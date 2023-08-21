@@ -30,8 +30,9 @@ chi::InputParameters Orientation::GetInputParameters()
 
 Orientation::Orientation(const chi::InputParameters& params)
   : ChiObject(params),
-    varphi_(params.GetParamValue<double>("azimuthal")*M_PI/180.0),
-    theta_(params.GetParamValue<double>("polar")*M_PI/180.0)
+    varphi_(params.GetParamValue<double>("azimuthal") * M_PI / 180.0),
+    theta_(params.GetParamValue<double>("polar") * M_PI / 180.0),
+    vector_(sin(theta_) * cos(varphi_), sin(theta_) * sin(varphi_), cos(theta_))
 {
 }
 
@@ -47,5 +48,10 @@ Orientation Orientation::MakeOrientation(const chi::ParameterBlock& param_block)
 double Orientation::Varphi() const { return varphi_; }
 
 double Orientation::Theta() const { return theta_; }
+
+const chi_mesh::Vector3& Orientation::Vector() const
+{
+  return vector_;
+}
 
 } // namespace piper

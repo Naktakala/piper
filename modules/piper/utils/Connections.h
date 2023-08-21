@@ -7,27 +7,35 @@
 
 namespace piper
 {
-class Component;
+class HardwareComponent;
 }
 
 namespace piper::utils
 {
+
+enum class FlowOrientation
+{
+  INCOMING, OUTGOING
+};
 
 struct Connection
 {
   std::string name_;
   std::string connected_comp_name_;
   std::string connected_comp_connection_point_name_;
+  size_t connected_comp_id_ = -1;
+  size_t connected_comp_connection_point_id_ = -1;
+  FlowOrientation connected_comp_flow_orientation = FlowOrientation::OUTGOING;
   chi_mesh::Vector3 position_;
 };
 
 /**Recursively nodalizes connections*/
-void Nodalize(const std::string& component_name,
-              const std::string& connection_name,
+void Nodalize(size_t component_id,
+              size_t connection_id,
               const chi_mesh::Vector3& datum,
-              std::map<std::string, std::shared_ptr<Component>>& components,
-              std::set<std::string>& components_visited);
+              std::vector<std::shared_ptr<HardwareComponent>>& components,
+              std::set<size_t>& components_visited);
 
-} // namespace piper
+} // namespace piper::utils
 
 #endif // PIPER_CONNECTIONS_H

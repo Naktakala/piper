@@ -1,4 +1,4 @@
-chiLog(LOG_0, "Hello World!")
+chiLog(LOG_0, "Test: Pure test of nodalization assembly")
 
 -- ============================================== Components
 bcompA = piper.BoundaryComponent.Create({name="bcompA"})

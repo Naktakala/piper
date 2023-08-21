@@ -1,7 +1,8 @@
 #include "Piper.h"
 
 #include "ChiObjectFactory.h"
-#include "piper/Components/Component.h"
+#include "piper/Components/HardwareComponent.h"
+#include "piper/physics/FluidPhysics.h"
 
 #include "chi_runtime.h"
 #include "chi_log.h"
@@ -48,12 +49,17 @@ chi::InputParameters Piper::GetInputParameters()
   params.AddOptionalParameterArray(
     "datum",
     std::vector<double>{0, 0, 0},
-    "A 3 component array of doubles specifying the system origin.");
+    "A 3 component array of doubles specifying the system origin. The "
+    "root_component will have it's first connection point attached to this "
+    "datum.");
 
   params.AddOptionalParameter("print_nodalization",
                               false,
                               "If set to true, will print the nodalization of "
                               "the system in the initialization step.");
+
+  params.AddRequiredParameter<size_t>("physics",
+                                      "Handle to a FluidPhysics object");
 
   return params;
 }
@@ -61,9 +67,12 @@ chi::InputParameters Piper::GetInputParameters()
 Piper::Piper(const chi::InputParameters& params)
   : chi_physics::Solver(params),
     system_name_(params.GetParamValue<std::string>("name")),
-    root_component_(params.GetParamValue<std::string>("root_component")),
+    root_component_name_(params.GetParamValue<std::string>("root_component")),
+    root_component_id_(0),
     datum_(chi_mesh::Vector3(params.GetParamVectorValue<double>("datum"))),
-    print_nodalization_(params.GetParamValue<bool>("print_nodalization"))
+    print_nodalization_(params.GetParamValue<bool>("print_nodalization")),
+    physics_(Chi::GetStackItemPtrAsType<FluidPhysics>(
+      Chi::object_stack, params.GetParamValue<size_t>("physics"), __FUNCTION__))
 {
   auto component_handles = params.GetParamVectorValue<size_t>("components");
   auto junction_handles = params.GetParamVectorValue<size_t>("connections");
@@ -74,25 +83,25 @@ Piper::Piper(const chi::InputParameters& params)
                        "No junctions added to system");
 
   //=================================================================
-  size_t component_id = 0;
   /**Lambda for adding components to a map from chi_object handles.*/
   auto AddComponents =
-    [this, &component_id](const std::vector<size_t>& handles,
-                          const std::vector<ComponentType>& allowed_types,
-                          const std::string& param_name)
+    [this](const std::vector<size_t>& handles,
+           const std::vector<ComponentCategory>& allowed_types,
+           const std::string& param_name)
   {
     for (size_t handle : handles)
     {
-      auto component_ptr_ = Chi::GetStackItemPtrAsType<Component>(
+      auto component_ptr_ = Chi::GetStackItemPtrAsType<HardwareComponent>(
         Chi::object_stack, handle, "Piper");
 
       const auto& name = component_ptr_->Name();
-      const auto& type = component_ptr_->Type();
+      const auto& type = component_ptr_->Category();
 
-      if (components_.count(name) != 0)
+      if (hw_comp_name_2_id_map_.count(name) != 0)
         ChiInvalidArgument("Duplicate component name \"" + name + "\"");
 
-      component_ptr_->SetID(component_id++);
+      const size_t component_id = hardware_components_.size();
+      component_ptr_->SetID(component_id);
 
       if (std::find(allowed_types.begin(), allowed_types.end(), type) ==
           allowed_types.end())
@@ -101,47 +110,101 @@ Piper::Piper(const chi::InputParameters& params)
         for (const auto& allowed_type : allowed_types)
         {
           allowed_type_names.append("\"");
-          allowed_type_names.append(ComponentTypeName(allowed_type));
+          allowed_type_names.append(ComponentCategoryName(allowed_type));
           allowed_type_names.append("\"");
           if (allowed_type != allowed_types.back())
             allowed_type_names.append(" ");
         }
         ChiLogicalError("Component \"" + name + "\" is of the wrong type \"" +
-                        ComponentTypeName(type) +
+                        ComponentCategoryName(type) +
                         "\" when used for parameter \"" + param_name +
                         "\". Allowed types are " + allowed_type_names);
       }
 
-      components_[name] = component_ptr_;
+      hw_comp_name_2_id_map_.insert(std::make_pair(name, component_id));
+      hardware_components_.push_back(component_ptr_);
 
       // We don't need to check for duplicates here since it is already
       // asserted above.
       // clang-format off
       switch (type)
       {
-        case ComponentType::BoundaryLike:
-          boundary_component_names_.push_back(name);break;
-        case ComponentType::Volumetric:
-          volume_component_names_.push_back(name); break;
-        case ComponentType::JunctionLike:
-          junction_component_names_.push_back(name);break;
+        case ComponentCategory::BoundaryLike:
+          boundary_component_ids_.push_back(component_id);break;
+        case ComponentCategory::Volumetric:
+          volume_component_ids_.push_back(component_id); break;
+        case ComponentCategory::JunctionLike:
+          junction_component_ids_.push_back(component_id);break;
       }
       // clang-format on
     }
   };
   //=================================================================
-  components_.clear();
-  AddComponents(component_handles,
-                {ComponentType::BoundaryLike, ComponentType::Volumetric},
-                "components");
-  AddComponents(junction_handles, {ComponentType::JunctionLike}, "connections");
+  hw_comp_name_2_id_map_.clear();
+  hardware_components_.clear();
+  boundary_component_ids_.clear();
+  volume_component_ids_.clear();
+  junction_component_ids_.clear();
+
+  AddComponents(
+    component_handles,
+    {ComponentCategory::BoundaryLike, ComponentCategory::Volumetric},
+    "components");
+  AddComponents(
+    junction_handles, {ComponentCategory::JunctionLike}, "connections");
+
+  physics_->SetPipeSystem(*this);
 
   Chi::log.Log0Verbose1() << "Piper system \"" << SystemName() << "\" created.";
 }
 
 const std::string& Piper::SystemName() const { return system_name_; }
+const std::vector<std::shared_ptr<HardwareComponent>>& Piper::HardwareComponents() const
+{
+  return hardware_components_;
+}
 
+const std::vector<size_t>& Piper::BoundaryComponentIDs() const
+{
+  return boundary_component_ids_;
+}
+const std::vector<size_t>& Piper::VolumeComponentIDs() const
+{
+  return volume_component_ids_;
+}
+const std::vector<size_t>& Piper::JunctionComponentIDs() const
+{
+  return junction_component_ids_;
+}
 
+size_t Piper::MapHWCompName2ID(const std::string& name) const
+{
+  auto it = hw_comp_name_2_id_map_.find(name);
+  ChiLogicalErrorIf(it == hw_comp_name_2_id_map_.end(),
+                    "ID not found for component name \"" + name + "\".");
+
+  return it->second;
+}
+
+size_t Piper::RootComponentID() const
+{
+  return root_component_id_;
+}
+
+void Piper::Initialize()
+{
+  Chi::mpi.Barrier();
+
+  ConnectComponents();
+  Chi::log.Log() << "Making mesh";
+  Chi::mpi.Barrier();
+  physics_->MakeMesh();
+  Chi::log.Log() << "Initializing Unknowns";
+  Chi::mpi.Barrier();
+  physics_->InitializeUnknowns();
+}
+
+void Piper::Step() { physics_->Step(); }
 
 } // namespace piper
 

@@ -1,32 +1,31 @@
 #include "Connections.h"
 
-#include "piper/Components/Component.h"
+#include "piper/Components/HardwareComponent.h"
 
 namespace piper::utils
 {
 
 // NOLINTBEGIN(misc-no-recursion)
-void Nodalize(const std::string& component_name,
-              const std::string& connection_name,
+void Nodalize(size_t component_id,
+              size_t connection_id,
               const chi_mesh::Vector3& datum,
-              std::map<std::string, std::shared_ptr<Component>>& components,
-              std::set<std::string>& components_visited)
+              std::vector<std::shared_ptr<HardwareComponent>>& components,
+              std::set<size_t>& components_visited)
 {
-  if (components_visited.find(component_name) != components_visited.end())
-    return;
+  if (components_visited.find(component_id) != components_visited.end()) return;
 
-  auto& component = components.at(component_name);
-  component->Nodalize(connection_name, datum);
+  auto& component = components.at(component_id);
+  component->Nodalize(connection_id, datum);
 
-  components_visited.insert(component_name);
+  components_visited.insert(component_id);
 
   for (const auto& connection : component->ConnectionPoints())
-    Nodalize(connection.connected_comp_name_,
-             connection.connected_comp_connection_point_name_,
+    Nodalize(connection.connected_comp_id_,
+             connection.connected_comp_connection_point_id_,
              connection.position_,
              components,
              components_visited);
 }
 // NOLINTEND(misc-no-recursion)
 
-} // namespace piper
+} // namespace piper::utils

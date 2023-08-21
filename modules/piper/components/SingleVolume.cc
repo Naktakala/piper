@@ -9,7 +9,7 @@ RegisterChiObject(piper, SingleVolume);
 
 chi::InputParameters SingleVolume::GetInputParameters()
 {
-  chi::InputParameters params = Component::GetInputParameters();
+  chi::InputParameters params = HardwareComponent::GetInputParameters();
 
   params.SetGeneralDescription(
     "Single control volume component with an inlet and an outlet");
@@ -25,10 +25,11 @@ chi::InputParameters SingleVolume::GetInputParameters()
 }
 
 SingleVolume::SingleVolume(const chi::InputParameters& params)
-  : Component(params,
-              ComponentType::Volumetric,
-              /*connection_points=*/
-              {utils::Connection{"inlet"}, utils::Connection{"outlet"}}),
+  : HardwareComponent(
+      params,
+      ComponentCategory::Volumetric,
+      /*connection_points=*/
+      {utils::Connection{"inlet"}, utils::Connection{"outlet"}}),
     Dh_(params.GetParamValue<double>("Dh")),
     A_(params.GetParamValue<double>("A")),
     length_(params.GetParamValue<double>("length")),
@@ -36,17 +37,24 @@ SingleVolume::SingleVolume(const chi::InputParameters& params)
 {
 }
 
+/**Returns the component's flow orientation relative to the connection
+ * point.*/
+utils::FlowOrientation
+SingleVolume::FlowOrientationRelToConPoint(size_t con_point_id) const
+{
+  if (con_point_id == 0) return utils::FlowOrientation::OUTGOING;
+  else if (con_point_id == 1)
+    return utils::FlowOrientation::INCOMING;
+  else
+    ChiInvalidArgument("Invalid con_point_id " + std::to_string(con_point_id));
+}
+
 /**The nodalization for a single volume is quite simple. Given the datum point,
  * the other point is just along the length vector.*/
-void SingleVolume::Nodalize(std::string connection_point_name,
+void SingleVolume::Nodalize(size_t connection_point_id,
                             const chi_mesh::Vector3& datum)
 {
-  size_t ci = 0; // cp = connection point
-  for (const auto& connection_point : connection_points_)
-  {
-    if (connection_point.name_ == connection_point_name) break;
-    ++ci;
-  }
+  const size_t ci = connection_point_id;
   const size_t cj = ci == 0 ? 1 : 0;
 
   connection_points_[ci].position_ = datum;
@@ -62,5 +70,9 @@ void SingleVolume::Nodalize(std::string connection_point_name,
   else
     connection_points_[cj].position_ = datum - length_vector;
 }
+
+double SingleVolume::Area() const { return A_; }
+
+double SingleVolume::Volume() const { return A_ * length_; }
 
 } // namespace piper

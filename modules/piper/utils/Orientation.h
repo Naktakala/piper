@@ -2,6 +2,7 @@
 #define PIPER_ORIENTATION_H
 
 #include "ChiObject.h"
+#include "mesh/chi_mesh.h"
 
 namespace piper
 {
@@ -16,10 +17,12 @@ public:
 
   double Varphi() const;
   double Theta() const;
+  const chi_mesh::Vector3& Vector() const;
 
 protected:
   double varphi_ = 0.0;
   double theta_ = 0.0;
+  chi_mesh::Vector3 vector_;
 };
 
 }

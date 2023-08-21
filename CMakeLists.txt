@@ -15,20 +15,26 @@ message(STATUS "CHI_TECH_DIR set to ${CHI_TECH_DIR}")
 
 include("${CHI_TECH_DIR}/resources/CMakeMacros/Downstream.cmake")
 
+set(SOURCES "main.cc")
 add_subdirectory("${PROJECT_SOURCE_DIR}/modules")
 
 include_directories("${PROJECT_SOURCE_DIR}/modules")
+include_directories("${PROJECT_SOURCE_DIR}/scratch/CoolProp/include")
+include_directories("${PROJECT_SOURCE_DIR}/scratch/CoolProp/externals/fmtlib/include")
+
+link_directories("${PROJECT_SOURCE_DIR}/scratch/CoolProp/build")
 
 set(CMAKE_ARCHIVE_OUTPUT_DIRECTORY "${PROJECT_SOURCE_DIR}/lib")
 set(CMAKE_LIBRARY_OUTPUT_DIRECTORY "${PROJECT_SOURCE_DIR}/lib")
 set(CMAKE_RUNTIME_OUTPUT_DIRECTORY "${PROJECT_SOURCE_DIR}/bin")
 
-file (GLOB_RECURSE SOURCES "*.cc")
+
 add_executable(${TARGET} "${SOURCES}")
 if(UNIX AND NOT APPLE)
-    target_link_libraries(${TARGET} ${CHI_LIBS} -Wl,--whole-archive ChiLib -Wl,--no-whole-archive )
+    target_link_libraries(${TARGET} ${CHI_LIBS} -Wl,--whole-archive ChiLib -Wl,--no-whole-archive
+            CoolProp)
 elseif(APPLE)
-    target_link_libraries(${TARGET} ${CHI_LIBS} -Wl,-all_load ChiLib )
+    target_link_libraries(${TARGET} ${CHI_LIBS} -Wl,-all_load ChiLib CoolProp)
 endif()
 
 file(WRITE ${PROJECT_SOURCE_DIR}/Makefile "subsystem:

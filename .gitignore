@@ -48,3 +48,6 @@ doc/generated_files
 
 #visual studio code files
 .vscode/
+
+#Scratch folder
+scratch/
