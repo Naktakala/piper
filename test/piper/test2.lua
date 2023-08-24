@@ -52,13 +52,14 @@ phys1 = piper.Piper.Create
   physics = piper.IncompressibleLiquidPhysics.Create
   ({
     fluid_name = "Water",
-    initializer = { type = "StaticGravity", state={T=273.15+4.0, p=100.0e3} }
+    initializer = { type = "StaticGravity", state={T=273.15+40.0, p=100.0e3} }
   })
 })
 chiLog(LOG_0, "Before init")
 chiSolverInitialize(phys1)
 
-for k=1,200 do
+for k=1,2000 do
+  print("*** "..tostring(k).." t="..tostring(k*0.1))
   chiSolverStep(phys1)
 end
 

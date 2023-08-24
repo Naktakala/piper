@@ -20,6 +20,8 @@ public:
 
   double Area() const override;
   double Volume() const override;
+  double Length() const override;
+  double HydraulicDiameter() const override;
 
 protected:
   double Dh_; /// Hydraulic diameter

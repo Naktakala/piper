@@ -19,16 +19,22 @@ public:
 
   const std::vector<utils::Connection>& ConnectionPoints() const;
   std::vector<utils::Connection>& ConnectionPoints();
-
   const Orientation& GetOrientation() const;
-
   size_t GetID() const;
   void SetID(size_t id);
-
   ComponentCategory Category() const;
+  virtual double Area() const { return 0.0; }
+  virtual double Volume() const { return 0.0; }
+  virtual double Length() const { return 0.0; }
+  virtual double HydraulicDiameter() const { return 0.0; };
+  virtual double Roughness() const { return 0.0; }
 
   const std::string& ConnectionPointName(size_t con_point_id) const;
   size_t ConnectionPointID(const std::string& con_point_name) const;
+
+  /**Returns true if the component's flow orientation is outgoing relative
+   * to the connection point.*/
+  bool IsOutgoingRelToConPoint(size_t con_point_id) const;
 
   /**Returns the component's flow orientation relative to the connection
    * point.*/
@@ -40,9 +46,6 @@ public:
 
   const chi_mesh::Vector3& GetRootNodePosition() const;
   virtual chi_mesh::Vector3 MakeCentroid() const;
-
-  virtual double Area() const { return 0.0; }
-  virtual double Volume() const { return 0.0; }
 
   /**This function gets called in Piper right after the hardware components
    * are connected to each other. It allows for setting things like "the min of

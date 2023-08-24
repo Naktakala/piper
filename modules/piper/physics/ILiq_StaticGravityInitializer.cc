@@ -90,6 +90,7 @@ void IncompressibleLiquidPhysics::StaticGravityInitializer(
       {
         const Vec3 hw_comp_centroid = model.MakeCentroid();
         const Vec3 delta_h_vec = hw_comp_centroid - root_node_position;
+        Chi::log.Log() << model.Name() << " " << delta_h_vec.PrintStr();
         const double delta_z = delta_h_vec.Dot(gravity_.Normalized());
         const double g = gravity_.Norm();
 
@@ -105,8 +106,7 @@ void IncompressibleLiquidPhysics::StaticGravityInitializer(
           const double end_rho = EvaluateState(perturbed_state).at("rho");
 
           const double new_avg_rho = 0.5 * (end_rho + root_comp_rho);
-          const double drho_rel_rho =
-            std::fabs(new_avg_rho - avg_rho);
+          const double drho_rel_rho = std::fabs(new_avg_rho - avg_rho);
 
           avg_rho = new_avg_rho;
 
@@ -142,6 +142,24 @@ void IncompressibleLiquidPhysics::StaticGravityInitializer(
     Chi::log.Log0Verbose1() << outstr.str();
   };
   ComponentModelTreeWalker::Execute(component_models_, root_comp_id, InitFunc);
+
+  Chi::log.Log0Verbose1() << "Density-T table @ 100kPa:";
+  {
+    const size_t N = 10;
+    const double Tmin = 310.0, Tmax = 330.0;
+    const double dT = (Tmax - Tmin) / double(N);
+    for (size_t k = 0; k < N; ++k)
+    {
+      const double T = Tmin + (k + 0.5) * dT;
+      const auto state = EvaluateState({{"p", 100000.0}, {"T", T}});
+      const double rho = state.at("rho");
+      const double Cp = state.at("Cp");
+      const double mu = state.at("mu");
+
+      Chi::log.Log0Verbose1()
+        << "T " << T << " rho " << rho << " Cp " << Cp << " mu " << mu;
+    } // for k
+  }
 
   Chi::mpi.Barrier();
 }

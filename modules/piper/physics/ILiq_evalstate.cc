@@ -18,7 +18,7 @@ IncompressibleLiquidPhysics::EvaluateState(const StateValsList& state_vals_list)
   const auto& [v1n, v1v] = state_vals_list[1];
 
   std::vector<std::string> vals_wanted = {
-    "rho", "e", "T", "p", "h", "s", "k", "Pr", "mu"};
+    "rho", "e", "T", "p", "h", "s", "k", "Pr", "mu", "Cp"};
 
   StateValMap outvals;
   for (const auto& chi_name : vals_wanted)

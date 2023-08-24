@@ -60,10 +60,11 @@ void IncompressibleLiquidPhysics::InitializeUnknowns()
   const auto& grid = Grid();
   const auto& pipe_system = PipeSystem();
 
-  const auto& hw_components = pipe_system.HardwareComponents();
+  auto& hw_components = pipe_system.HardwareComponents();
   const auto& cell_map = mesh_generator_->GetVolumeComponent2CellGIDMap();
 
-  for (const auto& hw_component_ptr : hw_components)
+  //================================================== Instantiate models
+  for (auto& hw_component_ptr : hw_components)
   {
     const auto& hw_component = *hw_component_ptr;
     const auto hw_comp_category = hw_component.Category();
@@ -76,37 +77,20 @@ void IncompressibleLiquidPhysics::InitializeUnknowns()
       cell_ptr = &(grid.cells[cell_gid]);
     }
 
-    std::vector<std::string> variable_names_;
-// These switches will let the compiler tell us when we miss cases in
-// the enum
-#pragma GCC diagnostic push
-#pragma GCC diagnostic error "-Wswitch-enum"
-    switch (hw_comp_category)
-    {
-      case ComponentCategory::BoundaryLike:
-      case ComponentCategory::Volumetric:
-      {
-        variable_names_ = {"rho", "e", "T", "p", "h", "s", "k", "Pr", "mu", "u"};
-        break;
-      }
-      case ComponentCategory::JunctionLike:
-      {
-        variable_names_ = {"u"};
-        break;
-      }
-    } // switch on hw_comp_category
-#pragma GCC diagnostic pop
+    const auto variable_names = MakeVariableNamesList(hw_comp_category);
 
-    auto component_model =
-      std::make_unique<ComponentModel>(hw_component, cell_ptr, variable_names_);
+    auto component_model = std::make_unique<ComponentModel>(
+      component_models_, hw_component, cell_ptr, variable_names);
 
     component_models_.push_back(std::move(component_model));
   }
 
+  //================================================== Execute the initializer
   initializer_param_block_.RequireParameter("type");
   const std::string initializer_type =
     initializer_param_block_.GetParamValue<std::string>("type");
 
+  Chi::mpi.Barrier();
   Chi::log.Log() << "Executing initializer";
   Chi::mpi.Barrier();
   if (initializer_type == "StaticGravity")
@@ -116,6 +100,62 @@ void IncompressibleLiquidPhysics::InitializeUnknowns()
   else
     ChiInvalidArgument("Unsupported initializer type \"" + initializer_type +
                        "\".");
+}
+
+// ###################################################################
+std::vector<std::string> IncompressibleLiquidPhysics::MakeVariableNamesList(
+  ComponentCategory hw_comp_category)
+{
+  std::vector<std::string> variable_names;
+// These switches will let the compiler tell us when we miss cases in
+// the enum
+#pragma GCC diagnostic push
+#pragma GCC diagnostic error "-Wswitch-enum"
+  switch (hw_comp_category)
+  {
+    case ComponentCategory::BoundaryLike:
+    case ComponentCategory::Volumetric:
+    {
+      variable_names = {
+        "rho", "e", "T", "p", "h", "s", "k", "Pr", "mu", "u", "Re"};
+      break;
+    }
+    case ComponentCategory::JunctionLike:
+    {
+      variable_names = {"u"};
+      break;
+    }
+  } // switch on hw_comp_category
+#pragma GCC diagnostic pop
+
+  return variable_names;
+}
+
+double IncompressibleLiquidPhysics::FrictionFactor(const ComponentModel& model)
+{
+  const double Re = std::max(model.VarOld("Re"), 10.0);
+  const double e = model.GetHardwareComponent().Roughness();
+  const double D = model.HydraulicDiameter();
+
+  const double a = pow(2.457 * log(pow(7.0 / Re, -0.9) + 0.27 * e / D), 16.0);
+  const double b = pow(37530 / Re, 16.0);
+
+  const double fT =
+    8.0 * pow(pow(8.0 / Re, 12.0) + pow(a + b, -1.5), 1.0 / 12.0);
+
+  if (Re < 2000.0)
+  {
+    const double f = 64.0 / Re;
+
+    return std::min(1.0e6, f);
+  }
+  else if (Re < 4000.0)
+  {
+    const double c = (Re - 2000.0) / (4000.0 - 2000.0);
+    return (1.0 - c) * (64.0 / Re) + c * fT;
+  }
+  else
+    return fT;
 }
 
 } // namespace piper

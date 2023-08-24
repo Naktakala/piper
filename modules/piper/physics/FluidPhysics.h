@@ -31,6 +31,10 @@ public:
 
   virtual void MakeMesh();
   virtual void InitializeUnknowns() = 0;
+  /**Makes a list of variable names that should be added for a given
+  * component category.*/
+  virtual std::vector<std::string>
+  MakeVariableNamesList(ComponentCategory hw_comp_category) = 0;
 
   virtual void Step() = 0;
 

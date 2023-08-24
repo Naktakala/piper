@@ -21,6 +21,8 @@ public:
   explicit IncompressibleLiquidPhysics(const chi::InputParameters& params);
 
   void InitializeUnknowns() override;
+  std::vector<std::string>
+  MakeVariableNamesList(ComponentCategory hw_comp_category) override;
   void StaticGravityInitializer(const chi::ParameterBlock& params);
 
   void Step() override;
@@ -31,6 +33,8 @@ protected:
   typedef std::map<std::string, double> StateValMap;
 
   StateValMap EvaluateState(const StateValsList& state_vals_list);
+
+  static double FrictionFactor(const ComponentModel& model);
 
   const std::string fluid_name_;
 };

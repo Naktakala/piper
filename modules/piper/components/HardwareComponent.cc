@@ -19,6 +19,7 @@ std::string ComponentCategoryName(ComponentCategory category)
   // clang-format on
 }
 
+// ##################################################################
 chi::InputParameters HardwareComponent::GetInputParameters()
 {
   chi::InputParameters params = ChiObject::GetInputParameters();
@@ -39,6 +40,7 @@ chi::InputParameters HardwareComponent::GetInputParameters()
   return params;
 }
 
+// ##################################################################
 HardwareComponent::HardwareComponent(
   const chi::InputParameters& params,
   ComponentCategory type,
@@ -58,8 +60,10 @@ HardwareComponent::HardwareComponent(
                           << ", polar_anlge=" << orientation_.Theta() << "}";
 }
 
+// ##################################################################
 const std::string& HardwareComponent::Name() const { return name_; }
 
+// ##################################################################
 const std::vector<utils::Connection>&
 HardwareComponent::ConnectionPoints() const
 {
@@ -70,6 +74,7 @@ std::vector<utils::Connection>& HardwareComponent::ConnectionPoints()
   return connection_points_;
 }
 
+// ##################################################################
 const Orientation& HardwareComponent::GetOrientation() const
 {
   return orientation_;
@@ -79,6 +84,7 @@ size_t HardwareComponent::GetID() const { return id_; }
 void HardwareComponent::SetID(size_t id) { id_ = id; }
 ComponentCategory HardwareComponent::Category() const { return category_; }
 
+// ##################################################################
 const std::string&
 HardwareComponent::ConnectionPointName(size_t con_point_id) const
 {
@@ -89,6 +95,7 @@ HardwareComponent::ConnectionPointName(size_t con_point_id) const
   return connection_points_[con_point_id].name_;
 }
 
+// ##################################################################
 /**Returns the connection point id given the name.*/
 size_t
 HardwareComponent::ConnectionPointID(const std::string& con_point_name) const
@@ -104,12 +111,23 @@ HardwareComponent::ConnectionPointID(const std::string& con_point_name) const
   return std::distance(connection_points_.begin(), it);
 }
 
+// ##################################################################
+/**Returns true if the component's flow orientation is outgoing relative
+ * to the connection point.*/
+bool HardwareComponent::IsOutgoingRelToConPoint(size_t con_point_id) const
+{
+  return FlowOrientationRelToConPoint(con_point_id) ==
+         utils::FlowOrientation::OUTGOING;
+}
+
+// ##################################################################
 const chi_mesh::Vector3& HardwareComponent::GetRootNodePosition() const
 {
   ChiLogicalErrorIf(connection_points_.empty(), "Empty nodes");
   return connection_points_.front().position_;
 }
 
+// ##################################################################
 chi_mesh::Vector3 HardwareComponent::MakeCentroid() const
 {
   ChiLogicalErrorIf(connection_points_.empty(), "Empty nodes");

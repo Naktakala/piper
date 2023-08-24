@@ -75,4 +75,8 @@ double SingleVolume::Area() const { return A_; }
 
 double SingleVolume::Volume() const { return A_ * length_; }
 
+double SingleVolume::Length() const { return length_; }
+
+double SingleVolume::HydraulicDiameter() const { return Dh_; }
+
 } // namespace piper

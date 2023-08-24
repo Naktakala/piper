@@ -19,6 +19,7 @@ std::string TranslateChiPropertyName2CoolProp(const std::string& chi_name)
   else if (chi_name == "k"  ) return "conductivity";
   else if (chi_name == "Pr" ) return "Prandtl";
   else if (chi_name == "mu" ) return "viscosity";
+  else if (chi_name == "Cp" ) return "Cp0mass";
   else
     ChiLogicalError("Translation of \"" + chi_name +"\" not defined");
   // clang-format on

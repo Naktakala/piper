@@ -7,10 +7,13 @@
 namespace piper
 {
 
-ComponentModel::ComponentModel(const HardwareComponent& hardware_component,
-                               const chi_mesh::Cell* cell_ptr,
-                               const std::vector<std::string>& variable_names)
-  : hardware_component_(&hardware_component),
+ComponentModel::ComponentModel(
+  std::vector<std::unique_ptr<ComponentModel>>& family,
+  const HardwareComponent& hardware_component,
+  const chi_mesh::Cell* cell_ptr,
+  const std::vector<std::string>& variable_names)
+  : family_(family),
+    hardware_component_(&hardware_component),
     cell_ptr_(cell_ptr),
     variable_names_(variable_names),
     vars_old_(MakeVariablesMap(variable_names)),
@@ -60,10 +63,25 @@ double ComponentModel::Area() const { return hardware_component_->Area(); }
 
 double ComponentModel::Volume() const { return hardware_component_->Volume(); }
 
+double ComponentModel::Length() const { return hardware_component_->Length(); }
+
+double ComponentModel::HydraulicDiameter() const
+{
+  return hardware_component_->HydraulicDiameter();
+}
+
 utils::FlowOrientation
 ComponentModel::FlowOrientationRelToConPoint(size_t con_point_id) const
 {
   return hardware_component_->FlowOrientationRelToConPoint(con_point_id);
+}
+
+// ##################################################################
+/**Returns true if the component's flow orientation is outgoing relative
+ * to the connection point.*/
+bool ComponentModel::IsOutgoingRelToConPoint(size_t con_point_id) const
+{
+  return hardware_component_->IsOutgoingRelToConPoint(con_point_id);
 }
 
 const chi_mesh::Vector3& ComponentModel::GetRootNodePosition() const
@@ -74,6 +92,18 @@ const chi_mesh::Vector3& ComponentModel::GetRootNodePosition() const
 chi_mesh::Vector3 ComponentModel::MakeCentroid() const
 {
   return hardware_component_->MakeCentroid();
+}
+
+// ##################################################################
+std::vector<std::unique_ptr<ComponentModel>>& ComponentModel::Family()
+{
+  return family_;
+}
+
+// ##################################################################
+ConnectionInterface ComponentModel::Connections()
+{
+  return ConnectionInterface(*this);
 }
 
 // ##################################################################
