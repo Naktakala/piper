@@ -27,6 +27,7 @@ chi::InputParameters SingleVolume::GetInputParameters()
 SingleVolume::SingleVolume(const chi::InputParameters& params)
   : HardwareComponent(
       params,
+      "SingleVolume",
       ComponentCategory::Volumetric,
       /*connection_points=*/
       {utils::Connection{"inlet"}, utils::Connection{"outlet"}}),

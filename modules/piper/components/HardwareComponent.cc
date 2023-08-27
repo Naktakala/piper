@@ -43,6 +43,7 @@ chi::InputParameters HardwareComponent::GetInputParameters()
 // ##################################################################
 HardwareComponent::HardwareComponent(
   const chi::InputParameters& params,
+  const std::string& type_name,
   ComponentCategory type,
   std::vector<utils::Connection> connection_points)
   : ChiObject(params),
@@ -51,6 +52,7 @@ HardwareComponent::HardwareComponent(
         ? Orientation::MakeOrientation(params.GetParam("orientation"))
         : Orientation::MakeOrientation(chi::ParameterBlock())),
     connection_points_(std::move(connection_points)),
+    type_name_(type_name),
     category_(type),
     name_(params.GetParamValue<std::string>("name"))
 {
@@ -61,6 +63,7 @@ HardwareComponent::HardwareComponent(
 }
 
 // ##################################################################
+const std::string& HardwareComponent::TypeName() const { return type_name_; }
 const std::string& HardwareComponent::Name() const { return name_; }
 
 // ##################################################################

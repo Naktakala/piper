@@ -30,13 +30,9 @@ class Orientation;
 class ComponentModel
 {
 public:
-  ComponentModel(std::vector<std::unique_ptr<ComponentModel>>& family,
-                 const HardwareComponent& hardware_component,
-                 const chi_mesh::Cell* cell,
-                 const std::vector<std::string>& variable_names);
-
   const HardwareComponent& GetHardwareComponent() const;
 
+  const std::string& TypeName() const;
   const std::string& Name() const;
   const std::vector<utils::Connection>& ConnectionPoints() const;
   const Orientation& GetOrientation() const;
@@ -47,9 +43,10 @@ public:
   double Volume() const;
   double Length() const;
   double HydraulicDiameter() const;
+  double Roughness() const;
 
   /**Returns true if the component's flow orientation is outgoing relative
-  * to the connection point.*/
+   * to the connection point.*/
   bool IsOutgoingRelToConPoint(size_t con_point_id) const;
 
   /**Returns the component's flow orientation relative to the connection
@@ -71,7 +68,17 @@ public:
   const double& VarNew(const std::string& name) const;
   double& VarNew(const std::string& name);
 
+  /**Assign the new variable values to the old.*/
+  void AdvanceNewToOld();
+
+  virtual ~ComponentModel() = default;
+
 protected:
+  ComponentModel(std::vector<std::unique_ptr<ComponentModel>>& family,
+                 const HardwareComponent& hardware_component,
+                 const chi_mesh::Cell* cell,
+                 const std::vector<std::string>& variable_names);
+
   static std::map<std::string, double>
   MakeVariablesMap(const std::vector<std::string>& variable_names);
 

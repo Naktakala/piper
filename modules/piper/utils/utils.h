@@ -11,6 +11,10 @@ enum class ComponentCategory : int
   JunctionLike = 2
 };
 
+class ComponentModel;
+
+double DarcyFrictionFactorWithChurchill(const ComponentModel& model);
+
 }
 
 #endif // PIPER_UTILS_H

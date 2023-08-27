@@ -1,4 +1,4 @@
-#include "IncompressibleLiquidPhysics.h"
+#include "LiquidPhysics.h"
 
 #include "piper/utils/CoolPropInterface.h"
 
@@ -9,8 +9,8 @@
 namespace piper
 {
 // ###################################################################
-IncompressibleLiquidPhysics::StateValMap
-IncompressibleLiquidPhysics::EvaluateState(const StateValsList& state_vals_list)
+LiquidPhysics::StateValMap
+LiquidPhysics::EvaluateState(const StateValsList& state_vals_list)
 {
   ChiInvalidArgumentIf(state_vals_list.size() < 2,
                        "At least 2 state variables are required.");

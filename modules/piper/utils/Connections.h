@@ -25,7 +25,6 @@ struct Connection
   std::string connected_comp_connection_point_name_;
   size_t connected_comp_id_ = -1;
   size_t connected_comp_connection_point_id_ = -1;
-  FlowOrientation connected_comp_flow_orientation = FlowOrientation::OUTGOING;
   chi_mesh::Vector3 position_;
 };
 

@@ -15,6 +15,7 @@ std::string ComponentCategoryName(ComponentCategory category);
 class HardwareComponent : public ChiObject
 {
 public:
+  const std::string& TypeName() const;
   const std::string& Name() const;
 
   const std::vector<utils::Connection>& ConnectionPoints() const;
@@ -65,10 +66,12 @@ protected:
 
   static chi::InputParameters GetInputParameters();
   explicit HardwareComponent(const chi::InputParameters& params,
+                             const std::string& type_name,
                              ComponentCategory type,
                              std::vector<utils::Connection> connection_points);
 
 private:
+  const std::string type_name_;
   const ComponentCategory category_;
   const std::string name_;
   size_t id_ = 0;

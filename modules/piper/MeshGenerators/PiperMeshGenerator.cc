@@ -78,8 +78,8 @@ PiperMeshGenerator::GenerateUnpartitionedMesh(
   return umesh;
 }
 
-std::map<std::string, uint64_t>
-PiperMeshGenerator::GetVolumeComponent2CellGIDMap()
+const std::map<std::string, uint64_t>&
+PiperMeshGenerator::GetVolumeComponent2CellGIDMap() const
 {
   return volume_comp_name_2_cell_id_map_;
 }

@@ -37,6 +37,11 @@ const HardwareComponent& ComponentModel::GetHardwareComponent() const
   return *hardware_component_;
 }
 
+const std::string& ComponentModel::TypeName() const
+{
+  return hardware_component_->TypeName();
+}
+
 const std::string& ComponentModel::Name() const
 {
   return hardware_component_->Name();
@@ -68,6 +73,11 @@ double ComponentModel::Length() const { return hardware_component_->Length(); }
 double ComponentModel::HydraulicDiameter() const
 {
   return hardware_component_->HydraulicDiameter();
+}
+
+double ComponentModel::Roughness() const
+{
+  return hardware_component_->Roughness();
 }
 
 utils::FlowOrientation
@@ -179,4 +189,16 @@ double& ComponentModel::VarNew(const std::string& name)
 
   return (*it).second;
 }
+
+void ComponentModel::AdvanceNewToOld()
+{
+  for (auto& [var_name, old_value] : vars_old_)
+  {
+    auto it_new = vars_new_.find(var_name);
+    ChiLogicalErrorIf(it_new == vars_new_.end(),
+                      "Var name in \"old\" list not present in \"new\" list.");
+    old_value = it_new->second;
+  }
+}
+
 } // namespace piper

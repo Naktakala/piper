@@ -1,4 +1,4 @@
-#include "IncompressibleLiquidPhysics.h"
+#include "LiquidPhysics.h"
 
 #include "piper/Piper.h"
 #include "piper/components/HardwareComponent.h"
@@ -10,7 +10,7 @@ namespace piper
 {
 
 // ###################################################################
-void IncompressibleLiquidPhysics::StaticGravityInitializer(
+void LiquidPhysics::StaticGravityInitializer(
   const chi::ParameterBlock& params)
 {
   typedef chi_mesh::Vector3 Vec3;
@@ -128,7 +128,11 @@ void IncompressibleLiquidPhysics::StaticGravityInitializer(
         const std::vector<std::string> var_names = {
           "rho", "e", "T", "p", "h", "s", "k", "Pr", "mu"};
         for (const auto& var_name : var_names)
-          model.VarOld(var_name) = state.at(var_name);
+        {
+          const double state_var_val = state.at(var_name);
+          model.VarOld(var_name) = state_var_val;
+          model.VarNew(var_name) = state_var_val;
+        }
         break;
       }
       case ComponentCategory::JunctionLike:

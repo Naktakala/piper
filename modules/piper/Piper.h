@@ -28,7 +28,9 @@ public:
   size_t RootComponentID() const;
 
   virtual void Initialize() override;
+  virtual void Execute() override;
   virtual void Step() override;
+  virtual void Advance() override;
 private:
   void ConnectComponents();
 

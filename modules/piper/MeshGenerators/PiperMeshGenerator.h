@@ -19,7 +19,7 @@ public:
   std::unique_ptr<chi_mesh::UnpartitionedMesh> GenerateUnpartitionedMesh(
     std::unique_ptr<chi_mesh::UnpartitionedMesh> input_umesh) override;
 
-  std::map<std::string, uint64_t> GetVolumeComponent2CellGIDMap();
+  const std::map<std::string, uint64_t>& GetVolumeComponent2CellGIDMap() const;
 
 protected:
   const Piper* pipe_system_ptr_ = nullptr;

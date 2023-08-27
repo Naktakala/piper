@@ -64,16 +64,12 @@ void Piper::ConnectComponents()
       // Complete junction's connection point info
       connection.connected_comp_id_ = comp_id;
       connection.connected_comp_connection_point_id_ = comp_conn_id;
-      connection.connected_comp_flow_orientation =
-        vol_component.FlowOrientationRelToConPoint(comp_conn_id);
 
       // Populate connected components connection point info
       con_it->connected_comp_name_ = jname;
       con_it->connected_comp_connection_point_name_ = comp_conn_name;
       con_it->connected_comp_id_ = jid;
       con_it->connected_comp_connection_point_id_ = j;
-      con_it->connected_comp_flow_orientation =
-        junction.FlowOrientationRelToConPoint(j);
 
       ++j;
     }

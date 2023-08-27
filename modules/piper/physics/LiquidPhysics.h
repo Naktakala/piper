@@ -1,14 +1,15 @@
-#ifndef PIPER_INCOMPRESSIBLELIQUIDPHYSICS_H
-#define PIPER_INCOMPRESSIBLELIQUIDPHYSICS_H
+#ifndef PIPER_LIQUIDPHYSICS_H
+#define PIPER_LIQUIDPHYSICS_H
 
 #include "FluidPhysics.h"
+#include "piper/models/ComponentLiquidModel.h"
 
 namespace piper
 {
 
 class ComponentModel;
 
-class IncompressibleLiquidPhysics : public FluidPhysics
+class LiquidPhysics : public FluidPhysics
 {
 public:
   struct EqCoeffs
@@ -18,14 +19,21 @@ public:
     std::vector<std::vector<size_t>> id_maps_;
   };
   static chi::InputParameters GetInputParameters();
-  explicit IncompressibleLiquidPhysics(const chi::InputParameters& params);
+  explicit LiquidPhysics(const chi::InputParameters& params);
 
+  /**Returns the fluid name.*/
+  const std::string& FluidName() const;
+
+  void Initialize() override;
   void InitializeUnknowns() override;
   std::vector<std::string>
   MakeVariableNamesList(ComponentCategory hw_comp_category) override;
   void StaticGravityInitializer(const chi::ParameterBlock& params);
 
+  ComponentLiquidModel& GetComponentLiquidModel(size_t component_id);
+
   void Step() override;
+  void Advance() override;
 
 protected:
   typedef std::pair<std::string, double> StateVal;
@@ -34,11 +42,9 @@ protected:
 
   StateValMap EvaluateState(const StateValsList& state_vals_list);
 
-  static double FrictionFactor(const ComponentModel& model);
-
   const std::string fluid_name_;
 };
 
 } // namespace piper
 
-#endif // PIPER_INCOMPRESSIBLELIQUIDPHYSICS_H
+#endif // PIPER_LIQUIDPHYSICS_H

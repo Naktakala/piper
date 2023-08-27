@@ -159,7 +159,8 @@ Piper::Piper(const chi::InputParameters& params)
 }
 
 const std::string& Piper::SystemName() const { return system_name_; }
-const std::vector<std::shared_ptr<HardwareComponent>>& Piper::HardwareComponents() const
+const std::vector<std::shared_ptr<HardwareComponent>>&
+Piper::HardwareComponents() const
 {
   return hardware_components_;
 }
@@ -186,25 +187,21 @@ size_t Piper::MapHWCompName2ID(const std::string& name) const
   return it->second;
 }
 
-size_t Piper::RootComponentID() const
-{
-  return root_component_id_;
-}
+size_t Piper::RootComponentID() const { return root_component_id_; }
 
 void Piper::Initialize()
 {
   Chi::mpi.Barrier();
 
   ConnectComponents();
-  Chi::log.Log() << "Making mesh";
-  Chi::mpi.Barrier();
-  physics_->MakeMesh();
-  Chi::log.Log() << "Initializing Unknowns";
-  Chi::mpi.Barrier();
-  physics_->InitializeUnknowns();
+  physics_->Initialize();
 }
 
+void Piper::Execute() { physics_->Execute(); }
+
 void Piper::Step() { physics_->Step(); }
+
+void Piper::Advance() { physics_->Advance(); }
 
 } // namespace piper
 

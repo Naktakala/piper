@@ -37,9 +37,10 @@ chi::InputParameters SingleJunction::GetInputParameters()
 
 SingleJunction::SingleJunction(const chi::InputParameters& params)
   : HardwareComponent(params,
-              ComponentCategory::JunctionLike,
-              /*connection_points=*/
-              {utils::Connection{"from"}, utils::Connection{"to"}}),
+                      "SingleJunction",
+                      ComponentCategory::JunctionLike,
+                      /*connection_points=*/
+                      {utils::Connection{"from"}, utils::Connection{"to"}}),
     A_(0.0),
     area_param_(params.GetParam("A"))
 {
@@ -120,8 +121,8 @@ void SingleJunction::EstablishHardwareReferenceData(
     else
       ChiInvalidArgument("Invalid area specification type \"" + type + "\".");
 
-    Chi::log.Log0Verbose1()
-      << "Junction \"" + Name() + "\" area spec: " << type << " set to A=" << A_;
+    Chi::log.Log0Verbose1() << "Junction \"" + Name() + "\" area spec: " << type
+                            << " set to A=" << A_;
   }
   else
     ChiInvalidArgument("Invalid parameter type \"" +

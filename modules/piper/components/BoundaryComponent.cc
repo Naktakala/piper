@@ -24,6 +24,7 @@ chi::InputParameters BoundaryComponent::GetInputParameters()
 
 BoundaryComponent::BoundaryComponent(const chi::InputParameters& params)
   : HardwareComponent(params,
+                      "BoundaryComponent",
                       ComponentCategory::BoundaryLike,
                       {utils::Connection{"to_or_from"}})
 {
