@@ -16,9 +16,6 @@ namespace piper
 {
 
 // ###################################################################
-const std::string& LiquidPhysics::FluidName() const { return fluid_name_; }
-
-// ###################################################################
 void LiquidPhysics::InitializeUnknowns()
 {
   const auto& grid = Grid();
@@ -124,7 +121,7 @@ LiquidPhysics::MakeVariableNamesList(ComponentCategory hw_comp_category)
     case ComponentCategory::Volumetric:
     {
       variable_names = {
-        "rho", "e", "T", "p", "h", "s", "k", "Pr", "mu", "u", "Re"};
+        "rho", "e", "T", "p", "k", "mu", "u", "Re"};
       break;
     }
     case ComponentCategory::JunctionLike:

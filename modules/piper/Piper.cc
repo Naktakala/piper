@@ -2,7 +2,7 @@
 
 #include "ChiObjectFactory.h"
 #include "piper/Components/HardwareComponent.h"
-#include "piper/physics/FluidPhysics.h"
+
 
 #include "chi_runtime.h"
 #include "chi_log.h"
@@ -29,13 +29,12 @@ chi::InputParameters Piper::GetInputParameters()
   params.SetGeneralDescription("A module for simulating pipes or channels.");
   params.SetDocGroup("Piper");
 
-  params.AddOptionalParameter(
-    "name", "PiperSystem", "A name to associated with this system.");
+  params.AddOptionalParameter("name", "PiperSystem", "System name.");
 
   params.AddRequiredParameterArray("components",
-                                   "List of volumetric components");
+                                   "List of volumetric components.");
   params.AddRequiredParameterArray("connections",
-                                   "List of junction components");
+                                   "List of junction components.");
 
   params.AddOptionalParameter(
     "root_component",
@@ -58,21 +57,16 @@ chi::InputParameters Piper::GetInputParameters()
                               "If set to true, will print the nodalization of "
                               "the system in the initialization step.");
 
-  params.AddRequiredParameter<size_t>("physics",
-                                      "Handle to a FluidPhysics object");
-
   return params;
 }
 
 Piper::Piper(const chi::InputParameters& params)
-  : chi_physics::Solver(params),
+  : ChiObject(params),
     system_name_(params.GetParamValue<std::string>("name")),
     root_component_name_(params.GetParamValue<std::string>("root_component")),
     root_component_id_(0),
     datum_(chi_mesh::Vector3(params.GetParamVectorValue<double>("datum"))),
-    print_nodalization_(params.GetParamValue<bool>("print_nodalization")),
-    physics_(Chi::GetStackItemPtrAsType<FluidPhysics>(
-      Chi::object_stack, params.GetParamValue<size_t>("physics"), __FUNCTION__))
+    print_nodalization_(params.GetParamValue<bool>("print_nodalization"))
 {
   auto component_handles = params.GetParamVectorValue<size_t>("components");
   auto junction_handles = params.GetParamVectorValue<size_t>("connections");
@@ -153,7 +147,7 @@ Piper::Piper(const chi::InputParameters& params)
   AddComponents(
     junction_handles, {ComponentCategory::JunctionLike}, "connections");
 
-  physics_->SetPipeSystem(*this);
+  ConnectComponents();
 
   Chi::log.Log0Verbose1() << "Piper system \"" << SystemName() << "\" created.";
 }
@@ -188,20 +182,6 @@ size_t Piper::MapHWCompName2ID(const std::string& name) const
 }
 
 size_t Piper::RootComponentID() const { return root_component_id_; }
-
-void Piper::Initialize()
-{
-  Chi::mpi.Barrier();
-
-  ConnectComponents();
-  physics_->Initialize();
-}
-
-void Piper::Execute() { physics_->Execute(); }
-
-void Piper::Step() { physics_->Step(); }
-
-void Piper::Advance() { physics_->Advance(); }
 
 } // namespace piper
 

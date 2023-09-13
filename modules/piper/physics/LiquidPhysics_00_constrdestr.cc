@@ -53,5 +53,7 @@ LiquidPhysics::LiquidPhysics(const chi::InputParameters& params)
   Chi::log.Log() << "IncompressibleLiquidPhysics created";
 }
 
+// ###################################################################
+const std::string& LiquidPhysics::FluidName() const { return fluid_name_; }
 
 } // namespace piper

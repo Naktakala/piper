@@ -17,8 +17,10 @@ include("${CHI_TECH_DIR}/resources/CMakeMacros/Downstream.cmake")
 
 set(SOURCES "main.cc")
 add_subdirectory("${PROJECT_SOURCE_DIR}/modules")
+add_subdirectory("${PROJECT_SOURCE_DIR}/framework")
 
 include_directories("${PROJECT_SOURCE_DIR}/modules")
+include_directories("${PROJECT_SOURCE_DIR}/framework")
 include_directories("${PROJECT_SOURCE_DIR}/scratch/CoolProp/include")
 include_directories("${PROJECT_SOURCE_DIR}/scratch/CoolProp/externals/fmtlib/include")
 

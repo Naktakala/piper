@@ -7,6 +7,7 @@
 #include "math/chi_math.h"
 
 #include "chi_log.h"
+#include "utils/chi_timer.h"
 
 #include <functional>
 
@@ -15,31 +16,48 @@ namespace piper
 
 void LiquidPhysics::Step()
 {
+  const double start_time = Chi::program_timer.GetTime();
   ChiLogicalErrorIf(Chi::mpi.process_count != 1, "ONLY SERIAL!!!");
 
+  const size_t tag_jnc_time = Chi::log.GetExistingRepeatingEventTag("JNC_TIME");
+  const size_t tag_vol_time = Chi::log.GetExistingRepeatingEventTag("VOL_TIME");
+  const size_t tag_slv_time = Chi::log.GetExistingRepeatingEventTag("SLV_TIME");
+
+  const std::vector<size_t> tags = {
+    Chi::log.GetExistingRepeatingEventTag("TIMING0"),
+    Chi::log.GetExistingRepeatingEventTag("TIMING1"),
+    Chi::log.GetExistingRepeatingEventTag("TIMING2"),
+    Chi::log.GetExistingRepeatingEventTag("TIMING3"),
+    Chi::log.GetExistingRepeatingEventTag("TIMING4")};
+
   const double projected_end_time = Time() + DeltaT();
-  if (projected_end_time > EndTime()) SetTimeStep(projected_end_time - Time());
+  if (projected_end_time > EndTime()) dt_ = (projected_end_time - Time());
 
   const auto& pipe_system = *pipe_system_ptr_;
   const auto& vol_comp_ids = pipe_system.VolumeComponentIDs();
   const auto& jnc_comp_ids = pipe_system.JunctionComponentIDs();
 
   //============================================= Assemble momentum eqs
+  Chi::log.LogEvent(tag_jnc_time, chi::ChiLog::EventType::EVENT_BEGIN);
   for (const size_t jnc_comp_id : jnc_comp_ids)
   {
     auto& jnc_model = GetComponentLiquidModel(jnc_comp_id);
     jnc_model.AssembleEquations();
   } // for junction component
+  Chi::log.LogEvent(tag_jnc_time, chi::ChiLog::EventType::EVENT_END);
 
   //============================================= Assemble conservation of
   //                                              energy, mass, eos
+  Chi::log.LogEvent(tag_vol_time, chi::ChiLog::EventType::EVENT_BEGIN);
   for (const auto& vol_comp_id : vol_comp_ids)
   {
     auto& vol_model = GetComponentLiquidModel(vol_comp_id);
     vol_model.AssembleEquations();
   } // for volume components
+  Chi::log.LogEvent(tag_vol_time, chi::ChiLog::EventType::EVENT_END);
 
   //============================================= Init pressure system
+  Chi::log.LogEvent(tag_slv_time, chi::ChiLog::EventType::EVENT_BEGIN);
   const size_t num_volumetric_components = vol_comp_ids.size();
 
   MatDbl A(num_volumetric_components, VecDbl(num_volumetric_components, 0.0));
@@ -98,15 +116,20 @@ void LiquidPhysics::Step()
 
   p = b;
   chi_math::GaussElimination(A, p, static_cast<int>(num_volumetric_components));
-  chi_math::PrintVector(p);
+  Chi::log.LogEvent(tag_slv_time, chi::ChiLog::EventType::EVENT_END);
+  Chi::log.LogEvent(tags[0], chi::ChiLog::EventType::EVENT_BEGIN);
 
+  Chi::log.LogEvent(tags[0], chi::ChiLog::EventType::EVENT_END);
+
+  Chi::log.LogEvent(tags[1], chi::ChiLog::EventType::EVENT_BEGIN);
   // Update pressure
   for (const auto& [vol_comp_id, ir] : vol_comp_id_2_row_i_map)
   {
     auto& vol_comp_model = *component_models_.at(vol_comp_id);
     vol_comp_model.VarNew("p") = p[vol_comp_id_2_row_i_map.at(vol_comp_id)];
   }
-
+  Chi::log.LogEvent(tags[1], chi::ChiLog::EventType::EVENT_END);
+  Chi::log.LogEvent(tags[2], chi::ChiLog::EventType::EVENT_BEGIN);
   // Update junction velocity
   for (const size_t junc_comp_id : jnc_comp_ids)
   {
@@ -128,6 +151,9 @@ void LiquidPhysics::Step()
 
     jnc_model.VarNew("u") = u_j_tp1;
   }
+  Chi::log.LogEvent(tags[2], chi::ChiLog::EventType::EVENT_END);
+
+  Chi::log.LogEvent(tags[3], chi::ChiLog::EventType::EVENT_BEGIN);
 
   // Update density and internal energy + other state variables
   for (const auto& [vol_comp_id, ir] : vol_comp_id_2_row_i_map)
@@ -171,25 +197,25 @@ void LiquidPhysics::Step()
     const std::vector<StateVal> state_specs = {{"p", vol_model.VarNew("p")},
                                                {"e", e_i_tp1}};
 
-    const auto state = EvaluateState(state_specs);
+    Chi::log.LogEvent(tags[4], chi::ChiLog::EventType::EVENT_BEGIN);
+    const auto state =
+      EvaluateState({"rho", "e", "T", "p", "k", "mu"}, state_specs);
+    Chi::log.LogEvent(tags[4], chi::ChiLog::EventType::EVENT_END);
 
     const std::vector<std::string> var_names = {
-      "rho", "e", "T", "p", "h", "s", "k", "Pr", "mu"};
+      "rho", "e", "T", "p", "k", "mu"};
 
-    Chi::log.Log0Verbose1() << "************* " << vol_model.Name();
     for (const auto& var_name : var_names)
-    {
       vol_model.VarNew(var_name) = state.at(var_name);
-      Chi::log.Log0Verbose1() << var_name << " = " << state.at(var_name);
-    }
-    Chi::log.Log() << "T=" << vol_model.VarNew("T")
-                   << " rho=" << vol_model.VarNew("rho")
-                   << " p=" << vol_model.VarNew("p")
-                   << " e=" << vol_model.VarNew("e")
-                   << " mu=" << vol_model.VarNew("mu")
-                   << " u=" << vol_model.VarNew("u");
-    // Compute Reynold's number
 
+    //Chi::log.Log() << "T=" << vol_model.VarNew("T")
+    //               << " rho=" << vol_model.VarNew("rho")
+    //               << " p=" << vol_model.VarNew("p")
+    //               << " e=" << vol_model.VarNew("e")
+    //               << " mu=" << vol_model.VarNew("mu")
+    //               << " u=" << vol_model.VarNew("u");
+
+    // Compute Reynold's number
     const double rho = rho_i_tp1;
     const double u = vol_model.VarNew("u");
     const double Dh = vol_model.HydraulicDiameter();
@@ -199,6 +225,9 @@ void LiquidPhysics::Step()
 
     vol_model.VarNew("Re") = Re;
   }
+  Chi::log.LogEvent(tags[3], chi::ChiLog::EventType::EVENT_END);
+
+  step_time_ = Chi::program_timer.GetTime() - start_time;
 }
 
 } // namespace piper

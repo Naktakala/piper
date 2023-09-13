@@ -35,12 +35,15 @@ public:
   void Step() override;
   void Advance() override;
 
-protected:
   typedef std::pair<std::string, double> StateVal;
   typedef std::vector<StateVal> StateValsList;
   typedef std::map<std::string, double> StateValMap;
 
-  StateValMap EvaluateState(const StateValsList& state_vals_list);
+  StateValMap EvaluateState(const std::vector<std::string>& vals_wanted,
+                            const StateValsList& state_vals_list);
+
+protected:
+
 
   const std::string fluid_name_;
 };

@@ -88,6 +88,12 @@ protected:
   const std::vector<std::string> variable_names_;
   std::map<std::string, double> vars_old_;
   std::map<std::string, double> vars_new_;
+
+  std::map<std::string, double> primary_vars_old_;
+  std::map<std::string, double> primary_vars_new_;
+
+  std::map<std::string, double> auxiliary_vars_old_;
+  std::map<std::string, double> auxiliary_vars_new_;
 };
 
 } // namespace piper

@@ -1,15 +1,14 @@
 #ifndef PIPER_PIPER_H
 #define PIPER_PIPER_H
 
-#include "physics/SolverBase/chi_solver.h"
+#include "ChiObject.h"
 #include "mesh/chi_mesh.h"
 
 namespace piper
 {
 class HardwareComponent;
-class FluidPhysics;
 
-class Piper : public chi_physics::Solver
+class Piper : public ChiObject
 {
 public:
   static chi::InputParameters GetInputParameters();
@@ -27,10 +26,6 @@ public:
 
   size_t RootComponentID() const;
 
-  virtual void Initialize() override;
-  virtual void Execute() override;
-  virtual void Step() override;
-  virtual void Advance() override;
 private:
   void ConnectComponents();
 
@@ -41,8 +36,6 @@ protected:
   std::vector<size_t> boundary_component_ids_;
   std::vector<size_t> volume_component_ids_;
   std::vector<size_t> junction_component_ids_;
-
-  std::shared_ptr<FluidPhysics> physics_;
 
 private:
   const std::string system_name_;

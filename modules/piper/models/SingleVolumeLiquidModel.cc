@@ -2,6 +2,7 @@
 
 #include "piper/physics/LiquidPhysics.h"
 #include "piper/utils/CoolPropInterface.h"
+#include "CoolProp.h"
 
 #include "ChiObjectFactory.h"
 
@@ -114,8 +115,8 @@ void SingleVolumeLiquidModel::AssembleEquations()
     gz_j[j] = jnc_j_model.MakeCentroid().Dot(gravity);
     Ax_j[j] = j == 0 ? -A_j : A_j;
 
-    if (jnc_j_model.Name() == "j1")
-      form_loss_j[j] = -5.0 * 0.5 * rho_j[j] * u_j_old * u_j_old * u_j[j];
+    //if (jnc_j_model.Name() == "j1")
+    //  form_loss_j[j] = -5.0 * 0.5 * rho_j[j] * u_j_old * u_j_old * u_j[j];
 
     avg_flowrate += Ax_j[j] * u_j[j];
   } // for connection j
@@ -153,16 +154,15 @@ void SingleVolumeLiquidModel::AssembleEquations()
   {
     auto& eq = eq_eos;
 
-    const std::string& fluid_name = physics_.FluidName();
     const double T_star = (1.0 + epsilon) * vol_model.VarOld("T");
-    const double e_star = PropSI("e", "p", p_t, "T", T_star, fluid_name);
-    const double rho_star = PropSI("rho", "p", p_t, "T", T_star, fluid_name);
 
+    const auto values =
+      physics_.EvaluateState({"e", "rho"}, {{"p", p_t}, {"T", T_star}});
+
+    const double e_star = values.at("e");
+    const double rho_star = values.at("rho");
     const double d_rho_e_d_rho =
       (rho_star * e_star - rho_t * e_t) / (rho_star - rho_t);
-
-    Chi::log.Log0Verbose1() << "d_rho_e_d_rho " << d_rho_e_d_rho << " "
-                            << (rho_star - rho_t) << " " << e_star - e_t;
 
     eq.coeff_sets_ = {VecDbl(1, d_rho_e_d_rho)};
     eq.rhs_ = rho_t * e_t - d_rho_e_d_rho * rho_t;
@@ -190,9 +190,6 @@ void SingleVolumeLiquidModel::AssembleEquations()
       eq.coeff_sets_[0][j] -= eq_cons_of_energy2.coeff_sets_[0][j];
 
     eq.rhs_ = eq_cons_of_energy2.rhs_ - eq_cons_of_mass.rhs_;
-
-    Chi::log.Log0Verbose1() << "COE3 rhs=" << eq.rhs_;
-    Chi::log.Log0Verbose1() << "COE3 ui=" << avg_flowrate;
   }
 
   equation_coefficients_ = {std::move(eq_cons_of_mass),

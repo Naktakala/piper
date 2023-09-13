@@ -5,7 +5,7 @@ namespace piper
 
 void LiquidPhysics::Advance()
 {
-  SetTime(Time() + DeltaT());
+  time_ = Time() + DeltaT();
 
   for (auto& model : component_models_)
     model->AdvanceNewToOld();
