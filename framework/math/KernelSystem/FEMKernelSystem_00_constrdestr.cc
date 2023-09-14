@@ -3,7 +3,7 @@
 #include "math/SpatialDiscretization/spatial_discretization.h"
 #include "math/SpatialDiscretization/FiniteElement/finite_element.h"
 #include "math/KernelSystem/FEMKernels/FEMKernel.h"
-#include "math/KernelSystem/FEMBCs/FEMDirichletBC.h"
+#include "math/KernelSystem/FEMBCs/FEMBoundaryCondition.h"
 
 #include "mesh/MeshContinuum/chi_meshcontinuum.h"
 
@@ -14,7 +14,8 @@
 
 namespace chi_math
 {
-
+/**\brief Basic constructor for a FEMKernelSystem.
+* This constructor also sorts kernels and BCs into convenient maps.*/
 FEMKernelSystem::FEMKernelSystem(
   const SpatialDiscretization& sdm,
   const UnknownManager& uk_man,
@@ -59,6 +60,7 @@ FEMKernelSystem::FEMKernelSystem(
 
   for (const auto& [bid, bname] : bndry_id_map)
   {
+    bool assigned = false;
     for (auto& bc : boundary_conditions)
     {
       const auto& bndry_scope = bc->GetBoundaryScope();
@@ -66,23 +68,31 @@ FEMKernelSystem::FEMKernelSystem(
           bndry_scope.end())
       {
         ChiLogicalErrorIf(
-          bid_2_boundary_conditions_map_.count(bid) != 0,
+          bid_2_BCKernel_map_.count(bid) != 0,
           "More than one boundary condition specified on boundary \"" + bname +
             "\".");
 
-        bid_2_boundary_conditions_map_[bid] = bc;
+        if (not assigned)
+        {
+          bid_2_BCKernel_map_[bid] = bc;
+          assigned = true;
+        }
+        else
+          ChiLogicalError("Boundary found with multiple BCs assignment");
       }
-    }
-  }
+    } // for bc
+  } // for item in bndry map
 }
 
+/**Returns the Spatial Discretization Method (SDM).*/
 const SpatialDiscretization& FEMKernelSystem::SDM() const { return sdm_; }
-
+/**Returns the nodal unknown structure of each variable set.*/
 const UnknownManager& FEMKernelSystem::UnknownStructure() const
 {
   return uk_man_;
 }
 
+/**Obtains the kernels associated with a material.*/
 const std::vector<FEMKernelPtr>& FEMKernelSystem::GetMaterialKernels(int mat_id)
 {
   auto iter = matid_2_volume_kernels_map_.find(mat_id);

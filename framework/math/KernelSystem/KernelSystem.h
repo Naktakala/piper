@@ -1,5 +1,5 @@
-#ifndef PIPER_KERNELSYSTEM_H
-#define PIPER_KERNELSYSTEM_H
+#ifndef CHI_KERNELSYSTEM_H
+#define CHI_KERNELSYSTEM_H
 
 #include "math/ParallelVector/ghosted_parallel_vector.h"
 
@@ -36,4 +36,4 @@ protected:
 
 } // namespace chi_math
 
-#endif // PIPER_KERNELSYSTEM_H
+#endif // CHI_KERNELSYSTEM_H

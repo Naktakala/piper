@@ -9,6 +9,7 @@
 
 namespace chi_math
 {
+/**Used to create an initial guess. Mostly applies Dirichlet BCs.*/
 void FEMKernelSystem::SetInitialSolution()
 {
   const auto& grid = sdm_.Grid();
@@ -40,9 +41,9 @@ void FEMKernelSystem::SetInitialSolution()
       const auto& face = cell.faces_[f];
       if (face.has_neighbor_) continue;
 
-      auto bc_it = bid_2_boundary_conditions_map_.find(face.neighbor_id_);
+      auto bc_it = bid_2_BCKernel_map_.find(face.neighbor_id_);
 
-      if (bc_it == bid_2_boundary_conditions_map_.end())
+      if (bc_it == bid_2_BCKernel_map_.end())
         continue; // Default natural BC
 
       auto bndry_condition = bc_it->second;

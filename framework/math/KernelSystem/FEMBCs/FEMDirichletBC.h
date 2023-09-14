@@ -1,5 +1,5 @@
-#ifndef PIPER_FEMDIRICHLETBC_H
-#define PIPER_FEMDIRICHLETBC_H
+#ifndef CHI_FEMDIRICHLETBC_H
+#define CHI_FEMDIRICHLETBC_H
 
 #include "FEMBoundaryCondition.h"
 
@@ -14,7 +14,8 @@ public:
 
   bool IsDirichlet() const override;
 
-  double ComputeLocalResidual(uint32_t i) override;
+  double ComputeLocalResidual(size_t f, uint32_t i) override;
+  double ComputeLocalJacobian(size_t f, uint32_t i, uint32_t j) override;
 
   double ResidualEntryAtQP() override;
 
@@ -24,7 +25,7 @@ public:
 protected:
   double bc_value_ = 0.0;
 
-  double var_value_ = 0.0;
+  double var_node_value_ = 0.0;
   chi_mesh::Vector3 node_xyz_;
 
 private:
@@ -33,4 +34,4 @@ private:
 
 } // namespace chi_math
 
-#endif // PIPER_FEMDIRICHLETBC_H
+#endif // CHI_FEMDIRICHLETBC_H

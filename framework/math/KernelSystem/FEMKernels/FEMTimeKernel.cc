@@ -6,7 +6,8 @@ namespace chi_math
 {
 
 FEMTimeKernelRefData::FEMTimeKernelRefData(
-  const finite_element::InternalQuadraturePointData& qp_data,
+  const std::shared_ptr<const finite_element::InternalQuadraturePointData>&
+    qp_data,
   const VecDbl& var_values,
   const VecVec3& var_grad_values,
   const VecDbl& var_values_old,
@@ -50,8 +51,8 @@ double FEMTimeKernel::ComputeLocalResidual(uint32_t i)
   {
     test_i_qp_ = ref_data_ptr_->shape_values_[i][qp];
     test_grad_i_qp_ = ref_data_ptr_->shape_grad_values_[i][qp];
-    var_value_qp_ = ref_data_ptr_->var_values_[qp];
-    var_grad_value_qp_ = ref_data_ptr_->var_grad_values_[qp];
+    var_qp_value_ = ref_data_ptr_->var_qp_values_[qp];
+    var_grad_qp_value_ = ref_data_ptr_->var_grad_qp_values_[qp];
     qp_xyz_ = ref_data_ptr_->qpoints_xyz_[qp];
 
     var_value_old_qp_ = time_ref_data_ptr_->var_values_old_[qp];
@@ -69,8 +70,8 @@ double FEMTimeKernel::ComputeLocalJacobian(uint32_t i, uint32_t j)
   {
     test_i_qp_ = ref_data_ptr_->shape_values_[i][qp];
     test_grad_i_qp_ = ref_data_ptr_->shape_grad_values_[i][qp];
-    var_value_qp_ = ref_data_ptr_->var_values_[qp];
-    var_grad_value_qp_ = ref_data_ptr_->var_grad_values_[qp];
+    var_qp_value_ = ref_data_ptr_->var_qp_values_[qp];
+    var_grad_qp_value_ = ref_data_ptr_->var_grad_qp_values_[qp];
     qp_xyz_ = ref_data_ptr_->qpoints_xyz_[qp];
 
     shape_j_qp_ = ref_data_ptr_->shape_values_[j][qp];

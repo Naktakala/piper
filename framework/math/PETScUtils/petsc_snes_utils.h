@@ -1,5 +1,5 @@
-#ifndef PIPER_PETSC_SNES_UTILS_H
-#define PIPER_PETSC_SNES_UTILS_H
+#ifndef CHI_PETSC_SNES_UTILS_H
+#define CHI_PETSC_SNES_UTILS_H
 
 #include <petscsnes.h>
 
@@ -11,4 +11,4 @@ BasicSNESMonitor(SNES snes, PetscInt iter, PetscReal rnorm, void*);
 
 }
 
-#endif // PIPER_PETSC_SNES_UTILS_H
+#endif // CHI_PETSC_SNES_UTILS_H

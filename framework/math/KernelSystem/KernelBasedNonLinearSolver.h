@@ -1,5 +1,5 @@
-#ifndef PIPER_KERNELBASEDNONLINEARSOLVER_H
-#define PIPER_KERNELBASEDNONLINEARSOLVER_H
+#ifndef CHI_KERNELBASEDNONLINEARSOLVER_H
+#define CHI_KERNELBASEDNONLINEARSOLVER_H
 
 #include "math/NonLinearSolver/non_linear_solver.h"
 #include "math/NonLinearSolver/NonLinearSolverOptions.h"
@@ -55,4 +55,4 @@ private:
 
 } // namespace chi_math
 
-#endif // PIPER_KERNELBASEDNONLINEARSOLVER_H
+#endif // CHI_KERNELBASEDNONLINEARSOLVER_H

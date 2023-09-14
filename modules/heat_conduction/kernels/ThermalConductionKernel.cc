@@ -30,7 +30,7 @@ ThermalConductionKernel::ThermalConductionKernel(
 
 double ThermalConductionKernel::ResidualEntryAtQP()
 {
-  return k_ * test_grad_i_qp_.Dot(var_grad_value_qp_);
+  return k_ * test_grad_i_qp_.Dot(var_grad_qp_value_);
 }
 
 double ThermalConductionKernel::JacobianEntryAtQP()

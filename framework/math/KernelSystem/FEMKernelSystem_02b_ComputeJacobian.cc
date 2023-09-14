@@ -1,7 +1,6 @@
 #include "FEMKernelSystem.h"
 
 #include "math/SpatialDiscretization/spatial_discretization.h"
-#include "math/SpatialDiscretization/FiniteElement/finite_element.h"
 #include "math/KernelSystem/FEMKernels/FEMKernel.h"
 #include "math/KernelSystem/FEMBCs/FEMDirichletBC.h"
 #include "math/ParallelMatrix/ParallelMatrix.h"
@@ -16,46 +15,59 @@
 namespace chi_math
 {
 
+/**Collective method for computing the system Jacobian-matrix.*/
 void FEMKernelSystem::ComputeJacobian(ParallelMatrix& J)
 {
   const auto& grid = sdm_.Grid();
 
   for (const auto& cell : grid.local_cells)
   {
-    InitCellKernelData(cell);
+    InitCellData(cell);
 
     auto kernels = SetupCellInternalKernels(cell);
     auto bndry_conditions = SetupCellBCKernels(cell);
 
-    const auto& internal_nodes = cur_cell_data.node_id_sets_.first;
     const auto& cell_mapping = *cur_cell_data.cell_mapping_ptr_;
     const size_t num_nodes = cell_mapping.NumNodes();
     const auto& dof_map = cur_cell_data.dof_map_;
 
     MatDbl cell_local_J(num_nodes, VecDbl(num_nodes, 0.0));
 
-    for (const auto& kernel : kernels)
-      for (size_t i : internal_nodes)
-        for (size_t j = 0; j < num_nodes; ++j)
-          cell_local_J[i][j] += kernel->ComputeLocalJacobian(i, j);
-
+    // Apply nodal BCs
+    std::set<uint32_t> dirichlet_nodes;
     for (const auto& [f, bndry_condition] : bndry_conditions)
     {
+      if (not bndry_condition->IsDirichlet()) continue;
       const size_t face_num_nodes = cell_mapping.NumFaceNodes(f);
-      if (bndry_condition->IsDirichlet())
-        for (size_t fi = 0; fi < face_num_nodes; ++fi)
-        {
-          const size_t i = cell_mapping.MapFaceNode(f, fi);
-          cell_local_J[i][i] += 1.0;
-        }
-      else
-        for (size_t fi = 0; fi < face_num_nodes; ++fi)
-        {
-          const size_t i = cell_mapping.MapFaceNode(f, fi);
-          for (size_t j = 0; j < num_nodes; ++j)
-            cell_local_J[i][j] += bndry_condition->ComputeLocalJacobian(i, j);
-        }
+      for (size_t fi = 0; fi < face_num_nodes; ++fi)
+      {
+        const size_t i = cell_mapping.MapFaceNode(f, fi);
+        cell_local_J[i][i] += 1.0;
+
+        dirichlet_nodes.insert(i);
+      }
     }
+
+    // Apply integral BCs
+    for (const auto& [f, bndry_condition] : bndry_conditions)
+    {
+      if (bndry_condition->IsDirichlet()) continue;
+      const size_t face_num_nodes = cell_mapping.NumFaceNodes(f);
+      for (size_t fi = 0; fi < face_num_nodes; ++fi)
+      {
+        const size_t i = cell_mapping.MapFaceNode(f, fi);
+        if (dirichlet_nodes.find(i) == dirichlet_nodes.end())
+          for (size_t j = 0; j < num_nodes; ++j)
+            cell_local_J[i][j] +=
+              bndry_condition->ComputeLocalJacobian(f, i, j);
+      }
+    }
+
+    for (const auto& kernel : kernels)
+      for (size_t i = 0; i < num_nodes; ++i)
+        if (dirichlet_nodes.find(i) == dirichlet_nodes.end())
+          for (size_t j = 0; j < num_nodes; ++j)
+            cell_local_J[i][j] += kernel->ComputeLocalJacobian(i, j);
 
     // Contribute to main jacobian
     for (size_t i = 0; i < num_nodes; ++i)

@@ -1,5 +1,5 @@
-#ifndef PIPER_FEMTIMEKERNEL_H
-#define PIPER_FEMTIMEKERNEL_H
+#ifndef CHI_FEMTIMEKERNEL_H
+#define CHI_FEMTIMEKERNEL_H
 
 #include "FEMKernel.h"
 
@@ -8,13 +8,15 @@ namespace chi_math
 
 struct FEMTimeKernelRefData : public FEMKernelRefData
 {
-  FEMTimeKernelRefData(const finite_element::InternalQuadraturePointData& qp_data,
-                       const VecDbl& var_values,
-                       const VecVec3& var_grad_values,
-                       const VecDbl& var_values_old,
-                       double dt,
-                       double time,
-                       double time_old);
+  FEMTimeKernelRefData(
+    const std::shared_ptr<const finite_element::InternalQuadraturePointData>&
+      qp_data,
+    const VecDbl& var_values,
+    const VecVec3& var_grad_values,
+    const VecDbl& var_values_old,
+    double dt,
+    double time,
+    double time_old);
 
   const std::vector<double>& var_values_old_;
   double time_ = 0.0;
@@ -42,6 +44,6 @@ protected:
   FEMTimeKernelRefData* time_ref_data_ptr_ = nullptr;
 };
 
-}
+} // namespace chi_math
 
-#endif // PIPER_FEMTIMEKERNEL_H
+#endif // CHI_FEMTIMEKERNEL_H

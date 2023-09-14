@@ -23,7 +23,7 @@ FEMTimeDerivativeKernel::FEMTimeDerivativeKernel(
 
 double FEMTimeDerivativeKernel::ResidualEntryAtQP()
 {
-  return test_i_qp_ * (var_value_qp_ - var_value_old_qp_)/dt_;
+  return test_i_qp_ * (var_qp_value_ - var_value_old_qp_)/dt_;
 }
 
 double FEMTimeDerivativeKernel::JacobianEntryAtQP()

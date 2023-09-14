@@ -38,18 +38,24 @@ FEMDirichletBC::FEMDirichletBC(const chi::InputParameters& params)
 bool FEMDirichletBC::IsDirichlet() const { return true; }
 
 
-double FEMDirichletBC::ComputeLocalResidual(uint32_t i)
+double FEMDirichletBC::ComputeLocalResidual(size_t f, uint32_t i)
 {
+  auto& ref_data = *face_id_2_ref_data_ptr_map_.at(f);
   i_ = i;
-  node_xyz_ = ref_data_ptr_->node_locations_[i];
-  var_value_ = ref_data_ptr_->var_nodal_values_[i];
+  node_xyz_ = ref_data.node_locations_[i];
+  var_node_value_ = ref_data.var_nodal_values_[i];
 
   return ResidualEntryAtQP();
 }
 
+double FEMDirichletBC::ComputeLocalJacobian(size_t f, uint32_t i, uint32_t j)
+{
+  ChiLogicalError("If this function was called, it must be a mistake!");
+}
+
 double FEMDirichletBC::ResidualEntryAtQP()
 {
-  return var_value_ - bc_value_;
+  return var_node_value_ - bc_value_;
 }
 
 double FEMDirichletBC::BCValue() const { return bc_value_; }

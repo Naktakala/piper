@@ -14,38 +14,58 @@
 namespace chi_math
 {
 
+/**Collective method for computing the system residual.*/
 void FEMKernelSystem::ComputeResidual(ParallelVector& r)
 {
   const auto& grid = sdm_.Grid();
 
   for (const auto& cell : grid.local_cells)
   {
-    InitCellKernelData(cell);
+    InitCellData(cell);
 
     auto kernels = SetupCellInternalKernels(cell);
     auto bndry_conditions = SetupCellBCKernels(cell);
 
-    const auto& internal_nodes = cur_cell_data.node_id_sets_.first;
     const auto& cell_mapping = *cur_cell_data.cell_mapping_ptr_;
     const size_t num_nodes = cell_mapping.NumNodes();
     const auto& dof_map = cur_cell_data.dof_map_;
 
     std::vector<double> cell_local_r(num_nodes, 0.0);
 
-    for (const auto& kernel : kernels)
-      for (size_t i : internal_nodes)
-        cell_local_r[i] += kernel->ComputeLocalResidual(i);
-
+    // Apply nodal BCs
+    std::set<uint32_t> dirichlet_nodes;
     for (const auto& [f, bndry_condition] : bndry_conditions)
     {
+      if (not bndry_condition->IsDirichlet()) continue;
       const size_t face_num_nodes = cell_mapping.NumFaceNodes(f);
       for (size_t fi = 0; fi < face_num_nodes; ++fi)
       {
         const size_t i = cell_mapping.MapFaceNode(f, fi);
 
-        cell_local_r[i] += bndry_condition->ComputeLocalResidual(i);
+        cell_local_r[i] += bndry_condition->ComputeLocalResidual(f, i);
+        dirichlet_nodes.insert(i);
       }
     }
+
+    // Apply integral BCs
+    for (const auto& [f, bndry_condition] : bndry_conditions)
+    {
+      if (bndry_condition->IsDirichlet()) continue;
+      const size_t face_num_nodes = cell_mapping.NumFaceNodes(f);
+      for (size_t fi = 0; fi < face_num_nodes; ++fi)
+      {
+        const size_t i = cell_mapping.MapFaceNode(f, fi);
+
+        if (dirichlet_nodes.find(i) == dirichlet_nodes.end())
+          cell_local_r[i] += bndry_condition->ComputeLocalResidual(f, i);
+      }
+    }
+
+    // Apply kernels
+    for (const auto& kernel : kernels)
+      for (size_t i=0; i<num_nodes; ++i)
+        if (dirichlet_nodes.find(i) == dirichlet_nodes.end())
+          cell_local_r[i] += kernel->ComputeLocalResidual(i);
 
     // Contribute to main residual
     for (size_t i = 0; i < num_nodes; ++i)

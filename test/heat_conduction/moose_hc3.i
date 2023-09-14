@@ -21,36 +21,26 @@
     type = HeatConduction
     variable = T
   []
+  [heat_generation]
+    type = BodyForce
+    variable = T
+    value = 100e2
+  []
 []
 
 [BCs]
   [bc1]
     type = DirichletBC
     variable = T
-    value = -1
-    boundary = 'left'
-    # preset = False
+    value = 0
+    boundary = 'left bottom top'
   []
   [bc2]
-    type = DirichletBC
+    type = ConvectiveHeatFluxBC
     variable = T
-    value = 10
+    T_infinity = 100
+    heat_transfer_coefficient = 10000
     boundary = 'right'
-    # preset = False
-  []
-  [bc3]
-    type = DirichletBC
-    variable = T
-    value = 20
-    boundary = 'bottom'
-    # preset = False
-  []
-  [bc4]
-    type = DirichletBC
-    variable = T
-    value = 30
-    boundary = 'top'
-    # preset = False
   []
 []
 

@@ -1,5 +1,5 @@
-#ifndef PIPER_FEMKERNELSYSTEM_H
-#define PIPER_FEMKERNELSYSTEM_H
+#ifndef CHI_FEMKERNELSYSTEM_H
+#define CHI_FEMKERNELSYSTEM_H
 
 #include "KernelSystem.h"
 #include "math/UnknownManager/unknown_manager.h"
@@ -14,73 +14,78 @@ class Cell;
 
 namespace chi_math
 {
-
-typedef finite_element::InternalQuadraturePointData CellQPData;
-typedef finite_element::FaceQuadraturePointData FaceQPData;
-
 class SpatialDiscretization;
 class FEMKernel;
 class FEMBoundaryCondition;
 class ParallelMatrix;
 
+typedef finite_element::InternalQuadraturePointData CellQPData;
+typedef finite_element::FaceQuadraturePointData FaceQPData;
 typedef std::shared_ptr<FEMKernel> FEMKernelPtr;
 typedef std::shared_ptr<FEMBoundaryCondition> FEMBoundaryConditionPtr;
 
+/**General Finite Element Method Kernel system.*/
 class FEMKernelSystem : public KernelSystem
 {
 public:
+  // 00_constrdestr
+  /**\brief Basic constructor for a FEMKernelSystem.*/
   FEMKernelSystem(
     const SpatialDiscretization& sdm,
     const UnknownManager& uk_man,
     std::vector<chi_math::FEMKernelPtr>& volume_kernels,
     std::vector<chi_math::FEMBoundaryConditionPtr>& boundary_conditions);
 
-  void SetInitialSolution() override;
-
-  void ComputeResidual(ParallelVector& r) override;
-  void ComputeJacobian(ParallelMatrix& J) override;
-
+  /**Returns the Spatial Discretization Method (SDM).*/
   const SpatialDiscretization& SDM() const;
+
+  /**Returns the nodal unknown structure of each variable set.*/
   const UnknownManager& UnknownStructure() const;
 
+  /**Obtains the kernels associated with a material.*/
   virtual const std::vector<FEMKernelPtr>& GetMaterialKernels(int mat_id);
 
+  // 01_SetInitSol
+  /**Used to create an initial guess. Mostly applies Dirichlet BCs.*/
+  void SetInitialSolution() override;
+
+  // 02a
+  /**Collective method for computing the system residual.*/
+  void ComputeResidual(ParallelVector& r) override;
+  // 02b
+  /**Collective method for computing the system Jacobian-matrix.*/
+  void ComputeJacobian(ParallelMatrix& J) override;
+
 protected:
-  void InitCellKernelData(const chi_mesh::Cell& cell);
-  std::vector<std::shared_ptr<FEMKernel>> SetupCellInternalKernels(const chi_mesh::Cell& cell);
-  std::vector<std::pair<size_t, FEMBoundaryConditionPtr>> SetupCellBCKernels(const chi_mesh::Cell& cell);
-  void SetupInternalKernelsRefData(const std::vector<FEMKernelPtr>& kernels);
-  void SetupBoundaryConditionRefData(chi_math::FEMBoundaryCondition& bndry_condition);
+  // 03_kernel_setup
+  /**Initializes cell data prior kernel and BC setup.*/
+  void InitCellData(const chi_mesh::Cell& cell);
+
+  /**Prepares all the necessary data for internal kernels.*/
+  std::vector<std::shared_ptr<FEMKernel>>
+  SetupCellInternalKernels(const chi_mesh::Cell& cell);
+
+  /**Prepares all the necessary data for boundary kernels.*/
+  std::vector<std::pair<size_t, FEMBoundaryConditionPtr>>
+  SetupCellBCKernels(const chi_mesh::Cell& cell);
 
   const SpatialDiscretization& sdm_;
   const UnknownManager uk_man_;
 
   std::map<int, std::vector<FEMKernelPtr>> matid_2_volume_kernels_map_;
-  std::map<uint64_t, FEMBoundaryConditionPtr> bid_2_boundary_conditions_map_;
+  std::map<uint64_t, FEMBoundaryConditionPtr> bid_2_BCKernel_map_;
 
+  /**Utility data structure to store data ahead of executing the kernels*/
   struct CurrentCellData
   {
-    const chi_mesh::Cell* cur_cell_ptr_ = nullptr;
     const chi_math::CellMapping* cell_mapping_ptr_ = nullptr;
-    /**Node sets. First = internal nodes, Second = Bndry nodes.*/
-    std::pair<std::set<uint32_t>, std::set<uint32_t>> node_id_sets_;
 
     std::vector<chi_mesh::Vector3> node_locations_;
     std::vector<int64_t> dof_map_;
     std::vector<double> local_x_;
-
-    std::unique_ptr<CellQPData> cell_qp_data_ = nullptr;
-    std::vector<double> cell_var_values_;
-    std::vector<chi_mesh::Vector3> cell_var_grad_values_;
-
-    std::unique_ptr<FaceQPData> face_qp_data_ = nullptr;
-    std::vector<double> face_var_values_;
-    std::vector<chi_mesh::Vector3> face_var_grad_values_;
-
-    size_t current_face_index_ = 0;
   } cur_cell_data;
 };
 
 } // namespace chi_math
 
-#endif // PIPER_FEMKERNELSYSTEM_H
+#endif // CHI_FEMKERNELSYSTEM_H
