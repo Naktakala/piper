@@ -51,7 +51,7 @@ void JunctionLiquidModel::AssembleEquations()
   typedef std::vector<double> VecDbl;
   typedef chi_mesh::Vector3 Vec3;
 
-  const double dt = physics_.DeltaT();
+  const double dt = physics_.TimeStepSize();
   const Vec3& gravity = physics_.GravityVector();
 
   auto& jnc_model = *this;

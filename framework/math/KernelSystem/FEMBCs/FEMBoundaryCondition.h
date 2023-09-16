@@ -12,6 +12,8 @@ namespace finite_element
 class FaceQuadraturePointData;
 }
 
+struct EquationSystemTimeData;
+
 /**A data structure to hold reference data for FEM Boundary Condition Kernels.*/
 struct FEMBCRefData
 {
@@ -20,13 +22,15 @@ struct FEMBCRefData
   typedef std::vector<double> VecDbl;
   typedef std::vector<VecDbl> VecVecDbl;
 
-  FEMBCRefData(const std::shared_ptr<
+  FEMBCRefData(const EquationSystemTimeData& time_data,
+               const std::shared_ptr<
                  const finite_element::FaceQuadraturePointData>& qp_data,
                VecDbl var_qp_values,
                VecVec3 var_grad_qp_values,
                const VecDbl& var_nodal_values,
                const VecVec3& node_locations);
 
+  const EquationSystemTimeData& time_data_;
   const std::shared_ptr<const finite_element::FaceQuadraturePointData> qp_data_;
   const std::vector<unsigned int>& qp_indices_;
   const VecVec3& qpoints_xyz_;
@@ -86,6 +90,9 @@ protected:
   chi_mesh::Vector3 var_grad_value_qp_;
   chi_mesh::Vector3 qp_xyz_;
   chi_mesh::Vector3 normal_qp_;
+
+  double dt_ = 1.0;
+  double time_ = 0.0;
 
   double shape_j_qp_ = 0.0;
   chi_mesh::Vector3 shape_grad_j_qp_;

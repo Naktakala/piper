@@ -14,8 +14,9 @@ void FEMKernelSystem::SetInitialSolution()
 {
   const auto& grid = sdm_.Grid();
 
-  auto count_vector = solution_vector_;
-  solution_vector_.Set(0.0);
+  auto dirichlet_vector = main_solution_vector_;
+  auto count_vector = main_solution_vector_;
+  dirichlet_vector.Set(0.0);
   count_vector.Set(0.0);
 
   for (const auto& cell : grid.local_cells)
@@ -25,13 +26,18 @@ void FEMKernelSystem::SetInitialSolution()
     const size_t num_nodes = cell_mapping.NumNodes();
     const auto node_locations = cell_mapping.GetNodeLocations();
 
-    //====================================== Pack cell-local solution
-    std::vector<double> local_x(num_nodes, 0.0);
+    cur_cell_data.cell_mapping_ptr_ = &cell_mapping;
+
+    VecDbl local_x(num_nodes, 0.0);
+
     for (size_t i = 0; i < num_nodes; ++i)
     {
       cint64_t dof_id = sdm_.MapDOFLocal(cell, i, uk_man_, 0, 0);
-      local_x[i] = solution_vector_[dof_id];
+      local_x[i] = main_solution_vector_[dof_id];
     }
+
+    const std::set<uint32_t> dirichlet_nodes =
+      IdentifyLocalDirichletNodes(cell);
 
     //====================================== Compute cell-local solution
     std::vector<double> local_x_out(num_nodes, 0.0);
@@ -43,8 +49,7 @@ void FEMKernelSystem::SetInitialSolution()
 
       auto bc_it = bid_2_BCKernel_map_.find(face.neighbor_id_);
 
-      if (bc_it == bid_2_BCKernel_map_.end())
-        continue; // Default natural BC
+      if (bc_it == bid_2_BCKernel_map_.end()) continue; // Default natural BC
 
       auto bndry_condition = bc_it->second;
 
@@ -52,8 +57,7 @@ void FEMKernelSystem::SetInitialSolution()
       if (bndry_condition->IsDirichlet())
       {
         auto dirichlet_condition =
-          std::static_pointer_cast<FEMDirichletBC>(
-            bndry_condition);
+          std::static_pointer_cast<FEMDirichletBC>(bndry_condition);
 
         if (dirichlet_condition->AllowApplyBeforeSolve())
         {
@@ -73,20 +77,30 @@ void FEMKernelSystem::SetInitialSolution()
     {
       cint64_t dof_id = sdm_.MapDOF(cell, i, uk_man_, 0, 0);
 
-      solution_vector_.SetValue(dof_id, local_x_out[i], VecOpType::ADD_VALUE);
-      count_vector.SetValue(dof_id, local_c_out[i], VecOpType::ADD_VALUE);
+      if (dirichlet_nodes.find(i) != dirichlet_nodes.end())
+      {
+        dirichlet_vector.SetValue(dof_id, local_x_out[i], VecOpType::ADD_VALUE);
+        count_vector.SetValue(dof_id, local_c_out[i], VecOpType::ADD_VALUE);
+      }
+      else
+      {
+        dirichlet_vector.SetValue(dof_id, local_x[i], VecOpType::ADD_VALUE);
+        count_vector.SetValue(dof_id, 1.0, VecOpType::ADD_VALUE);
+      }
     }
   } // for cell
 
-  solution_vector_.Assemble();
+  dirichlet_vector.Assemble();
   count_vector.Assemble();
 
-  auto& sol_raw = solution_vector_.RawValues();
+  auto& sol_raw = dirichlet_vector.RawValues();
   auto& cnt_raw = count_vector.RawValues();
 
-  for (size_t i = 0; i < solution_vector_.LocalSize(); ++i)
+  for (size_t i = 0; i < dirichlet_vector.LocalSize(); ++i)
     if (cnt_raw[i] > 0.0) sol_raw[i] /= cnt_raw[i];
 
-  solution_vector_.CommunicateGhostEntries();
+  dirichlet_vector.CommunicateGhostEntries();
+
+  main_solution_vector_.CopyValues(dirichlet_vector);
 }
 } // namespace chi_math

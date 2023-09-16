@@ -15,13 +15,15 @@ namespace chi_math
 {
 
 /**Collective method for computing the system residual.*/
-void FEMKernelSystem::ComputeResidual(ParallelVector& r)
+void FEMKernelSystem::ComputeResidual(const GhostedParallelVector& x,
+                                      ParallelVector& r)
 {
+  SetActiveKernels(TIME_KERNELS | STD_KERNELS | BNDRY_KERNELS);
   const auto& grid = sdm_.Grid();
 
   for (const auto& cell : grid.local_cells)
   {
-    InitCellData(cell);
+    InitCellData(x, cell);
 
     auto kernels = SetupCellInternalKernels(cell);
     auto bndry_conditions = SetupCellBCKernels(cell);
@@ -33,7 +35,9 @@ void FEMKernelSystem::ComputeResidual(ParallelVector& r)
     std::vector<double> cell_local_r(num_nodes, 0.0);
 
     // Apply nodal BCs
-    std::set<uint32_t> dirichlet_nodes;
+    const std::set<uint32_t> dirichlet_nodes =
+      IdentifyLocalDirichletNodes(cell);
+
     for (const auto& [f, bndry_condition] : bndry_conditions)
     {
       if (not bndry_condition->IsDirichlet()) continue;
@@ -43,7 +47,6 @@ void FEMKernelSystem::ComputeResidual(ParallelVector& r)
         const size_t i = cell_mapping.MapFaceNode(f, fi);
 
         cell_local_r[i] += bndry_condition->ComputeLocalResidual(f, i);
-        dirichlet_nodes.insert(i);
       }
     }
 
@@ -63,7 +66,7 @@ void FEMKernelSystem::ComputeResidual(ParallelVector& r)
 
     // Apply kernels
     for (const auto& kernel : kernels)
-      for (size_t i=0; i<num_nodes; ++i)
+      for (size_t i = 0; i < num_nodes; ++i)
         if (dirichlet_nodes.find(i) == dirichlet_nodes.end())
           cell_local_r[i] += kernel->ComputeLocalResidual(i);
 
@@ -73,6 +76,7 @@ void FEMKernelSystem::ComputeResidual(ParallelVector& r)
   } // for cell
 
   r.Assemble();
+  SetActiveKernels(STD_KERNELS | BNDRY_KERNELS);
 }
 
 } // namespace chi_math

@@ -5,6 +5,8 @@
 namespace chi_math
 {
 
+RegisterChiObject(chi_math, FEMTimeDerivativeKernel);
+
 chi::InputParameters FEMTimeDerivativeKernel::GetInputParameters()
 {
   chi::InputParameters params = FEMTimeKernel::GetInputParameters();
@@ -23,7 +25,9 @@ FEMTimeDerivativeKernel::FEMTimeDerivativeKernel(
 
 double FEMTimeDerivativeKernel::ResidualEntryAtQP()
 {
-  return test_i_qp_ * (var_qp_value_ - var_value_old_qp_)/dt_;
+  //if (time_ > 0.0)
+  //  std::cout << old_var_qp_value_[TIME_T] << "\n";
+  return test_i_qp_ * (var_qp_value_ - old_var_qp_value_[TIME_T]) / dt_;
 }
 
 double FEMTimeDerivativeKernel::JacobianEntryAtQP()

@@ -5,7 +5,6 @@
 #include "math/UnknownManager/unknown_manager.h"
 #include "math/SpatialDiscretization/FiniteElement/finite_element.h"
 #include "math/SpatialDiscretization/CellMappings/cell_mapping_base.h"
-#include "mesh/chi_mesh.h"
 
 namespace chi_mesh
 {
@@ -24,6 +23,8 @@ typedef finite_element::FaceQuadraturePointData FaceQPData;
 typedef std::shared_ptr<FEMKernel> FEMKernelPtr;
 typedef std::shared_ptr<FEMBoundaryCondition> FEMBoundaryConditionPtr;
 
+struct KernelSystemTimeData;
+
 /**General Finite Element Method Kernel system.*/
 class FEMKernelSystem : public KernelSystem
 {
@@ -34,7 +35,8 @@ public:
     const SpatialDiscretization& sdm,
     const UnknownManager& uk_man,
     std::vector<chi_math::FEMKernelPtr>& volume_kernels,
-    std::vector<chi_math::FEMBoundaryConditionPtr>& boundary_conditions);
+    std::vector<chi_math::FEMBoundaryConditionPtr>& boundary_conditions,
+    TimeID oldest_time_id);
 
   /**Returns the Spatial Discretization Method (SDM).*/
   const SpatialDiscretization& SDM() const;
@@ -43,7 +45,10 @@ public:
   const UnknownManager& UnknownStructure() const;
 
   /**Obtains the kernels associated with a material.*/
-  virtual const std::vector<FEMKernelPtr>& GetMaterialKernels(int mat_id);
+  std::vector<FEMKernelPtr> GetMaterialKernels(int mat_id);
+
+  /**Obtains the boundary kernel associated with a boundary id.*/
+  FEMBoundaryConditionPtr GetBoundaryCondition(uint64_t boundary_id);
 
   // 01_SetInitSol
   /**Used to create an initial guess. Mostly applies Dirichlet BCs.*/
@@ -51,15 +56,19 @@ public:
 
   // 02a
   /**Collective method for computing the system residual.*/
-  void ComputeResidual(ParallelVector& r) override;
+  void ComputeResidual(const GhostedParallelVector& x,
+                       ParallelVector& r) override;
   // 02b
   /**Collective method for computing the system Jacobian-matrix.*/
-  void ComputeJacobian(ParallelMatrix& J) override;
+  void ComputeJacobian(const GhostedParallelVector& x,
+                       ParallelMatrix& J) override;
+
+  ParallelMatrixSparsityPattern BuildMatrixSparsityPattern() const override;
 
 protected:
   // 03_kernel_setup
   /**Initializes cell data prior kernel and BC setup.*/
-  void InitCellData(const chi_mesh::Cell& cell);
+  void InitCellData(const GhostedParallelVector& x, const chi_mesh::Cell& cell);
 
   /**Prepares all the necessary data for internal kernels.*/
   std::vector<std::shared_ptr<FEMKernel>>
@@ -68,6 +77,10 @@ protected:
   /**Prepares all the necessary data for boundary kernels.*/
   std::vector<std::pair<size_t, FEMBoundaryConditionPtr>>
   SetupCellBCKernels(const chi_mesh::Cell& cell);
+
+  /**Returns a set of dirichlet nodes by looking at the BCs applied on
+  * faces. Does not get filtered by time status.*/
+  std::set<uint32_t> IdentifyLocalDirichletNodes(const chi_mesh::Cell& cell) const;
 
   const SpatialDiscretization& sdm_;
   const UnknownManager uk_man_;
@@ -82,7 +95,8 @@ protected:
 
     std::vector<chi_mesh::Vector3> node_locations_;
     std::vector<int64_t> dof_map_;
-    std::vector<double> local_x_;
+    VecDbl local_x_;
+    MatDbl old_local_x_;
   } cur_cell_data;
 };
 

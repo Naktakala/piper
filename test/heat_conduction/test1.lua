@@ -21,7 +21,7 @@ hcsystem = hcm.HeatConductionSystem.Create({
   }
 })
 
-phys1 = hcm.HeatConductionSteadyStateExecutor.Create({
+phys1 = hcm.HCSteadyExecutor.Create({
   conduction_system = hcsystem,
   solver_params =
   {

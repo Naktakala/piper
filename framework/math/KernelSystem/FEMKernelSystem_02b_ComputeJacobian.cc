@@ -16,13 +16,15 @@ namespace chi_math
 {
 
 /**Collective method for computing the system Jacobian-matrix.*/
-void FEMKernelSystem::ComputeJacobian(ParallelMatrix& J)
+void FEMKernelSystem::ComputeJacobian(const GhostedParallelVector& x,
+                                      ParallelMatrix& J)
 {
+  SetActiveKernels(TIME_KERNELS | STD_KERNELS | BNDRY_KERNELS);
   const auto& grid = sdm_.Grid();
 
   for (const auto& cell : grid.local_cells)
   {
-    InitCellData(cell);
+    InitCellData(x, cell);
 
     auto kernels = SetupCellInternalKernels(cell);
     auto bndry_conditions = SetupCellBCKernels(cell);
@@ -34,19 +36,11 @@ void FEMKernelSystem::ComputeJacobian(ParallelMatrix& J)
     MatDbl cell_local_J(num_nodes, VecDbl(num_nodes, 0.0));
 
     // Apply nodal BCs
-    std::set<uint32_t> dirichlet_nodes;
-    for (const auto& [f, bndry_condition] : bndry_conditions)
-    {
-      if (not bndry_condition->IsDirichlet()) continue;
-      const size_t face_num_nodes = cell_mapping.NumFaceNodes(f);
-      for (size_t fi = 0; fi < face_num_nodes; ++fi)
-      {
-        const size_t i = cell_mapping.MapFaceNode(f, fi);
-        cell_local_J[i][i] += 1.0;
+    const std::set<uint32_t> dirichlet_nodes =
+      IdentifyLocalDirichletNodes(cell);
 
-        dirichlet_nodes.insert(i);
-      }
-    }
+    for (size_t i : dirichlet_nodes)
+      cell_local_J[i][i] += 1.0;
 
     // Apply integral BCs
     for (const auto& [f, bndry_condition] : bndry_conditions)
@@ -74,6 +68,8 @@ void FEMKernelSystem::ComputeJacobian(ParallelMatrix& J)
       for (size_t j = 0; j < num_nodes; ++j)
         J.AddValue(dof_map[i], dof_map[j], cell_local_J[i][j]);
   } // for cell
+
+  SetActiveKernels(STD_KERNELS | BNDRY_KERNELS);
 }
 
 } // namespace chi_math

@@ -30,7 +30,7 @@ void LiquidPhysics::Step()
     Chi::log.GetExistingRepeatingEventTag("TIMING3"),
     Chi::log.GetExistingRepeatingEventTag("TIMING4")};
 
-  const double projected_end_time = Time() + DeltaT();
+  const double projected_end_time = Time() + TimeStepSize();
   if (projected_end_time > EndTime()) dt_ = (projected_end_time - Time());
 
   const auto& pipe_system = *pipe_system_ptr_;

@@ -137,7 +137,7 @@ void FluidPhysics::Execute()
 
     std::stringstream outstr;
     outstr << "Timestep " << t_index_ << " dt=" << std::scientific
-           << std::setprecision(2) << DeltaT() << " time=" << std::scientific
+           << std::setprecision(2) << TimeStepSize() << " time=" << std::scientific
            << std::setprecision(2) << Time() << std::fixed
            << " step_time=" << step_time_ << "ms";
 

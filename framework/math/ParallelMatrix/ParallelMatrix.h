@@ -9,6 +9,12 @@
 namespace chi_math
 {
 
+struct ParallelMatrixSparsityPattern
+{
+  std::vector<int64_t> nodal_nnz_in_diag_;
+  std::vector<int64_t> nodal_nnz_off_diag_;
+};
+
 class ParallelMatrix
 {
 public:

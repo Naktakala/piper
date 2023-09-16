@@ -1,5 +1,6 @@
 #include "FEMBoundaryCondition.h"
 
+#include "math/Systems/EquationSystemTimeData.h"
 #include "math/SpatialDiscretization/FiniteElement/finite_element.h"
 
 #include "chi_log.h"
@@ -8,12 +9,14 @@ namespace chi_math
 {
 
 FEMBCRefData::FEMBCRefData(
+  const EquationSystemTimeData& time_data,
   const std::shared_ptr<const finite_element::FaceQuadraturePointData>& qp_data,
   VecDbl var_qp_values,
   VecVec3 var_grad_qp_values,
   const VecDbl& var_nodal_values,
   const VecVec3& node_locations)
-  : qp_data_(qp_data),
+  : time_data_(time_data),
+    qp_data_(qp_data),
     qp_indices_(qp_data->QuadraturePointIndices()),
     qpoints_xyz_(qp_data->QPointsXYZ()),
     shape_values_(qp_data->ShapeValues()),
@@ -61,6 +64,10 @@ const std::vector<std::string>& FEMBoundaryCondition::GetBoundaryScope() const
 double FEMBoundaryCondition::ComputeLocalResidual(size_t f, uint32_t i)
 {
   auto& ref_data = *face_id_2_ref_data_ptr_map_.at(f);
+
+  dt_ = ref_data.time_data_.dt_;
+  time_ = ref_data.time_data_.time_;
+
   i_ = i;
   double local_r = 0.0;
   for (uint32_t qp : ref_data.qp_indices_)
@@ -78,9 +85,14 @@ double FEMBoundaryCondition::ComputeLocalResidual(size_t f, uint32_t i)
   return local_r;
 }
 
-double FEMBoundaryCondition::ComputeLocalJacobian(size_t f, uint32_t i, uint32_t j)
+double
+FEMBoundaryCondition::ComputeLocalJacobian(size_t f, uint32_t i, uint32_t j)
 {
   auto& ref_data = *face_id_2_ref_data_ptr_map_.at(f);
+
+  dt_ = ref_data.time_data_.dt_;
+  time_ = ref_data.time_data_.time_;
+
   i_ = i;
   double local_j = 0.0;
   for (uint32_t qp : ref_data.qp_indices_)
