@@ -14,7 +14,8 @@ EquationSystem::EquationSystem(int64_t num_local_dofs,
     ghost_ids_(ghost_ids),
     main_solution_vector_(
       num_local_dofs, num_globl_dofs, ghost_ids, Chi::mpi.comm),
-    num_old_blocks_(static_cast<int>(oldest_time_id) + 1)
+    num_old_blocks_(static_cast<int>(oldest_time_id) + 1),
+    eq_term_scope_(EqTermScope::DOMAIN_TERMS | EqTermScope::BOUNDARY_TERMS)
 {
   for (int t = 0; t < num_old_blocks_; ++t)
   {
@@ -65,6 +66,24 @@ void EquationSystem::SetTimeData(EquationSystemTimeData time_data)
 {
   time_data_ = time_data;
 }
+
+/**Returns the current equation terms-scope.*/
+EqTermScope EquationSystem::EquationTermsScope() const
+{
+  return eq_term_scope_;
+}
+
+/**Sets the scope of current equations.*/
+void EquationSystem::SetEquationTermsScope(EqTermScope eq_term_scope)
+{
+  eq_term_scope_ = eq_term_scope;
+}
+
+bool EquationSystem::QueryTermsActive(EqTermScope query_scope) const
+{
+  return eq_term_scope_ & query_scope;
+}
+
 /**Returns a reference to the system current time data.*/
 const EquationSystemTimeData& EquationSystem::GetTimeData() const
 {

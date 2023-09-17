@@ -32,6 +32,7 @@ test/modules/LinearBoltzmannSolvers/DSA/SimTest_92b_DSA_PWLC_0.vtu
 
 # All exodus files
 /*.e
+*.e
 
 # python files
 \.DS_Store

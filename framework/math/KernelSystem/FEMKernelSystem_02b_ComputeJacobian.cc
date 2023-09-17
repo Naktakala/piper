@@ -19,7 +19,6 @@ namespace chi_math
 void FEMKernelSystem::ComputeJacobian(const GhostedParallelVector& x,
                                       ParallelMatrix& J)
 {
-  SetActiveKernels(TIME_KERNELS | STD_KERNELS | BNDRY_KERNELS);
   const auto& grid = sdm_.Grid();
 
   for (const auto& cell : grid.local_cells)
@@ -68,8 +67,6 @@ void FEMKernelSystem::ComputeJacobian(const GhostedParallelVector& x,
       for (size_t j = 0; j < num_nodes; ++j)
         J.AddValue(dof_map[i], dof_map[j], cell_local_J[i][j]);
   } // for cell
-
-  SetActiveKernels(STD_KERNELS | BNDRY_KERNELS);
 }
 
 } // namespace chi_math

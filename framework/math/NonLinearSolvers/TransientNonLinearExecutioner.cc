@@ -33,8 +33,10 @@ TransientNonLinearExecutioner::TransientNonLinearExecutioner(
 void TransientNonLinearExecutioner::ComputeResidual(
   const GhostedParallelVector& x, ParallelVector& r)
 {
+  eq_system_->SetEquationTermsScope(EqTermScope::TIME_TERMS |
+                                    EqTermScope::DOMAIN_TERMS |
+                                    EqTermScope::BOUNDARY_TERMS);
   ParallelVector time_residual = r;
-  //eq_system_->ComputeTimeResidual(x, time_residual);
 
   const auto time_ids = time_integrator_->GetTimeIDsNeeded();
 
@@ -57,7 +59,9 @@ void TransientNonLinearExecutioner::ComputeResidual(
 void TransientNonLinearExecutioner::ComputeJacobian(
   const GhostedParallelVector& x, ParallelMatrix& J)
 {
-  //eq_system_->ComputeTimeJacobian(x, J);
+  eq_system_->SetEquationTermsScope(EqTermScope::TIME_TERMS |
+                                    EqTermScope::DOMAIN_TERMS |
+                                    EqTermScope::BOUNDARY_TERMS);
   time_integrator_->ComputeJacobian(x, J, *eq_system_);
 }
 

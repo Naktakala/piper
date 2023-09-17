@@ -18,7 +18,6 @@ namespace chi_math
 void FEMKernelSystem::ComputeResidual(const GhostedParallelVector& x,
                                       ParallelVector& r)
 {
-  SetActiveKernels(TIME_KERNELS | STD_KERNELS | BNDRY_KERNELS);
   const auto& grid = sdm_.Grid();
 
   for (const auto& cell : grid.local_cells)
@@ -76,7 +75,6 @@ void FEMKernelSystem::ComputeResidual(const GhostedParallelVector& x,
   } // for cell
 
   r.Assemble();
-  SetActiveKernels(STD_KERNELS | BNDRY_KERNELS);
 }
 
 } // namespace chi_math

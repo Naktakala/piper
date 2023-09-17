@@ -11,6 +11,24 @@ namespace chi_math
 class ParallelMatrix;
 struct ParallelMatrixSparsityPattern;
 
+enum class EqTermScope : int
+{
+  NONE = 0,
+  TIME_TERMS = (1 << 0),
+  DOMAIN_TERMS = (1 << 2),
+  BOUNDARY_TERMS = (1 << 3)
+};
+
+inline EqTermScope operator|(const EqTermScope f1, const EqTermScope f2)
+{
+  return static_cast<EqTermScope>(static_cast<int>(f1) |
+                                    static_cast<int>(f2));
+}
+inline bool operator&(const EqTermScope f1, const EqTermScope f2)
+{
+  return static_cast<int>(f1) & static_cast<int>(f2);
+}
+
 class EquationSystem
 {
 public:
@@ -30,10 +48,10 @@ public:
   /**Sets the current solution vector.*/
   virtual void SetInitialSolution(){};
 
-  virtual void ComputeTimeResidual(const GhostedParallelVector& x,
-                                   ParallelVector& r) = 0;
-  virtual void ComputeTimeJacobian(const GhostedParallelVector& x,
-                                   ParallelMatrix& J) = 0;
+  //virtual void ComputeTimeResidual(const GhostedParallelVector& x,
+  //                                 ParallelVector& r) = 0;
+  //virtual void ComputeTimeJacobian(const GhostedParallelVector& x,
+  //                                 ParallelMatrix& J) = 0;
   virtual void ComputeResidual(const GhostedParallelVector& x,
                                ParallelVector& r) = 0;
   virtual void ComputeJacobian(const GhostedParallelVector& x,
@@ -41,6 +59,14 @@ public:
 
   /**Sets the current time data.*/
   void SetTimeData(EquationSystemTimeData time_data);
+
+  /**Returns the current equation terms-scope.*/
+  EqTermScope EquationTermsScope() const;
+  /**Sets the scope of current equations.*/
+  void SetEquationTermsScope(EqTermScope eq_term_scope);
+
+  /**Determines if a particular equation term is active.*/
+  bool QueryTermsActive(EqTermScope query_scope) const;
 
   /**Returns a reference to the system current time data.*/
   const EquationSystemTimeData& GetTimeData() const;
@@ -69,6 +95,9 @@ protected:
 
   size_t num_old_blocks_;
   EquationSystemTimeData time_data_;
+
+private:
+  EqTermScope eq_term_scope_;
 };
 
 } // namespace chi_math

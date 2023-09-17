@@ -49,7 +49,7 @@
 [Executioner]
   type = Steady
 
-  solve_type = NEWTON
+  solve_type = JFNK
 
   # l_tol = 1e-03
   # nl_abs_tol = 1e-4
@@ -58,6 +58,7 @@
   automatic_scaling = false
   # petsc_options_iname = '-pc_type -pc_hypre_type -ksp_gmres_restart -pc_hypre_boomeramg_strong_threshold'
   # petsc_options_value = 'hypre boomeramg 50 0.7'
+  auto_preconditioning=false
 []
 
 [Outputs]

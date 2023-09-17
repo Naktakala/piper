@@ -76,6 +76,9 @@ public:
 protected:
   std::shared_ptr<FEMKernelRefData> ref_data_ptr_ = nullptr;
 
+  double dt_ = 1.0;
+  double time_ = 0.0;
+
   double test_i_qp_ = 0.0;
   chi_mesh::Vector3 test_grad_i_qp_;
   double var_qp_value_ = 0.0;
@@ -85,9 +88,6 @@ protected:
 
   double shape_j_qp_ = 0.0;
   chi_mesh::Vector3 shape_grad_j_qp_;
-
-  double dt_ = 1.0;
-  double time_ = 0.0;
 
 private:
   std::vector<int> mat_ids_;

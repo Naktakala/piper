@@ -26,7 +26,7 @@ phys1 = hcm.HCSteadyExecutor.Create({
   solver_params =
   {
     --l_max_its = 10
-    nl_method = "NEWTON"
+    nl_method = "JFNK"
   }
 })
 

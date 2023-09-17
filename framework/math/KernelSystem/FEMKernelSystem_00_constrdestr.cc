@@ -109,15 +109,18 @@ std::vector<FEMKernelPtr> FEMKernelSystem::GetMaterialKernels(int mat_id)
                     "No kernel for material id " + std::to_string(mat_id));
 
   std::vector<std::shared_ptr<FEMKernel>> filtered_kernels;
+  const bool time_terms_active = QueryTermsActive(EqTermScope::TIME_TERMS);
+  const bool domain_terms_active = QueryTermsActive(EqTermScope::DOMAIN_TERMS);
+
   for (const auto& kernel : kernels)
   {
-    if (kernel->IsTimeKernel() and (active_kernels_ & TIME_KERNELS))
+    if (kernel->IsTimeKernel() and time_terms_active)
       filtered_kernels.push_back(kernel);
-    if (not kernel->IsTimeKernel() and active_kernels_ & STD_KERNELS)
+    if (not kernel->IsTimeKernel() and domain_terms_active)
       filtered_kernels.push_back(kernel);
   }
 
-  if (active_kernels_ & TIME_KERNELS and filtered_kernels.empty())
+  if (time_terms_active and filtered_kernels.empty())
     ChiLogicalError("No time kernels in system");
 
   return filtered_kernels;
@@ -127,7 +130,7 @@ std::vector<FEMKernelPtr> FEMKernelSystem::GetMaterialKernels(int mat_id)
 FEMBoundaryConditionPtr
 FEMKernelSystem::GetBoundaryCondition(uint64_t boundary_id)
 {
-  if (AreTimeKernelsActive()) return nullptr;
+  if (not(EquationTermsScope() & EqTermScope::BOUNDARY_TERMS)) return nullptr;
 
   auto bc_it = bid_2_BCKernel_map_.find(boundary_id);
 

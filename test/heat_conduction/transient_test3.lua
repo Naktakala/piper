@@ -1,5 +1,5 @@
 nodes = {}
-N = 1000
+N = 100
 xmin = 0.0
 L = 1.0
 nodes = {}
@@ -49,10 +49,11 @@ phys1 = hcm.HCTransientExecutor.Create({
 })
 
 chiSolverInitialize(phys1)
-chiSolverStep(phys1)
-chiSolverAdvance(phys1)
-chiSolverStep(phys1)
-chiSolverAdvance(phys1)
+for k=1,100 do
+  chiSolverStep(phys1)
+  chiSolverAdvance(phys1)
+end
+
 
 --phys1 = hcm.HCSteadyExecutor.Create({
 --  conduction_system = hcsystem,

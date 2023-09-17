@@ -2,8 +2,8 @@
   [gmg]
     type = GeneratedMeshGenerator
     dim = 2
-    nx = 1000
-    ny = 1000
+    nx = 100
+    ny = 100
   []
   parallel_type = DISTRIBUTED
 []
@@ -62,7 +62,7 @@
   solve_type = PJFNK
   # solve_type = NEWTON
 
-  num_steps = 2
+  num_steps = 100
   dt = 0.001
 
   # l_tol = 1e-03

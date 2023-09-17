@@ -98,6 +98,8 @@ protected:
     VecDbl local_x_;
     MatDbl old_local_x_;
   } cur_cell_data;
+
+
 };
 
 } // namespace chi_math

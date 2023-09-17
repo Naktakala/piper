@@ -31,7 +31,8 @@ void FEMKernelSystem::InitCellData(const GhostedParallelVector& x,
   for (size_t i = 0; i < num_nodes; ++i)
     dof_map[i] = sdm_.MapDOF(cell, i, uk_man_, 0, 0);
 
-  const size_t max_t = AreTimeKernelsActive() ? num_old_blocks_ : 0;
+  const size_t max_t =
+    EquationTermsScope() & EqTermScope::TIME_TERMS ? num_old_blocks_ : 0;
 
   VecDbl local_x(num_nodes, 0.0);
   MatDbl old_local_x(max_t, VecDbl(num_nodes, 0.0));
@@ -82,9 +83,13 @@ FEMKernelSystem::SetupCellInternalKernels(const chi_mesh::Cell& cell)
     }
 
   //======================================== Compute old time values if needed
-  const size_t max_t = AreTimeKernelsActive() ? num_old_blocks_ : 0;
+  const bool time_kernels_active =
+    EquationTermsScope() & EqTermScope::TIME_TERMS;
+
+  const size_t max_t = time_kernels_active ? num_old_blocks_ : 0;
+
   MatDbl old_var_qp_values(max_t, VecDbl(num_qps, 0.0));
-  if (AreTimeKernelsActive())
+  if (time_kernels_active)
     for (size_t t = 0; t < max_t; ++t)
     {
       auto& old_var_qp_values_t = old_var_qp_values[t];
@@ -185,7 +190,7 @@ FEMKernelSystem::SetupCellBCKernels(const chi_mesh::Cell& cell)
 }
 
 /**Returns a set of dirichlet nodes by looking at the BCs applied on
-  * faces. Does not get filtered by time status.*/
+ * faces. Does not get filtered by time status.*/
 std::set<uint32_t>
 FEMKernelSystem::IdentifyLocalDirichletNodes(const chi_mesh::Cell& cell) const
 {
@@ -206,10 +211,10 @@ FEMKernelSystem::IdentifyLocalDirichletNodes(const chi_mesh::Cell& cell) const
     {
       const size_t num_face_nodes = cell_mapping.NumFaceNodes(f);
 
-      for (size_t fi=0; fi<num_face_nodes; ++fi)
+      for (size_t fi = 0; fi < num_face_nodes; ++fi)
         dirichlet_nodes.insert(cell_mapping.MapFaceNode(f, fi));
-    }//if dirichlet
-  }// for face
+    } // if dirichlet
+  }   // for face
 
   return dirichlet_nodes;
 }
