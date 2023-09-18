@@ -28,7 +28,7 @@ FEMNeumannBC::FEMNeumannBC(const chi::InputParameters& params)
 
 double FEMNeumannBC::ResidualEntryAtQP()
 {
-  return -test_i_qp_ * flux_value_;
+  return -test_values_[i_][qp_] * flux_value_;
 }
 
 } // namespace chi_math

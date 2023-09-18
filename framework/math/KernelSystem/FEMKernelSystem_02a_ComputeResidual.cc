@@ -24,19 +24,25 @@ void FEMKernelSystem::ComputeResidual(const GhostedParallelVector& x,
   {
     InitCellData(x, cell);
 
-    auto kernels = SetupCellInternalKernels(cell);
-    auto bndry_conditions = SetupCellBCKernels(cell);
+    auto kernels = SetupAndGetCellInternalKernels(cell);
+    auto bndry_conditions = GetCellBCKernels(cell);
 
     const auto& cell_mapping = *cur_cell_data.cell_mapping_ptr_;
     const size_t num_nodes = cell_mapping.NumNodes();
     const auto& dof_map = cur_cell_data.dof_map_;
 
-    std::vector<double> cell_local_r(num_nodes, 0.0);
-
-    // Apply nodal BCs
     const std::set<uint32_t> dirichlet_nodes =
       IdentifyLocalDirichletNodes(cell);
 
+    std::vector<double> cell_local_r(num_nodes, 0.0);
+
+    // Apply domain kernels
+    for (const auto& kernel : kernels)
+      for (size_t i = 0; i < num_nodes; ++i)
+        if (dirichlet_nodes.find(i) == dirichlet_nodes.end())
+          cell_local_r[i] += kernel->ComputeLocalResidual(i);
+
+    // Apply nodal BCs
     for (const auto& [f, bndry_condition] : bndry_conditions)
     {
       if (not bndry_condition->IsDirichlet()) continue;
@@ -53,6 +59,7 @@ void FEMKernelSystem::ComputeResidual(const GhostedParallelVector& x,
     for (const auto& [f, bndry_condition] : bndry_conditions)
     {
       if (bndry_condition->IsDirichlet()) continue;
+      SetupFaceIntegralBCKernel(f);
       const size_t face_num_nodes = cell_mapping.NumFaceNodes(f);
       for (size_t fi = 0; fi < face_num_nodes; ++fi)
       {
@@ -62,12 +69,6 @@ void FEMKernelSystem::ComputeResidual(const GhostedParallelVector& x,
           cell_local_r[i] += bndry_condition->ComputeLocalResidual(f, i);
       }
     }
-
-    // Apply kernels
-    for (const auto& kernel : kernels)
-      for (size_t i = 0; i < num_nodes; ++i)
-        if (dirichlet_nodes.find(i) == dirichlet_nodes.end())
-          cell_local_r[i] += kernel->ComputeLocalResidual(i);
 
     // Contribute to main residual
     for (size_t i = 0; i < num_nodes; ++i)

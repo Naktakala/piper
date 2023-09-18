@@ -13,8 +13,8 @@ chi_mesh.MeshGenerator.Execute(meshgen1)
 
 hcsystem = hcm.HeatConductionSystem.Create({
   kernels = {
-    hcm.ThermalConductionKernel.Create({ k = 16.0 }),
-    chi_math.SinkSourceFEMKernel.Create({ value = 100.0e2 })
+    { type = hcm.ThermalConductionKernel.type, k = 16.0 },
+    { type = chi_math.SinkSourceFEMKernel.type, value = 100.0e2 }
   },
   bcs = {
     chi_math.FEMDirichletBC.Create({ boundaries = { "ZMAX" }, bc_value = 1.0 }),

@@ -1,5 +1,5 @@
 nodes = {}
-N = 100
+N = 1000
 xmin = 0.0
 L = 1.0
 nodes = {}
@@ -13,8 +13,8 @@ chi_mesh.MeshGenerator.Execute(meshgen1)
 
 hcsystem = hcm.HeatConductionSystem.Create({
   kernels = {
-    hcm.ThermalConductionKernel.Create({ k = 16.0 }),
-    chi_math.SinkSourceFEMKernel.Create({ value = 100.0e2 })
+    { type = hcm.ThermalConductionKernel.type, k = 16.0 },
+    { type = chi_math.SinkSourceFEMKernel.type, value = 100.0e2 }
   },
   bcs = {
     chi_math.FEMDirichletBC.Create
@@ -36,7 +36,13 @@ phys1 = hcm.HCSteadyExecutor.Create({
   {
     nl_method = "PJFNK",
     --nl_method = "NEWTON",
-    l_rel_tol = 1.0e-5
+    l_rel_tol = 1.0e-5,
+    --pc_options =
+    --{
+    --  pc_type = "hypre",
+    --  pc_hypre_type = "boomeramg",
+    --  pc_hypre_boomeramg_coarsen_type = "HMIS"
+    --}
   }
 })
 

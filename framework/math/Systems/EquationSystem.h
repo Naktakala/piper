@@ -11,6 +11,8 @@ namespace chi_math
 class ParallelMatrix;
 struct ParallelMatrixSparsityPattern;
 
+/**Enum for controlling which terms go into a specific residual/jacobian
+ * computation. Mostly set by Executioners.*/
 enum class EqTermScope : int
 {
   NONE = 0,
@@ -19,16 +21,19 @@ enum class EqTermScope : int
   BOUNDARY_TERMS = (1 << 3)
 };
 
+/**Defining the bit-wise "or" operator in order to easily add flags.*/
 inline EqTermScope operator|(const EqTermScope f1, const EqTermScope f2)
 {
-  return static_cast<EqTermScope>(static_cast<int>(f1) |
-                                    static_cast<int>(f2));
+  return static_cast<EqTermScope>(static_cast<int>(f1) | static_cast<int>(f2));
 }
+/**Defining the bit-wise "and" operator to allow us to easily check
+ * if a term is active.*/
 inline bool operator&(const EqTermScope f1, const EqTermScope f2)
 {
   return static_cast<int>(f1) & static_cast<int>(f2);
 }
 
+/**Base abstract class for a system of equations.*/
 class EquationSystem
 {
 public:
@@ -48,12 +53,13 @@ public:
   /**Sets the current solution vector.*/
   virtual void SetInitialSolution(){};
 
-  //virtual void ComputeTimeResidual(const GhostedParallelVector& x,
-  //                                 ParallelVector& r) = 0;
-  //virtual void ComputeTimeJacobian(const GhostedParallelVector& x,
-  //                                 ParallelMatrix& J) = 0;
+  /**Computes the residual vector \p r given a solution vector \p x.
+  * This method is generally only called by executioners.*/
   virtual void ComputeResidual(const GhostedParallelVector& x,
                                ParallelVector& r) = 0;
+
+  /**Computes the Jacobian matrix \p J given a solution vector \p x.
+  * This method is generally only called by executioners.*/
   virtual void ComputeJacobian(const GhostedParallelVector& x,
                                ParallelMatrix& J) = 0;
 

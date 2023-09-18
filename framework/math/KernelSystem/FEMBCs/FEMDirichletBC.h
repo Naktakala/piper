@@ -25,9 +25,6 @@ public:
 protected:
   double bc_value_ = 0.0;
 
-  double var_node_value_ = 0.0;
-  chi_mesh::Vector3 node_xyz_;
-
 private:
   bool apply_before_solve_ = true;
 };

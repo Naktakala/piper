@@ -3,6 +3,7 @@
 
 #include "ChiObject.h"
 #include "mesh/chi_mesh.h"
+#include "math/chi_math.h"
 
 namespace chi_math
 {
@@ -12,55 +13,17 @@ namespace finite_element
 class FaceQuadraturePointData;
 }
 
-struct EquationSystemTimeData;
-
-/**A data structure to hold reference data for FEM Boundary Condition Kernels.*/
-struct FEMBCRefData
-{
-  typedef std::vector<chi_mesh::Vector3> VecVec3;
-  typedef std::vector<VecVec3> VecVecVec3;
-  typedef std::vector<double> VecDbl;
-  typedef std::vector<VecDbl> VecVecDbl;
-
-  FEMBCRefData(const EquationSystemTimeData& time_data,
-               const std::shared_ptr<
-                 const finite_element::FaceQuadraturePointData>& qp_data,
-               VecDbl var_qp_values,
-               VecVec3 var_grad_qp_values,
-               const VecDbl& var_nodal_values,
-               const VecVec3& node_locations);
-
-  const EquationSystemTimeData& time_data_;
-  const std::shared_ptr<const finite_element::FaceQuadraturePointData> qp_data_;
-  const std::vector<unsigned int>& qp_indices_;
-  const VecVec3& qpoints_xyz_;
-  const VecVecDbl& shape_values_;
-  const VecVecVec3& shape_grad_values_;
-  const VecDbl& JxW_values_;
-  const VecVec3& normals_;
-  const VecDbl var_qp_values_;
-  const VecVec3 var_grad_qp_values_;
-  const VecDbl& var_nodal_values_;
-  const VecVec3& node_locations_;
-};
+class FEMKernelSystemData;
 
 /**The abstract base class of a Finite Element Method Boundary Condition
  * Kernel.*/
 class FEMBoundaryCondition : public ChiObject
 {
 public:
-  typedef size_t FaceID;
-  typedef std::shared_ptr<FEMBCRefData> FEMBCRefDataPtr;
-
   static chi::InputParameters GetInputParameters();
   explicit FEMBoundaryCondition(const chi::InputParameters& params);
 
   virtual bool IsDirichlet() const;
-
-  /**Stores reference data as a pointer so that it can be reassigned
-   * and automatically garbage collected.*/
-  void SetFaceReferenceData(FaceID face_index,
-                            std::shared_ptr<FEMBCRefData>& ref_data_ptr);
 
   /**Computes the current face's contribution to the residual at cell node i.*/
   virtual double ComputeLocalResidual(size_t f, uint32_t i);
@@ -78,24 +41,30 @@ public:
 protected:
   const std::vector<std::string> boundary_scope_;
 
-  // std::shared_ptr<FEMBCRefData> ref_data_ptr_ = nullptr;
+  const FEMKernelSystemData& fem_data_;
 
-  std::map<size_t, FEMBCRefDataPtr> face_id_2_ref_data_ptr_map_;
+  typedef chi_mesh::Vector3 Vec3;
+  typedef std::vector<Vec3> VecVec3;
+  typedef std::vector<VecVec3> MatVec3;
 
-  size_t f_ = 0;
+  const double& dt_;
+  const double& time_;
+
+  const VecDbl& JxW_values_;
+  const MatDbl& test_values_;
+  const MatVec3& test_grad_values_;
+  const MatDbl& shape_values_;
+  const MatVec3& shape_grad_values_;
+  const VecDbl& var_value_;
+  const VecVec3& var_grad_value_;
+  const VecVec3& qp_xyz_;
+  const VecVec3& normal_;
+  const VecDbl& nodal_var_values_;
+  const VecVec3& node_locations_;
+
   size_t i_ = 0;
-  double test_i_qp_ = 0.0;
-  chi_mesh::Vector3 test_grad_i_qp_;
-  double var_value_qp_ = 0.0;
-  chi_mesh::Vector3 var_grad_value_qp_;
-  chi_mesh::Vector3 qp_xyz_;
-  chi_mesh::Vector3 normal_qp_;
-
-  double dt_ = 1.0;
-  double time_ = 0.0;
-
-  double shape_j_qp_ = 0.0;
-  chi_mesh::Vector3 shape_grad_j_qp_;
+  size_t j_ = 0;
+  size_t qp_ = 0;
 };
 
 } // namespace chi_math

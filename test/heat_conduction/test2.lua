@@ -13,7 +13,7 @@ chi_mesh.MeshGenerator.Execute(meshgen1)
 
 hcsystem = hcm.HeatConductionSystem.Create({
   kernels = {
-    hcm.ThermalConductionKernel.Create({ k = 16.0 }),
+    { type = hcm.ThermalConductionKernel.type, k = 16.0 },
     --chi_math.SinkSourceFEMKernel.Create({ value = 100.0e2 })
   },
   bcs = {
@@ -28,7 +28,8 @@ phys1 = hcm.HCSteadyExecutor.Create({
   conduction_system = hcsystem,
   solver_params =
   {
-    nl_method = "PJFNK"
+    nl_method = "PJFNK",
+    l_rel_tol = 1.0e-5
     --nl_method = "NEWTON"
   }
 })

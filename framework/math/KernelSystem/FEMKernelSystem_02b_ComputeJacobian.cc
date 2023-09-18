@@ -25,19 +25,26 @@ void FEMKernelSystem::ComputeJacobian(const GhostedParallelVector& x,
   {
     InitCellData(x, cell);
 
-    auto kernels = SetupCellInternalKernels(cell);
-    auto bndry_conditions = SetupCellBCKernels(cell);
+    auto kernels = SetupAndGetCellInternalKernels(cell);
+    auto bndry_conditions = GetCellBCKernels(cell);
 
     const auto& cell_mapping = *cur_cell_data.cell_mapping_ptr_;
     const size_t num_nodes = cell_mapping.NumNodes();
     const auto& dof_map = cur_cell_data.dof_map_;
 
-    MatDbl cell_local_J(num_nodes, VecDbl(num_nodes, 0.0));
-
-    // Apply nodal BCs
     const std::set<uint32_t> dirichlet_nodes =
       IdentifyLocalDirichletNodes(cell);
 
+    MatDbl cell_local_J(num_nodes, VecDbl(num_nodes, 0.0));
+
+    // Apply domain kernels
+    for (const auto& kernel : kernels)
+      for (size_t i = 0; i < num_nodes; ++i)
+        if (dirichlet_nodes.find(i) == dirichlet_nodes.end())
+          for (size_t j = 0; j < num_nodes; ++j)
+            cell_local_J[i][j] += kernel->ComputeLocalJacobian(i, j);
+
+    // Apply nodal BCs
     for (size_t i : dirichlet_nodes)
       cell_local_J[i][i] += 1.0;
 
@@ -45,6 +52,7 @@ void FEMKernelSystem::ComputeJacobian(const GhostedParallelVector& x,
     for (const auto& [f, bndry_condition] : bndry_conditions)
     {
       if (bndry_condition->IsDirichlet()) continue;
+      SetupFaceIntegralBCKernel(f);
       const size_t face_num_nodes = cell_mapping.NumFaceNodes(f);
       for (size_t fi = 0; fi < face_num_nodes; ++fi)
       {
@@ -55,12 +63,6 @@ void FEMKernelSystem::ComputeJacobian(const GhostedParallelVector& x,
               bndry_condition->ComputeLocalJacobian(f, i, j);
       }
     }
-
-    for (const auto& kernel : kernels)
-      for (size_t i = 0; i < num_nodes; ++i)
-        if (dirichlet_nodes.find(i) == dirichlet_nodes.end())
-          for (size_t j = 0; j < num_nodes; ++j)
-            cell_local_J[i][j] += kernel->ComputeLocalJacobian(i, j);
 
     // Contribute to main jacobian
     for (size_t i = 0; i < num_nodes; ++i)

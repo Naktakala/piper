@@ -8,6 +8,8 @@
 
 #include "mesh/MeshContinuum/chi_meshcontinuum.h"
 
+#include "ChiObjectFactory.h"
+
 #include "chi_log.h"
 
 #define scint64_t(x) static_cast<int64_t>(x)
@@ -15,13 +17,42 @@
 
 namespace chi_math
 {
+
+FEMKernelSystemData::FEMKernelSystemData(
+  const EquationSystemTimeData& time_data,
+  const CellQPData& qp_data,
+  const VecDbl& var_qp_values,
+  const VecVec3& var_grad_qp_values,
+  const MatDbl& old_var_qp_values,
+  const VecDbl& nodal_var_values,
+  const VecVec3& node_locations,
+
+  const FaceQPData& face_qp_data,
+  const VecDbl& face_var_qp_values,
+  const VecVec3& face_var_grad_qp_values)
+
+  : ChiObject(chi::InputParameters{}),
+    time_data_(time_data),
+    qp_data_(qp_data),
+    var_qp_values_(var_qp_values),
+    var_grad_qp_values_(var_grad_qp_values),
+    old_var_qp_values_(old_var_qp_values),
+    nodal_var_values_(nodal_var_values),
+    node_locations_(node_locations),
+
+    face_qp_data_(face_qp_data),
+    face_var_qp_values_(face_var_qp_values),
+    face_var_grad_qp_values_(face_var_grad_qp_values)
+{
+}
+
 /**\brief Basic constructor for a FEMKernelSystem.
  * This constructor also sorts kernels and BCs into convenient maps.*/
 FEMKernelSystem::FEMKernelSystem(
   const SpatialDiscretization& sdm,
   const UnknownManager& uk_man,
-  std::vector<chi_math::FEMKernelPtr>& volume_kernels,
-  std::vector<chi_math::FEMBoundaryConditionPtr>& boundary_conditions,
+  const std::vector<chi::ParameterBlock>& volume_kernels_inputs,
+  const std::vector<chi::ParameterBlock>& boundary_condition_inputs,
   TimeID oldest_time_id /*=TimeID::T_PLUS_1*/)
   : KernelSystem(scint64_t(sdm.GetNumLocalDOFs(uk_man)),
                  scint64_t(sdm.GetNumGlobalDOFs(uk_man)),
@@ -31,6 +62,72 @@ FEMKernelSystem::FEMKernelSystem(
     uk_man_(uk_man)
 {
   const auto& grid = sdm_.Grid();
+
+  //======================================== Make reference data
+  auto reference_data =
+    std::make_shared<FEMKernelSystemData>(time_data_,
+                                          cur_cell_data.qp_data_,
+                                          cur_cell_data.var_qp_values_,
+                                          cur_cell_data.var_grad_qp_values_,
+                                          cur_cell_data.old_var_qp_values_,
+                                          cur_cell_data.local_x_,
+                                          cur_cell_data.node_locations_,
+
+                                          cur_face_data.qp_data_,
+                                          cur_face_data.var_qp_values_,
+                                          cur_face_data.var_grad_qp_values_);
+
+  Chi::object_stack.push_back(reference_data);
+  const size_t data_handle = Chi::object_stack.size() - 1;
+
+  //======================================== Make all kernels
+  auto& object_factory = ChiObjectFactory::GetInstance();
+
+  std::vector<FEMKernelPtr> kernels;
+  for (auto kernel_input : volume_kernels_inputs) // making a copy
+  {
+    ChiInvalidArgumentIf(not kernel_input.Has("type"),
+                         "A kernel input is missing the \"type\" parameter");
+
+    kernel_input.AddParameter("fem_data_handle", data_handle);
+
+    const auto obj_type = kernel_input.GetParamValue<std::string>("type");
+    chi::InputParameters in_params =
+      object_factory.GetRegisteredObjectParameters(obj_type);
+    in_params.AssignParameters(kernel_input);
+
+    const size_t kernel_handle =
+      object_factory.MakeRegisteredObjectOfType(obj_type, in_params);
+
+    auto kernel = Chi::GetStackItemPtrAsType<FEMKernel>(
+      Chi::object_stack, kernel_handle, __FUNCTION__);
+
+    kernels.push_back(kernel);
+  }
+
+  //======================================== Make all BC-Kernels
+  std::vector<FEMBoundaryConditionPtr> boundary_conditions;
+  for (auto bc_input : boundary_condition_inputs) // making a copy
+  {
+    ChiInvalidArgumentIf(
+      not bc_input.Has("type"),
+      "A BoundaryCondition input is missing the \"type\" parameter");
+
+    bc_input.AddParameter("fem_data_handle", data_handle);
+
+    const auto obj_type = bc_input.GetParamValue<std::string>("type");
+    chi::InputParameters in_params =
+      object_factory.GetRegisteredObjectParameters(obj_type);
+    in_params.AssignParameters(bc_input);
+
+    const size_t bc_handle =
+      object_factory.MakeRegisteredObjectOfType(obj_type, in_params);
+
+    auto boundary_condition = Chi::GetStackItemPtrAsType<FEMBoundaryCondition>(
+      Chi::object_stack, bc_handle, __FUNCTION__);
+
+    boundary_conditions.push_back(boundary_condition);
+  }
 
   //======================================== Map mat-ids to kernels
   std::set<int> material_ids;
@@ -43,14 +140,14 @@ FEMKernelSystem::FEMKernelSystem(
   for (int mat_id : material_ids)
   {
     auto& material_kernels = matid_2_volume_kernels_map_[mat_id];
-    for (auto& kernel : volume_kernels)
+    for (const auto& kernel_ptr : kernels) // making a copy
     {
-      const auto& mat_scope = kernel->GetMaterialIDScope();
+      const auto& mat_scope = kernel_ptr->GetMaterialIDScope();
 
       if (mat_scope.empty() or
           std::find(mat_scope.begin(), mat_scope.end(), mat_id) !=
             mat_scope.end())
-        material_kernels.push_back(kernel);
+        material_kernels.push_back(kernel_ptr);
     }
 
     ChiLogicalErrorIf(material_kernels.empty(),

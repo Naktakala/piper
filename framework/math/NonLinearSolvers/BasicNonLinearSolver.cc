@@ -78,6 +78,7 @@ void BasicNonLinearSolver::SetPreconditioner()
     SNESGetKSP(nl_solver_, &ksp);
     PC pc;
     KSPGetPC(ksp, &pc);
+    KSPSetPCSide(ksp, PC_RIGHT);
 
     const auto pc_type_str = pc_params.GetParamValue<std::string>("pc_type");
 
@@ -90,26 +91,35 @@ void BasicNonLinearSolver::SetPreconditioner()
         pc_params.GetParamValue<std::string>("pc_hypre_type");
       PCHYPRESetType(pc, pc_hypre_type.c_str());
 
-
-      pc_options = {"-pc_hypre_boomeramg_strong_threshold 0.7",
-        "pc_hypre_boomeramg_agg_nl 0",
-        "pc_hypre_boomeramg_agg_num_paths 1",
-        "pc_hypre_boomeramg_max_levels 25",
-        "pc_hypre_boomeramg_coarsen_type HMIS",
-        "pc_hypre_boomeramg_interp_type ext+i",
-        "pc_hypre_boomeramg_P_max 4",
-        "pc_hypre_boomeramg_truncfactor 0.0",};
+      pc_options = {"pc_hypre_boomeramg_strong_threshold 0.7",
+                    "pc_hypre_boomeramg_agg_nl 0",
+                    "pc_hypre_boomeramg_agg_num_paths 1",
+                    "pc_hypre_boomeramg_max_levels 25",
+                    //"pc_hypre_boomeramg_coarsen_type HMIS",
+                    "pc_hypre_boomeramg_coarsen_type Falgout",
+                    //"pc_hypre_boomeramg_interp_type ext+i",
+                    "pc_hypre_boomeramg_interp_type classical",
+                    "pc_hypre_boomeramg_P_max 4",
+                    "pc_hypre_boomeramg_truncfactor 0.0",
+                    "pc_mg_galerkin_mat_product_algorithm hypre"};
 
       auto nl_context_ptr = GetKernelBasedContextPtr(context_ptr_);
       nl_context_ptr->executioner_.AddToPreConditionerOptions(pc_options);
-    }
+    } // if hypre
 
     for (const auto& option : pc_options)
       PetscOptionsInsertString(nullptr, ("-" + solver_name_ + option).c_str());
-    PetscOptionsInsertString(nullptr, "-ksp_view");
+
+    for (const auto& user_option : pc_params)
+    {
+      const std::string option_string =
+        user_option.Name() + " " + user_option.GetValue<std::string>();
+      PetscOptionsInsertString(nullptr,
+                               ("-" + solver_name_ + option_string).c_str());
+    }
 
     PCSetFromOptions(pc);
-  }
+  } // if NEWTON or PJFNK
 }
 
 // ##################################################################
@@ -142,6 +152,7 @@ void BasicNonLinearSolver::SetJacobian()
   {
     MatCreateSNESMF(nl_solver_, &J_);
     SNESSetJacobian(nl_solver_, J_, J_, MatMFFDComputeJacobian, this);
+    SNESSetUseMatrixFree(nl_solver_, PETSC_FALSE, PETSC_TRUE);
   }
   else if (options_.nl_method_ == "PJFNK")
   {
@@ -158,6 +169,9 @@ void BasicNonLinearSolver::SetJacobian()
   else
     ChiInvalidArgument("Unsupported nl_method \"" + options_.nl_method_ +
                        "\".");
+
+  // MatSNESMFSetReuseBase(J_, PETSC_TRUE);
+  SNESSetLagJacobian(nl_solver_, 1);
 }
 
 // ##################################################################
@@ -224,17 +238,28 @@ PetscErrorCode BasicNonLinearSolver::ComputeJacobian(
 
   auto& options = solver_ptr->options_;
 
-  Mat ref_mat;
-  if (options.nl_method_ == "NEWTON") ref_mat = Jmat;
-  else
+  Mat matrix_to_assemble;
+
+  /*if (options.nl_method_ == "JFNK") Never happens*/
+
+  // For PJFNK The Jacobian is done with Matrix-Free actions using
+  // residual evaluations whilst the preconditioner is assembled as the
+  // Jacobian
+  if (options.nl_method_ == "PJFNK")
   {
-    ref_mat = Pmat;
     MatMFFDComputeJacobian(solver_ptr->nl_solver_, x, Jmat, nullptr, nullptr);
+    matrix_to_assemble = Pmat;
   }
+  // For NEWTON the jacobian and the preconditioner is the same therefore
+  // we don't need to touch Pmat
+  else if (options.nl_method_ == "NEWTON")
+    matrix_to_assemble = Jmat;
+  else
+    ChiInvalidArgument("Unsupported nl_method \"" + options.nl_method_ + "\".");
 
-  MatZeroEntries(ref_mat);
+  MatZeroEntries(matrix_to_assemble);
 
-  ParallelPETScMatrixProxy J_proxy(ref_mat,
+  ParallelPETScMatrixProxy J_proxy(matrix_to_assemble,
                                    executioner.NumLocalDOFs(),
                                    executioner.NumLocalDOFs(),
                                    executioner.NumGlobalDOFs(),
@@ -260,6 +285,10 @@ void BasicNonLinearSolver::PostSolveCallback()
                                            solution_vector.RawValues(),
                                            solution_vector.LocalSize(),
                                            /*resize_STL=*/false);
+
+  solution_vector.CommunicateGhostEntries();
+
+  // SNESView(nl_solver_, PETSC_VIEWER_STDOUT_WORLD);
 }
 
 // ##################################################################

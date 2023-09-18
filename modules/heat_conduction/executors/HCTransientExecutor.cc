@@ -56,8 +56,8 @@ void HCTransientExecutor::Initialize()
   fem_kernel_system_ = std::make_shared<chi_math::FEMKernelSystem>(
     sdm,
     T_uk_man_,
-    hc_system_->VolumeKernels(),
-    hc_system_->BoundaryConditions(),
+    hc_system_->VolumeKernelInputs(),
+    hc_system_->BoundaryConditionInputs(),
     chi_math::TimeID::T);
 
   nl_executioner_ = SetExecutioner();

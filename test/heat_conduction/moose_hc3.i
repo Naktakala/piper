@@ -2,8 +2,8 @@
   [gmg]
     type = GeneratedMeshGenerator
     dim = 2
-    nx = 100
-    ny = 100
+    nx = 1000
+    ny = 1000
   []
   parallel_type = DISTRIBUTED
 []
@@ -33,15 +33,15 @@
     type = DirichletBC
     variable = T
     value = 0
-    boundary = 'left bottom top'
+    boundary = 'left bottom top right'
   []
-  [bc2]
-    type = ConvectiveHeatFluxBC
-    variable = T
-    T_infinity = 100
-    heat_transfer_coefficient = 10000
-    boundary = 'right'
-  []
+  # [bc2]
+  #   type = ConvectiveHeatFluxBC
+  #   variable = T
+  #   T_infinity = 100
+  #   heat_transfer_coefficient = 10000
+  #   boundary = 'right'
+  # []
 []
 
 [Materials]
@@ -56,6 +56,7 @@
   type = Steady
 
   solve_type = PJFNK
+  # solve_type = JFNK
   # solve_type = NEWTON
 
   # l_tol = 1e-03

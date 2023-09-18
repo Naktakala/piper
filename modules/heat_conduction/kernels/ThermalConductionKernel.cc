@@ -9,7 +9,7 @@ RegisterChiObject(hcm, ThermalConductionKernel);
 
 chi::InputParameters ThermalConductionKernel::GetInputParameters()
 {
-  chi::InputParameters params = ChiObject::GetInputParameters();
+  chi::InputParameters params = FEMKernel::GetInputParameters();
 
   params.SetGeneralDescription("A material property where the thermal "
                                "conductivity is constant.");
@@ -30,12 +30,12 @@ ThermalConductionKernel::ThermalConductionKernel(
 
 double ThermalConductionKernel::ResidualEntryAtQP()
 {
-  return k_ * test_grad_i_qp_.Dot(var_grad_qp_value_);
+  return k_ * test_grad_values_[i_][qp_].Dot(var_grad_value_[qp_]);
 }
 
 double ThermalConductionKernel::JacobianEntryAtQP()
 {
-  return k_ * test_grad_i_qp_.Dot(shape_grad_j_qp_);
+  return k_ * test_grad_values_[i_][qp_].Dot(shape_grad_values_[j_][qp_]);
 }
 
 } // namespace hcm

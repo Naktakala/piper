@@ -45,6 +45,10 @@ protected:
   static PetscErrorCode
   ComputeJacobian(SNES snes, Vec x, Mat Jmat, Mat Pmat, void* ctx);
 
+  static PetscErrorCode ResidualFunction2(void* ctx, Vec x, Vec r);
+
+
+
 private:
   void SetupMatrix(Mat& A);
 };

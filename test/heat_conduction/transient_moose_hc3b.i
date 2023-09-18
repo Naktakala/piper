@@ -21,36 +21,30 @@
     type = HeatConduction
     variable = T
   []
+  [heat_generation]
+    type = BodyForce
+    variable = T
+    value = 100e2
+  []
+  [time_derivative]
+    type = TimeDerivative
+    variable = T
+  []
 []
 
 [BCs]
-  [bc1]
-    type = DirichletBC
-    variable = T
-    value = -1
-    boundary = 'left'
-    # preset = False
-  []
+  # [bc1]
+  #   type = DirichletBC
+  #   variable = T
+  #   value = 0
+  #   boundary = 'left bottom top'
+  # []
   [bc2]
-    type = DirichletBC
+    type = ConvectiveHeatFluxBC
     variable = T
-    value = 10
-    boundary = 'right'
-    # preset = False
-  []
-  [bc3]
-    type = DirichletBC
-    variable = T
-    value = 20
-    boundary = 'bottom'
-    # preset = False
-  []
-  [bc4]
-    type = DirichletBC
-    variable = T
-    value = 30
-    boundary = 'top'
-    # preset = False
+    T_infinity = 100
+    heat_transfer_coefficient = 10000
+    boundary = 'left bottom top right'
   []
 []
 
@@ -63,23 +57,24 @@
 []
 
 [Executioner]
-  type = Steady
+  type = Transient
 
   solve_type = PJFNK
   # solve_type = NEWTON
+
+  num_steps = 100
+  dt = 0.001
 
   # l_tol = 1e-03
   nl_abs_tol = 1e-8
   nl_rel_tol = 1e-8
   # line_search = l2
   automatic_scaling = false
-  petsc_options_iname = '-pc_type -pc_hypre_type
-  -ksp_gmres_restart -pc_hypre_boomeramg_strong_threshold
-  -pc_mg_galerkin_mat_product_algorithm'
-  petsc_options_value = 'hypre boomeramg 50 0.7 hypre'
+  petsc_options_iname = '-pc_type -pc_hypre_type -ksp_gmres_restart -pc_hypre_boomeramg_strong_threshold'
+  petsc_options_value = 'hypre boomeramg 50 0.7'
   # petsc_options_iname = '-pc_type'
   # petsc_options_value = 'none'
-  # auto_preconditioning=false
+  auto_preconditioning=false
 []
 
 [Outputs]

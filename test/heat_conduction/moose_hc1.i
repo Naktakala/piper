@@ -49,7 +49,7 @@
 [Executioner]
   type = Steady
 
-  solve_type = JFNK
+  solve_type = PJFNK
 
   # l_tol = 1e-03
   # nl_abs_tol = 1e-4

@@ -74,7 +74,7 @@
   petsc_options_value = 'hypre boomeramg 50 0.7'
   # petsc_options_iname = '-pc_type'
   # petsc_options_value = 'none'
-  # auto_preconditioning=false
+  auto_preconditioning=false
 []
 
 [Outputs]

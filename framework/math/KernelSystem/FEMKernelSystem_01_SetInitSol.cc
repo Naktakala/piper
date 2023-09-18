@@ -97,7 +97,7 @@ void FEMKernelSystem::SetInitialSolution()
   auto& cnt_raw = count_vector.RawValues();
 
   for (size_t i = 0; i < dirichlet_vector.LocalSize(); ++i)
-    if (cnt_raw[i] > 0.0) sol_raw[i] /= cnt_raw[i];
+    if (std::fabs(cnt_raw[i]) > 1.0e-12) sol_raw[i] /= cnt_raw[i];
 
   dirichlet_vector.CommunicateGhostEntries();
 

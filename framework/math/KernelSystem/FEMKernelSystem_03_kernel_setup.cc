@@ -24,7 +24,7 @@ void FEMKernelSystem::InitCellData(const GhostedParallelVector& x,
   const size_t num_nodes = cell_mapping.NumNodes();
 
   cur_cell_data.cell_mapping_ptr_ = &cell_mapping;
-  cur_cell_data.node_locations_ = cell_mapping.GetNodeLocations();
+  cur_cell_data.node_locations_ = std::move(cell_mapping.GetNodeLocations());
 
   auto& dof_map = cur_cell_data.dof_map_;
   dof_map.assign(num_nodes, 0);
@@ -52,11 +52,12 @@ void FEMKernelSystem::InitCellData(const GhostedParallelVector& x,
 // ##################################################################
 /**Prepares all the necessary data for internal kernels.*/
 std::vector<std::shared_ptr<FEMKernel>>
-FEMKernelSystem::SetupCellInternalKernels(const chi_mesh::Cell& cell)
+FEMKernelSystem::SetupAndGetCellInternalKernels(const chi_mesh::Cell& cell)
 {
   const auto& cell_mapping = *cur_cell_data.cell_mapping_ptr_;
 
-  auto cell_qp_data_ptr = cell_mapping.NewVolumeQuadraturePointData();
+  cur_cell_data.qp_data_ =
+    std::move(cell_mapping.MakeVolumeQuadraturePointData());
 
   const auto& kernels = GetMaterialKernels(cell.material_id_);
 
@@ -65,15 +66,18 @@ FEMKernelSystem::SetupCellInternalKernels(const chi_mesh::Cell& cell)
   const size_t num_nodes = cell_mapping.NumNodes();
 
   //====================================== Compute variable values on each qp
-  const auto& qp_data = *cell_qp_data_ptr;
+  const auto& qp_data = cur_cell_data.qp_data_;
   const auto& qp_indices = qp_data.QuadraturePointIndices();
   const size_t num_qps = qp_indices.size();
 
   const auto& shape_values = qp_data.ShapeValues();
   const auto& shape_grad_values = qp_data.ShapeGradValues();
 
-  VecDbl var_qp_values(num_qps, 0.0);
-  VecVec3 var_grad_qp_values(num_qps);
+  auto& var_qp_values = cur_cell_data.var_qp_values_;
+  auto& var_grad_qp_values = cur_cell_data.var_grad_qp_values_;
+
+  var_qp_values.assign(num_qps, 0.0);
+  var_grad_qp_values.assign(num_qps, {});
 
   for (size_t j = 0; j < num_nodes; ++j)
     for (uint32_t qp : qp_indices)
@@ -88,7 +92,8 @@ FEMKernelSystem::SetupCellInternalKernels(const chi_mesh::Cell& cell)
 
   const size_t max_t = time_kernels_active ? num_old_blocks_ : 0;
 
-  MatDbl old_var_qp_values(max_t, VecDbl(num_qps, 0.0));
+  auto& old_var_qp_values = cur_cell_data.old_var_qp_values_;
+  old_var_qp_values.assign(max_t, VecDbl(num_qps, 0.0));
   if (time_kernels_active)
     for (size_t t = 0; t < max_t; ++t)
     {
@@ -99,31 +104,15 @@ FEMKernelSystem::SetupCellInternalKernels(const chi_mesh::Cell& cell)
           old_var_qp_values_t[qp] += shape_values[j][qp] * old_local_x[t][j];
     }
 
-  //====================================== Set reference data
-  auto ref_data_ptr = std::make_shared<FEMKernelRefData>(time_data_,
-                                                         cell_qp_data_ptr,
-                                                         var_qp_values,
-                                                         var_grad_qp_values,
-                                                         old_var_qp_values);
-
-  for (const auto& kernel : kernels)
-    kernel->SetReferenceData(ref_data_ptr);
-
   return kernels;
 }
 
 // ##################################################################
 /**Prepares all the necessary data for boundary kernels.*/
 std::vector<std::pair<size_t, FEMBoundaryConditionPtr>>
-FEMKernelSystem::SetupCellBCKernels(const chi_mesh::Cell& cell)
+FEMKernelSystem::GetCellBCKernels(const chi_mesh::Cell& cell)
 {
   std::vector<std::pair<size_t, FEMBoundaryConditionPtr>> bndry_conditions;
-
-  const auto& cell_mapping = *cur_cell_data.cell_mapping_ptr_;
-
-  const auto& local_x = cur_cell_data.local_x_;
-
-  const size_t num_nodes = cell_mapping.NumNodes();
 
   const size_t num_faces = cell.faces_.size();
   for (size_t f = 0; f < num_faces; ++f)
@@ -136,57 +125,41 @@ FEMKernelSystem::SetupCellBCKernels(const chi_mesh::Cell& cell)
     if (not bndry_condition) continue;
 
     bndry_conditions.emplace_back(f, bndry_condition);
-
-    std::shared_ptr<FaceQPData> face_qp_data_ptr = nullptr;
-
-    VecDbl var_qp_values;
-    VecVec3 var_grad_qp_values;
-
-    //====================================== For non-dirichlet BCs we compute
-    //                                       variable values and gradients on
-    //                                       each qp
-    if (not bndry_condition->IsDirichlet())
-    {
-      face_qp_data_ptr = cell_mapping.NewFaceQuadraturePointData(f);
-      const auto& face_qp_data = *face_qp_data_ptr;
-      const auto& qp_indices = face_qp_data.QuadraturePointIndices();
-      const size_t num_qps = qp_indices.size();
-
-      const auto& shape_values = face_qp_data.ShapeValues();
-      const auto& shape_grad_values = face_qp_data.ShapeGradValues();
-
-      var_qp_values.assign(num_qps, 0.0);
-      var_grad_qp_values.assign(num_qps, {});
-
-      for (size_t j = 0; j < num_nodes; ++j)
-        for (uint32_t qp : qp_indices)
-        {
-          var_qp_values[qp] += shape_values[j][qp] * local_x[j];
-          var_grad_qp_values[qp] += shape_grad_values[j][qp] * local_x[j];
-        }
-    }
-    //====================================== Dirichlet BCs do not require
-    //                                       quadrature point info, so we skip
-    //                                       it
-    else
-    {
-      face_qp_data_ptr = std::make_unique<FaceQPData>();
-      face_qp_data_ptr->InitializeEmpty();
-    }
-
-    //====================================== Set reference data
-    auto ref_bc_data_ptr =
-      std::make_shared<FEMBCRefData>(time_data_,
-                                     face_qp_data_ptr,
-                                     var_qp_values,
-                                     var_grad_qp_values,
-                                     cur_cell_data.local_x_,
-                                     cur_cell_data.node_locations_);
-
-    bndry_condition->SetFaceReferenceData(f, ref_bc_data_ptr);
   } // for face
 
   return bndry_conditions;
+}
+
+void FEMKernelSystem::SetupFaceIntegralBCKernel(size_t face_index)
+{
+  const auto& cell_mapping = *cur_cell_data.cell_mapping_ptr_;
+
+  const auto& local_x = cur_cell_data.local_x_;
+
+  const size_t num_nodes = cell_mapping.NumNodes();
+
+  cur_face_data.qp_data_ =
+    std::move(cell_mapping.MakeFaceQuadraturePointData(face_index));
+
+  const auto& face_qp_data = cur_face_data.qp_data_;
+  const auto& qp_indices = face_qp_data.QuadraturePointIndices();
+  const size_t num_qps = qp_indices.size();
+
+  const auto& shape_values = face_qp_data.ShapeValues();
+  const auto& shape_grad_values = face_qp_data.ShapeGradValues();
+
+  auto& var_qp_values = cur_face_data.var_qp_values_;
+  auto& var_grad_qp_values = cur_face_data.var_grad_qp_values_;
+
+  var_qp_values.assign(num_qps, 0.0);
+  var_grad_qp_values.assign(num_qps, {});
+
+  for (size_t j = 0; j < num_nodes; ++j)
+    for (uint32_t qp : qp_indices)
+    {
+      var_qp_values[qp] += shape_values[j][qp] * local_x[j];
+      var_grad_qp_values[qp] += shape_grad_values[j][qp] * local_x[j];
+    }
 }
 
 /**Returns a set of dirichlet nodes by looking at the BCs applied on

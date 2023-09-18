@@ -4,8 +4,6 @@
 #include "mesh/MeshContinuum/chi_meshcontinuum.h"
 
 #include "math/SpatialDiscretization/FiniteElement/PiecewiseLinear/pwlc.h"
-#include "math/KernelSystem/FEMKernels/FEMKernel.h"
-#include "math/KernelSystem/FEMBCs/FEMBoundaryCondition.h"
 
 #include "ChiObjectFactory.h"
 
@@ -30,7 +28,8 @@ chi::InputParameters HeatConductionSystem::GetInputParameters()
     "T",
     "Name to give to the field function holding the temperature.");
 
-  params.AddRequiredParameterArray("kernels", "A list of kernel handles.");
+  params.AddRequiredParameterArray("kernels",
+                                   "A list of kernel in parameter form.");
   params.AddRequiredParameterArray("bcs",
                                    "A list of boundary condition handles.");
 
@@ -53,24 +52,15 @@ HeatConductionSystem::HeatConductionSystem(const chi::InputParameters& params)
 
   sdm_ptr_ = chi_math::SpatialDiscretization_PWLC::New(Grid());
 
-  const auto kernel_handles = params.GetParamVectorValue<size_t>("kernels");
-  const auto bc_handles = params.GetParamVectorValue<size_t>("bcs");
+  const auto volume_kernels_input = params.GetParam("kernels");
 
-  for (size_t kernel_handle : kernel_handles)
-  {
-    auto kernel_ptr = Chi::GetStackItemPtrAsType<chi_math::FEMKernel>(
-      Chi::object_stack, kernel_handle, __FUNCTION__);
+  for (const auto& kernel_input : volume_kernels_input)
+    volume_kernel_inputs_.push_back(kernel_input);
 
-    volume_kernels_.push_back(kernel_ptr);
-  }
+  const auto bc_kernels_input = params.GetParam("bcs");
 
-  for (size_t bc_handle : bc_handles)
-  {
-    auto bc_ptr = Chi::GetStackItemPtrAsType<chi_math::FEMBoundaryCondition>(
-      Chi::object_stack, bc_handle, __FUNCTION__);
-
-    boundary_conditions_.push_back(bc_ptr);
-  }
+  for (const auto& bc_input : bc_kernels_input)
+    boundary_condition_inputs_.push_back(bc_input);
 }
 
 const std::string& HeatConductionSystem::GetTemperatureFFName() const
@@ -104,16 +94,16 @@ chi_math::SpatialDiscretizationPtr& HeatConductionSystem::SDMPtr()
   return sdm_ptr_;
 }
 
-std::vector<chi_math::FEMKernelPtr>&
-HeatConductionSystem::VolumeKernels()
+const std::vector<chi::ParameterBlock>&
+HeatConductionSystem::VolumeKernelInputs() const
 {
-  return volume_kernels_;
+  return volume_kernel_inputs_;
 }
 
-std::vector<chi_math::FEMBoundaryConditionPtr>&
-HeatConductionSystem::BoundaryConditions()
+std::vector<chi::ParameterBlock>&
+HeatConductionSystem::BoundaryConditionInputs()
 {
-  return boundary_conditions_;
+  return boundary_condition_inputs_;
 }
 
 } // namespace hcm

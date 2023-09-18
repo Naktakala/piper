@@ -18,16 +18,16 @@ hcsystem = hcm.HeatConductionSystem.Create({
     {type = chi_math.FEMTimeDerivativeKernel.type,}
   },
   bcs = {
+    --{
+    --  type = chi_math.FEMDirichletBC.type,
+    --  boundaries = { "XMIN", "YMIN", "YMAX", "XMAX" }
+    --},
     {
-      type = chi_math.FEMDirichletBC.type,
-      boundaries = { "XMIN", "YMIN", "YMAX", "XMAX" }
-    },
-    --hcm.ConvectiveHeatFluxBC.Create
-    --({
-    --  boundaries = { "XMAX" },
-    --  T_bulk = 100.0,
-    --  convection_coefficient = 10000.0
-    --})
+      type = hcm.ConvectiveHeatFluxBC.type,
+      boundaries = { "XMIN", "YMIN", "YMAX", "XMAX" },
+      T_bulk = 100.0,
+      convection_coefficient = 10000.0
+    }
   }
 })
 
@@ -59,7 +59,7 @@ chi.AggregateNodalValuePostProcessor.Create
 chi.PostProcessorPrinterSetOptions({ print_scalar_time_history = false })
 
 chiSolverInitialize(phys1)
-for k=1,2 do
+for k=1,100 do
   chiSolverStep(phys1)
   chiSolverAdvance(phys1)
 end
@@ -78,4 +78,4 @@ end
 --chiSolverInitialize(phys1)
 --chiSolverExecute(phys1)
 --
-chiExportMultiFieldFunctionToVTK({ "T" }, "transient_test3")
+chiExportMultiFieldFunctionToVTK({ "T" }, "transient_test3b")

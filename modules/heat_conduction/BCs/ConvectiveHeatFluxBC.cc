@@ -32,12 +32,12 @@ ConvectiveHeatFluxBC::ConvectiveHeatFluxBC(const chi::InputParameters& params)
 
 double ConvectiveHeatFluxBC::ResidualEntryAtQP()
 {
-  return -test_i_qp_ * h_ * (T_bulk_ - var_value_qp_);
+  return -test_values_[i_][qp_] * h_ * (T_bulk_ - var_value_[qp_]);
 }
 
 double ConvectiveHeatFluxBC::JacobianEntryAtQP()
 {
-  return -test_i_qp_ * shape_j_qp_ * (-h_);
+  return -test_values_[i_][qp_] * shape_values_[j_][qp_] * (-h_);
 }
 
 } // namespace hcm

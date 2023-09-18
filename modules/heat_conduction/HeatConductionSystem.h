@@ -33,8 +33,8 @@ public:
   const chi_math::SpatialDiscretization& SDM() const;
   chi_math::SpatialDiscretizationPtr& SDMPtr();
 
-  std::vector<chi_math::FEMKernelPtr>& VolumeKernels();
-  std::vector<chi_math::FEMBoundaryConditionPtr>& BoundaryConditions();
+  const std::vector<chi::ParameterBlock>& VolumeKernelInputs() const;
+  std::vector<chi::ParameterBlock>& BoundaryConditionInputs();
 
 
 protected:
@@ -43,8 +43,8 @@ protected:
   std::shared_ptr<const chi_mesh::MeshContinuum> grid_ptr_ = nullptr;
   std::shared_ptr<chi_math::SpatialDiscretization> sdm_ptr_ = nullptr;
 
-  std::vector<chi_math::FEMKernelPtr> volume_kernels_;
-  std::vector<chi_math::FEMBoundaryConditionPtr> boundary_conditions_;
+  std::vector<chi::ParameterBlock> volume_kernel_inputs_;
+  std::vector<chi::ParameterBlock> boundary_condition_inputs_;
 };
 
 } // namespace hcm

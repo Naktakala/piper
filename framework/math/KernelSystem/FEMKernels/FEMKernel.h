@@ -3,45 +3,12 @@
 
 #include "ChiObject.h"
 #include "mesh/chi_mesh.h"
+#include "math/chi_math.h"
 
 namespace chi_math
 {
 
-namespace finite_element
-{
-class InternalQuadraturePointData;
-}
-
-struct EquationSystemTimeData;
-
-/**A data structure to hold reference data for FEM Kernels.*/
-struct FEMKernelRefData
-{
-  typedef std::vector<chi_mesh::Vector3> VecVec3;
-  typedef std::vector<VecVec3> VecVecVec3;
-  typedef std::vector<double> VecDbl;
-  typedef std::vector<VecDbl> MatDbl;
-
-  FEMKernelRefData(
-    const EquationSystemTimeData& time_data,
-    const std::shared_ptr<const finite_element::InternalQuadraturePointData>&
-      qp_data_ptr_,
-    VecDbl var_qp_values,
-    VecVec3 var_grad_qp_values,
-    MatDbl old_var_qp_values);
-
-  const EquationSystemTimeData& time_data_;
-  const std::shared_ptr<const finite_element::InternalQuadraturePointData>
-    qp_data_ptr_;
-  const std::vector<unsigned int>& qp_indices_;
-  const VecVec3& qpoints_xyz_;
-  const MatDbl& shape_values_;
-  const VecVecVec3& shape_grad_values_;
-  const VecDbl& JxW_values_;
-  const VecDbl var_qp_values_;
-  const VecVec3 var_grad_qp_values_;
-  const MatDbl old_var_qp_values_;
-};
+class FEMKernelSystemData;
 
 /**The abstract base class of a Finite Element Method Kernel.*/
 class FEMKernel : public ChiObject
@@ -49,10 +16,6 @@ class FEMKernel : public ChiObject
 public:
   static chi::InputParameters GetInputParameters();
   explicit FEMKernel(const chi::InputParameters& params);
-
-  /**Stores reference data as a pointer so that it can be reassigned
-  * and automatically garbage collected.*/
-  void SetReferenceData(std::shared_ptr<FEMKernelRefData>& ref_data_ptr);
 
   /**Computes the current cell's contribution to the residual at cell node i.*/
   virtual double ComputeLocalResidual(uint32_t i);
@@ -74,20 +37,28 @@ public:
   virtual bool IsTimeKernel() const;
 
 protected:
-  std::shared_ptr<FEMKernelRefData> ref_data_ptr_ = nullptr;
+  const FEMKernelSystemData& fem_data_;
 
-  double dt_ = 1.0;
-  double time_ = 0.0;
+  typedef chi_mesh::Vector3 Vec3;
+  typedef std::vector<Vec3> VecVec3;
+  typedef std::vector<VecVec3> MatVec3;
 
-  double test_i_qp_ = 0.0;
-  chi_mesh::Vector3 test_grad_i_qp_;
-  double var_qp_value_ = 0.0;
-  chi_mesh::Vector3 var_grad_qp_value_;
-  chi_mesh::Vector3 qp_xyz_;
-  std::vector<double> old_var_qp_value_;
+  const double& dt_;
+  const double& time_;
 
-  double shape_j_qp_ = 0.0;
-  chi_mesh::Vector3 shape_grad_j_qp_;
+  const VecDbl& JxW_values_;
+  const MatDbl& test_values_;
+  const MatVec3& test_grad_values_;
+  const MatDbl& shape_values_;
+  const MatVec3& shape_grad_values_;
+  const VecDbl& var_value_;
+  const VecVec3& var_grad_value_;
+  const MatDbl& old_var_value_;
+  const VecVec3& qp_xyz_;
+
+  size_t i_ = 0;
+  size_t j_ = 0;
+  size_t qp_ = 0;
 
 private:
   std::vector<int> mat_ids_;

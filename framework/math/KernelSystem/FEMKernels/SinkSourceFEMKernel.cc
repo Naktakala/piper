@@ -26,6 +26,9 @@ SinkSourceFEMKernel::SinkSourceFEMKernel(const chi::InputParameters& params)
 {
 }
 
-double SinkSourceFEMKernel::ResidualEntryAtQP() { return -value_ * test_i_qp_; }
+double SinkSourceFEMKernel::ResidualEntryAtQP()
+{
+  return -value_ * test_values_[i_][qp_];
+}
 
 } // namespace chi_math
