@@ -7,7 +7,6 @@ namespace chi_math
 {
 
 class ParallelVector;
-class GhostedParallelVector;
 class ParallelMatrix;
 struct ParallelMatrixSparsityPattern;
 
@@ -25,16 +24,14 @@ public:
   virtual int64_t NumGlobalDOFs() const;
 
   /**Returns a reference to the current solution vector.*/
-  virtual GhostedParallelVector& SolutionVector();
-  ///**Returns a reference to the current residual vector.*/
-  //virtual ParallelVector& ResidualVector();
+  virtual ParallelVector& SolutionVector();
 
   /**Sets the current solution vector.*/
   virtual void SetInitialSolution();
 
-  virtual void ComputeResidual(const GhostedParallelVector& x,
+  virtual void ComputeResidual(const ParallelVector& x,
                                ParallelVector& r) = 0;
-  virtual void ComputeJacobian(const GhostedParallelVector& x,
+  virtual void ComputeJacobian(const ParallelVector& x,
                                ParallelMatrix& J) = 0;
 
   virtual ParallelMatrixSparsityPattern BuildMatrixSparsityPattern() const;

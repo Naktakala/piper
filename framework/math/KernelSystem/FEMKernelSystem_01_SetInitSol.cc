@@ -5,6 +5,8 @@
 
 #include "mesh/MeshContinuum/chi_meshcontinuum.h"
 
+#include "chi_log.h"
+
 #define cint64_t const int64_t
 
 namespace chi_math
@@ -14,8 +16,10 @@ void FEMKernelSystem::SetInitialSolution()
 {
   const auto& grid = sdm_.Grid();
 
-  auto dirichlet_vector = main_solution_vector_;
-  auto count_vector = main_solution_vector_;
+  auto dirichlet_vector_ptr = main_solution_vector_->MakeNewVector();
+  auto count_vector_ptr = main_solution_vector_->MakeNewVector();
+  auto& dirichlet_vector = *dirichlet_vector_ptr;
+  auto& count_vector = *count_vector_ptr;
   dirichlet_vector.Set(0.0);
   count_vector.Set(0.0);
 
@@ -33,7 +37,7 @@ void FEMKernelSystem::SetInitialSolution()
     for (size_t i = 0; i < num_nodes; ++i)
     {
       cint64_t dof_id = sdm_.MapDOFLocal(cell, i, uk_man_, 0, 0);
-      local_x[i] = main_solution_vector_[dof_id];
+      local_x[i] = main_solution_vector_->operator[](dof_id);
     }
 
     const std::set<uint32_t> dirichlet_nodes =
@@ -101,6 +105,6 @@ void FEMKernelSystem::SetInitialSolution()
 
   dirichlet_vector.CommunicateGhostEntries();
 
-  main_solution_vector_.CopyValues(dirichlet_vector);
+  main_solution_vector_->CopyValues(dirichlet_vector);
 }
 } // namespace chi_math

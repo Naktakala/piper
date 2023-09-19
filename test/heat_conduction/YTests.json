@@ -1,0 +1,44 @@
+[
+  {
+    "file" : "test1.lua", "num_procs" : 2, "checks" :
+  [
+    { "type" :  "ErrorCode", "error_code" :  0},
+    { "type" : "StrCompare", "key" : "maxval(latest)       |       10.000000" }
+  ]
+  },
+  {
+    "file" : "test1b.lua", "num_procs" : 2, "checks" :
+  [
+    { "type" :  "ErrorCode", "error_code" :  0},
+    { "type" : "StrCompare", "key" : "maxval(latest)       |       79.125000" }
+  ]
+  },
+  {
+    "file" : "test2.lua", "num_procs" : 2, "checks" :
+  [
+    { "type" :  "ErrorCode", "error_code" :  0},
+    { "type" : "StrCompare", "key" : "avgval(latest)       |       14.750000" }
+  ]
+  },
+  {
+    "file" : "test3.lua", "num_procs" : 2, "checks" :
+  [
+    { "type" :  "ErrorCode", "error_code" :  0},
+    { "type" : "StrCompare", "key" : "avgval(latest)       |       46.884804" }
+  ]
+  },
+  {
+    "file" : "transient_test3.lua", "num_procs" : 8, "checks" :
+  [
+    { "type" :  "ErrorCode", "error_code" :  0},
+    { "type" : "StrCompare", "key" : "maxval(latest)       |       17.339335" }
+  ]
+  },
+  {
+    "file" : "transient_test3b.lua", "num_procs" : 8, "checks" :
+  [
+    { "type" :  "ErrorCode", "error_code" :  0},
+    { "type" : "StrCompare", "key" : "maxval(latest)       |      146.340792" }
+  ]
+  }
+]

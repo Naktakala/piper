@@ -1,5 +1,7 @@
 #include "EquationSystem.h"
 
+#include "math/ParallelVector/GhostedParallelSTLVector.h"
+
 #include "chi_log.h"
 
 namespace chi_math
@@ -12,16 +14,15 @@ EquationSystem::EquationSystem(int64_t num_local_dofs,
   : num_local_dofs_(num_local_dofs),
     num_globl_dofs_(num_globl_dofs),
     ghost_ids_(ghost_ids),
-    main_solution_vector_(
-      num_local_dofs, num_globl_dofs, ghost_ids, Chi::mpi.comm),
+    main_solution_vector_(std::make_unique<GhostedParallelSTLVector>(
+      num_local_dofs, num_globl_dofs, ghost_ids, Chi::mpi.comm)),
     num_old_blocks_(static_cast<int>(oldest_time_id) + 1),
     eq_term_scope_(EqTermScope::DOMAIN_TERMS | EqTermScope::BOUNDARY_TERMS)
 {
   for (int t = 0; t < num_old_blocks_; ++t)
   {
-    auto new_sol_vec = std::make_unique<GhostedParallelVector>(
-      num_local_dofs, num_globl_dofs, ghost_ids, Chi::mpi.comm);
-    auto new_res_vec = std::make_unique<ParallelVector>(
+    auto new_sol_vec = main_solution_vector_->MakeNewVector();
+    auto new_res_vec = std::make_unique<ParallelSTLVector>(
       num_local_dofs, num_globl_dofs, Chi::mpi.comm);
 
     old_solution_vectors_.push_back(std::move(new_sol_vec));
@@ -35,10 +36,10 @@ int64_t EquationSystem::NumLocalDOFs() const { return num_local_dofs_; }
 int64_t EquationSystem::NumGlobalDOFs() const { return num_globl_dofs_; }
 
 /**Returns a reference to the current solution vector.*/
-GhostedParallelVector&
+ParallelVector&
 EquationSystem::SolutionVector(TimeID time_id /*=TimeID::T_PLUS_1*/)
 {
-  if (time_id == TimeID::T_PLUS_1) return main_solution_vector_;
+  if (time_id == TimeID::T_PLUS_1) return *main_solution_vector_;
 
   const size_t index = static_cast<int>(time_id);
   ChiLogicalErrorIf(index >= old_solution_vectors_.size(),
@@ -105,13 +106,13 @@ void EquationSystem::Advance(EquationSystemTimeData time_data,
     {
       auto& vec = old_solution_vectors_;
       auto start = vec.begin();
-      vec.insert(start, std::make_unique<GhostedParallelVector>(sol_vec));
+      vec.insert(start, sol_vec->MakeCopy());
       vec.pop_back();
     }
     {
       auto& vec = old_residual_vectors_;
       auto start = vec.begin();
-      vec.insert(start, std::make_unique<ParallelVector>(res_vec));
+      vec.insert(start, res_vec.MakeCopy());
       vec.pop_back();
     }
   }

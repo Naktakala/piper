@@ -16,9 +16,9 @@ public:
     const chi::InputParameters& params,
     std::shared_ptr<EquationSystem> equation_system);
 
-  void ComputeResidual(const GhostedParallelVector& x,
+  void ComputeResidual(const ParallelVector& x,
                        ParallelVector& r) override;
-  void ComputeJacobian(const GhostedParallelVector& x,
+  void ComputeJacobian(const ParallelVector& x,
                        ParallelMatrix& J) override;
 
   void Advance(EquationSystemTimeData time_data) override;

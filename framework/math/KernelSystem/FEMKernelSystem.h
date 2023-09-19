@@ -86,19 +86,18 @@ public:
 
   // 02a
   /**Collective method for computing the system residual.*/
-  void ComputeResidual(const GhostedParallelVector& x,
-                       ParallelVector& r) override;
+  void ComputeResidual(const ParallelVector& x, ParallelVector& r) override;
   // 02b
   /**Collective method for computing the system Jacobian-matrix.*/
-  void ComputeJacobian(const GhostedParallelVector& x,
-                       ParallelMatrix& J) override;
+  void ComputeJacobian(const ParallelVector& x, ParallelMatrix& J) override;
 
   ParallelMatrixSparsityPattern BuildMatrixSparsityPattern() const override;
 
 protected:
   // 03_kernel_setup
   /**Initializes cell data prior kernel and BC setup.*/
-  void InitCellData(const GhostedParallelVector& x, const chi_mesh::Cell& cell);
+  void InitCellData(const ParallelVector& x,
+                    const chi_mesh::Cell& cell);
 
   /**Prepares all the necessary data for internal kernels.*/
   std::vector<std::shared_ptr<FEMKernel>>

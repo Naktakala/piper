@@ -31,21 +31,22 @@ TransientNonLinearExecutioner::TransientNonLinearExecutioner(
 }
 
 void TransientNonLinearExecutioner::ComputeResidual(
-  const GhostedParallelVector& x, ParallelVector& r)
+  const ParallelVector& x, ParallelVector& r)
 {
   eq_system_->SetEquationTermsScope(EqTermScope::TIME_TERMS |
                                     EqTermScope::DOMAIN_TERMS |
                                     EqTermScope::BOUNDARY_TERMS);
-  ParallelVector time_residual = r;
 
   const auto time_ids = time_integrator_->GetTimeIDsNeeded();
+
+  auto time_residual = r.MakeNewVector();
 
   std::vector<const ParallelVector*> residuals;
   for (const TimeID time_id : time_ids)
   {
     if (time_id == TimeID::T_PLUS_1)
     {
-      residual_tp1_ = std::make_unique<ParallelVector>(r);
+      residual_tp1_ = r.MakeNewVector();
       eq_system_->ComputeResidual(x, *residual_tp1_);
       residuals.push_back(&(*residual_tp1_));
     }
@@ -53,11 +54,11 @@ void TransientNonLinearExecutioner::ComputeResidual(
       residuals.push_back(&eq_system_->ResidualVector(time_id));
   }
 
-  time_integrator_->ComputeResidual(r, time_residual, residuals);
+  time_integrator_->ComputeResidual(r, *time_residual, residuals);
 }
 
 void TransientNonLinearExecutioner::ComputeJacobian(
-  const GhostedParallelVector& x, ParallelMatrix& J)
+  const ParallelVector& x, ParallelMatrix& J)
 {
   eq_system_->SetEquationTermsScope(EqTermScope::TIME_TERMS |
                                     EqTermScope::DOMAIN_TERMS |

@@ -16,7 +16,7 @@ namespace chi_math
 {
 
 /**Collective method for computing the system Jacobian-matrix.*/
-void FEMKernelSystem::ComputeJacobian(const GhostedParallelVector& x,
+void FEMKernelSystem::ComputeJacobian(const ParallelVector& x,
                                       ParallelMatrix& J)
 {
   const auto& grid = sdm_.Grid();

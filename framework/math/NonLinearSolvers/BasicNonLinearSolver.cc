@@ -4,7 +4,7 @@
 #include "math/NonLinearSolvers/NonLinearExecutioner.h"
 #include "math/PETScUtils/petsc_snes_utils.h"
 #include "math/ParallelMatrix/ParallelPETScMatrixProxy.h"
-#include "math/ParallelVector/ghosted_parallel_vector.h"
+#include "math/ParallelVector/ParallelVector.h"
 
 #include "chi_runtime.h"
 #include "chi_log.h"
@@ -33,25 +33,6 @@ BasicNonLinearSolver::BasicNonLinearSolver(NonLinearExecutioner& executioner,
       std::make_shared<BasicNLSolverContext>(executioner), params)
 {
 }
-
-// ##################################################################
-// void BasicNonLinearSolver::UpdateSolution(
-//  const std::vector<double>& stl_vector)
-//{
-//  ChiLogicalErrorIf(not x_,
-//                    "Solution vector not initialized. This method can only"
-//                    "be made after a call to Setup().");
-//  ChiLogicalErrorIf(
-//    stl_vector.size() < num_local_dofs_,
-//    "The STL-vector's local-size does not match that of the solution
-//    vector.");
-//
-//  PetscScalar* x_raw;
-//  VecGetArray(x_, &x_raw);
-//  for (size_t i = 0; i < num_local_dofs_; ++i)
-//    x_raw[i] = stl_vector[i];
-//  VecRestoreArray(x_, &x_raw);
-//}
 
 // ##################################################################
 void BasicNonLinearSolver::SetMonitor()
@@ -184,6 +165,7 @@ void BasicNonLinearSolver::PostSetupCallback()
 void BasicNonLinearSolver::SetInitialGuess()
 {
   auto context = std::static_pointer_cast<BasicNLSolverContext>(context_ptr_);
+
   context->executioner_.SetInitialSolution();
 
   auto& solution_vector = context->executioner_.SolutionVector();
@@ -200,21 +182,21 @@ BasicNonLinearSolver::ResidualFunction(SNES snes, Vec x, Vec r, void*)
   SNESGetApplicationContext(snes, &nl_context_ptr);
 
   auto& executioner = nl_context_ptr->executioner_;
-  auto solution_vector = executioner.SolutionVector();
-  auto residual_vector = solution_vector;
+  auto solution_vector = executioner.SolutionVector().MakeNewVector();
+  auto residual_vector = solution_vector->MakeNewVector();
 
   chi_math::PETScUtils::CopyVecToSTLvector(x,
-                                           solution_vector.RawValues(),
-                                           solution_vector.LocalSize(),
+                                           solution_vector->RawValues(),
+                                           solution_vector->LocalSize(),
                                            /*resize_STL=*/false);
-  solution_vector.CommunicateGhostEntries();
+  solution_vector->CommunicateGhostEntries();
 
-  residual_vector.Set(0.0);
+  residual_vector->Set(0.0);
 
-  executioner.ComputeResidual(solution_vector, residual_vector);
+  executioner.ComputeResidual(*solution_vector, *residual_vector);
 
   chi_math::PETScUtils::CopySTLvectorToVec(
-    residual_vector.RawValues(), r, residual_vector.LocalSize());
+    residual_vector->RawValues(), r, residual_vector->LocalSize());
 
   return 0;
 }
@@ -228,13 +210,13 @@ PetscErrorCode BasicNonLinearSolver::ComputeJacobian(
   SNESGetApplicationContext(snes, &nl_context_ptr);
 
   auto& executioner = nl_context_ptr->executioner_;
-  auto solution_vector = executioner.SolutionVector();
+  auto solution_vector = executioner.SolutionVector().MakeNewVector();
 
   chi_math::PETScUtils::CopyVecToSTLvector(x,
-                                           solution_vector.RawValues(),
-                                           solution_vector.LocalSize(),
+                                           solution_vector->RawValues(),
+                                           solution_vector->LocalSize(),
                                            /*resize_STL=*/false);
-  solution_vector.CommunicateGhostEntries();
+  solution_vector->CommunicateGhostEntries();
 
   auto& options = solver_ptr->options_;
 
@@ -266,7 +248,7 @@ PetscErrorCode BasicNonLinearSolver::ComputeJacobian(
                                    executioner.NumGlobalDOFs(),
                                    Chi::mpi.comm);
 
-  executioner.ComputeJacobian(solution_vector, J_proxy);
+  executioner.ComputeJacobian(*solution_vector, J_proxy);
 
   J_proxy.Assemble();
 
@@ -287,8 +269,6 @@ void BasicNonLinearSolver::PostSolveCallback()
                                            /*resize_STL=*/false);
 
   solution_vector.CommunicateGhostEntries();
-
-  // SNESView(nl_solver_, PETSC_VIEWER_STDOUT_WORLD);
 }
 
 // ##################################################################

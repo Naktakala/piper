@@ -30,7 +30,7 @@ int64_t NonLinearExecutioner::NumGlobalDOFs() const
   return eq_system_->NumGlobalDOFs();
 }
 
-GhostedParallelVector& NonLinearExecutioner::SolutionVector()
+ParallelVector& NonLinearExecutioner::SolutionVector()
 {
   return eq_system_->SolutionVector();
 }

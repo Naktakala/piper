@@ -1,5 +1,5 @@
 nodes = {}
-N = 1000
+N = 100
 xmin = 0.0
 L = 1.0
 nodes = {}
@@ -17,16 +17,16 @@ hcsystem = hcm.HeatConductionSystem.Create({
     { type = chi_math.SinkSourceFEMKernel.type, value = 100.0e2 }
   },
   bcs = {
-    chi_math.FEMDirichletBC.Create
-    ({
+    {
+      type = chi_math.FEMDirichletBC.type,
       boundaries = { "XMIN", "YMIN", "YMAX" }
-    }),
-    hcm.ConvectiveHeatFluxBC.Create
-    ({
+    },
+    {
+      type = hcm.ConvectiveHeatFluxBC.type,
       boundaries = { "XMAX" },
       T_bulk = 100.0,
       convection_coefficient = 10000.0
-    })
+    }
   }
 })
 
@@ -49,4 +49,15 @@ phys1 = hcm.HCSteadyExecutor.Create({
 chiSolverInitialize(phys1)
 chiSolverExecute(phys1)
 
-chiExportMultiFieldFunctionToVTK({ "T" }, "test3")
+--############################################### PostProcessors
+chi.CellVolumeIntegralPostProcessor.Create
+({
+  name = "avgval",
+  field_function = "T",
+  compute_volume_average = true
+})
+chi.ExecutePostProcessors({"avgval"})
+
+if (master_export == nil) then
+  chiExportMultiFieldFunctionToVTK({ "T" }, "test3")
+end

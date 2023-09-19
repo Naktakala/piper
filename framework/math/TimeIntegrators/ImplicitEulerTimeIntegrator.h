@@ -19,7 +19,7 @@ public:
     const ParallelVector& time_residual,
     const std::vector<const ParallelVector*>& std_residuals) override;
 
-  void ComputeJacobian(const GhostedParallelVector& x,
+  void ComputeJacobian(const ParallelVector& x,
                        ParallelMatrix& J,
                        EquationSystem& equation_system) override;
 };

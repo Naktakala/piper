@@ -19,13 +19,13 @@ SteadyNonLinearExecutioner::SteadyNonLinearExecutioner(
 {
 }
 
-void SteadyNonLinearExecutioner::ComputeResidual(const GhostedParallelVector& x,
+void SteadyNonLinearExecutioner::ComputeResidual(const ParallelVector& x,
                                                  ParallelVector& r)
 {
   eq_system_->ComputeResidual(x, r);
 }
 
-void SteadyNonLinearExecutioner::ComputeJacobian(const GhostedParallelVector& x,
+void SteadyNonLinearExecutioner::ComputeJacobian(const ParallelVector& x,
                                                  ParallelMatrix& J)
 {
   eq_system_->ComputeJacobian(x, J);

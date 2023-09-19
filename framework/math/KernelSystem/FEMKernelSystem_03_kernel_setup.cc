@@ -17,7 +17,7 @@ namespace chi_math
 
 // ##################################################################
 /**Initializes cell data prior kernel and BC setup.*/
-void FEMKernelSystem::InitCellData(const GhostedParallelVector& x,
+void FEMKernelSystem::InitCellData(const ParallelVector& x,
                                    const chi_mesh::Cell& cell)
 {
   const auto& cell_mapping = sdm_.GetCellMapping(cell);

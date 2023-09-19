@@ -15,7 +15,7 @@ namespace chi_math
 {
 
 /**Collective method for computing the system residual.*/
-void FEMKernelSystem::ComputeResidual(const GhostedParallelVector& x,
+void FEMKernelSystem::ComputeResidual(const ParallelVector& x,
                                       ParallelVector& r)
 {
   const auto& grid = sdm_.Grid();

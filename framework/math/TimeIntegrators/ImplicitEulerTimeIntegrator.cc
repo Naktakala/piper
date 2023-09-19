@@ -1,6 +1,6 @@
 #include "ImplicitEulerTimeIntegrator.h"
 
-#include "math/ParallelVector/parallel_vector.h"
+#include "math/ParallelVector/ParallelVector.h"
 #include "math/Systems/EquationSystem.h"
 
 #include "ChiObjectFactory.h"
@@ -46,11 +46,12 @@ void ImplicitEulerTimeIntegrator::ComputeResidual(
 }
 
 void ImplicitEulerTimeIntegrator::ComputeJacobian(
-  const GhostedParallelVector& x,
+  const ParallelVector& x,
   ParallelMatrix& J,
   EquationSystem& equation_system)
 {
   equation_system.ComputeJacobian(x, J);
 }
+
 
 } // namespace chi_math

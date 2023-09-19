@@ -1,0 +1,67 @@
+mpiexec -np 8 /Users/vermjc/Repos/ChiTech/piper/bin/piper transient_test3.lua --suppress_color --supress_beg_end_timelog master_export=false 
+[0]  Parsing argument 1 transient_test3.lua
+[0m[0]  Parsing argument 2 --suppress_color
+[0m[0]  Parsing argument 3 --supress_beg_end_timelog
+[0]  Parsing argument 4 master_export=false
+[0]  ChiTech number of arguments supplied: 4
+[0]  Computing cell-centroids.
+[0]  Done computing cell-centroids.
+[0]  Checking cell-center-to-face orientations
+[0]  Done checking cell-center-to-face orientations
+[0]  00:00:00 Establishing cell connectivity.
+[0]  00:00:00 Vertex cell subscriptions complete.
+[0]  00:00:00 Surpassing cell 1000 of 10000 (10%)
+[0]  00:00:00 Surpassing cell 2000 of 10000 (20%)
+[0]  00:00:00 Surpassing cell 3001 of 10000 (30%)
+[0]  00:00:00 Surpassing cell 4000 of 10000 (40%)
+[0]  00:00:00 Surpassing cell 5000 of 10000 (50%)
+[0]  00:00:00 Surpassing cell 6001 of 10000 (60%)
+[0]  00:00:00 Surpassing cell 7001 of 10000 (70%)
+[0]  00:00:00 Surpassing cell 8000 of 10000 (80%)
+[0]  00:00:00 Surpassing cell 9000 of 10000 (90%)
+[0]  00:00:00 Surpassing cell 10000 of 10000 (100%)
+[0]  00:00:00 Establishing cell boundary connectivity.
+[0]  00:00:00 Done establishing cell connectivity.
+[0]  MeshGenerator: Cells created = 10000
+[0]  Time step 0, time = 0, dt = 0.001
+[0]  NonLinearSolver non-linear iteration    0 - Residual 9.9000000e+01
+[0]  NonLinearSolver iteration    0 - Residual 9.9000000e+01
+[0]  NonLinearSolver iteration    1 - Residual 9.0584728e+00
+[0]  NonLinearSolver iteration    2 - Residual 3.8434889e-01
+[0]  NonLinearSolver iteration    3 - Residual 1.6623125e-02
+[0]  NonLinearSolver iteration    4 - Residual 6.1010622e-04
+[0]  NonLinearSolver non-linear iteration    1 - Residual 8.0367044e-04
+[0]  NonLinearSolver iteration    0 - Residual 8.0367044e-04
+[0]  NonLinearSolver iteration    1 - Residual 4.2062888e-05
+[0]  NonLinearSolver iteration    2 - Residual 1.5470962e-06
+[0]  NonLinearSolver iteration    3 - Residual 8.3740182e-08
+[0]  NonLinearSolver iteration    4 - Residual 2.4116111e-09
+[0]  NonLinearSolver non-linear iteration    2 - Residual 6.3681721e-09
+[0]            Converged CONVERGED_FNORM_ABS
+[0]  Time step 1, time = 0.001, dt = 0.001
+[0]  NonLinearSolver non-linear iteration    0 - Residual 6.3595184e+01
+[0]  NonLinearSolver iteration    0 - Residual 6.3595184e+01
+[0]  NonLinearSolver iteration    1 - Residual 6.5508592e+00
+[0]  NonLinearSolver iteration    2 - Residual 3.1731209e-01
+[0]  NonLinearSolver iteration    3 - Residual 1.3384561e-02
+[0]  NonLinearSolver iteration    4 - Residual 5.0999486e-04
+[0]  NonLinearSolver non-linear iteration    1 - Residual 2.3598390e-03
+[0]  NonLinearSolver iteration    0 - Residual 2.3598390e-03
+[0]  NonLinearSolver iteration    1 - Residual 4.3590235e-05
+[0]  NonLinearSolver iteration    2 - Residual 1.5898264e-06
+[0]  NonLinearSolver iteration    3 - Residual 5.7134392e-08
+[0]  NonLinearSolver iteration    4 - Residual 1.6098863e-09
+[0]  NonLinearSolver non-linear iteration    2 - Residual 2.8353078e-09
+[0]            Converged CONVERGED_FNORM_ABS
+[0]  
+[0]  SCALAR post-processors latest values at event "ProgramExecuted"
+[0]  *----------------------*-----------------*
+[0]  | Post-Processor Name  | Value           |
+[0]  *----------------------*-----------------*
+[0]  | maxval(latest)       |       17.339335 |
+[0]  *----------------------*-----------------*
+[0]  
+
+[0]  **!**ERROR**!** Advanced
+[0]  **!**ERROR**!** Advanced
+

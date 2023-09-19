@@ -17,10 +17,10 @@ hcsystem = hcm.HeatConductionSystem.Create({
     --chi_math.SinkSourceFEMKernel.Create({ value = 100.0e2 })
   },
   bcs = {
-    chi_math.FEMDirichletBC.Create({ boundaries = { "XMIN" }, bc_value = -1.0 }),
-    chi_math.FEMDirichletBC.Create({ boundaries = { "XMAX" }, bc_value = 10.0 }),
-    chi_math.FEMDirichletBC.Create({ boundaries = { "YMIN" }, bc_value = 20.0 }),
-    chi_math.FEMDirichletBC.Create({ boundaries = { "YMAX" }, bc_value = 30.0 })
+    { type = chi_math.FEMDirichletBC.type, boundaries = { "XMIN" }, bc_value = -1.0 },
+    { type = chi_math.FEMDirichletBC.type, boundaries = { "XMAX" }, bc_value = 10.0 },
+    { type = chi_math.FEMDirichletBC.type, boundaries = { "YMIN" }, bc_value = 20.0 },
+    { type = chi_math.FEMDirichletBC.type, boundaries = { "YMAX" }, bc_value = 30.0 }
   }
 })
 
@@ -37,4 +37,15 @@ phys1 = hcm.HCSteadyExecutor.Create({
 chiSolverInitialize(phys1)
 chiSolverExecute(phys1)
 
-chiExportMultiFieldFunctionToVTK({ "T" }, "test2")
+--############################################### PostProcessors
+chi.CellVolumeIntegralPostProcessor.Create
+({
+  name = "avgval",
+  field_function = "T",
+  compute_volume_average = true
+})
+chi.ExecutePostProcessors({"avgval"})
+
+if (master_export == nil) then
+  chiExportMultiFieldFunctionToVTK({ "T" }, "test2")
+end

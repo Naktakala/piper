@@ -1,0 +1,17 @@
+<VTKFile type="PUnstructuredGrid" version="0.1" byte_order="LittleEndian" header_type="UInt32" compressor="vtkZLibDataCompressor">
+  <PUnstructuredGrid GhostLevel="0">
+    <PPointData>
+      <PDataArray type="Float64" Name="T"/>
+    </PPointData>
+    <PCellData>
+      <PDataArray type="Int32" Name="Material"/>
+      <PDataArray type="UInt32" Name="Partition"/>
+      <PDataArray type="Float64" Name="T"/>
+    </PCellData>
+    <PPoints>
+      <PDataArray type="Float64" Name="Points" NumberOfComponents="3"/>
+    </PPoints>
+    <Piece Source="test3_0.vtu"/>
+    <Piece Source="test3_1.vtu"/>
+  </PUnstructuredGrid>
+</VTKFile>

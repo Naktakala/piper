@@ -8,7 +8,6 @@ namespace chi_math
 {
 
 class ParallelVector;
-class GhostedParallelVector;
 class ParallelMatrix;
 class EquationSystem;
 
@@ -22,7 +21,7 @@ public:
   ComputeResidual(ParallelVector& r,
                   const ParallelVector& time_residual,
                   const std::vector<const ParallelVector*>& std_residuals) = 0;
-  virtual void ComputeJacobian(const GhostedParallelVector& x,
+  virtual void ComputeJacobian(const ParallelVector& x,
                                ParallelMatrix& J,
                                EquationSystem& equation_system) = 0;
 

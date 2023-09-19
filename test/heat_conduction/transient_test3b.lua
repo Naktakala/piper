@@ -78,4 +78,6 @@ end
 --chiSolverInitialize(phys1)
 --chiSolverExecute(phys1)
 --
-chiExportMultiFieldFunctionToVTK({ "T" }, "transient_test3b")
+if (master_export == nil) then
+  chiExportMultiFieldFunctionToVTK({ "T" }, "transient_test3b")
+end

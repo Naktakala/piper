@@ -2,7 +2,6 @@
 #define CHI_KERNELSYSTEM_H
 
 #include "math/Systems/EquationSystem.h"
-#include "math/ParallelVector/ghosted_parallel_vector.h"
 #include "mesh/chi_mesh.h"
 
 namespace chi_math

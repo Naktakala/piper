@@ -2,7 +2,7 @@
 #define CHITECH_EQUATIONSYSTEM_H
 
 #include "EquationSystemTimeData.h"
-#include "math/ParallelVector/ghosted_parallel_vector.h"
+#include "math/ParallelVector/ParallelVector.h"
 #include "mesh/chi_mesh.h"
 
 namespace chi_math
@@ -46,7 +46,7 @@ public:
   int64_t NumGlobalDOFs() const;
 
   /**Returns a reference to the current solution vector.*/
-  GhostedParallelVector& SolutionVector(TimeID time_id = TimeID::T_PLUS_1);
+  ParallelVector& SolutionVector(TimeID time_id = TimeID::T_PLUS_1);
   /**Returns a reference to the current residual vector.*/
   ParallelVector& ResidualVector(TimeID time_id = TimeID::T_PLUS_1);
 
@@ -54,14 +54,12 @@ public:
   virtual void SetInitialSolution(){};
 
   /**Computes the residual vector \p r given a solution vector \p x.
-  * This method is generally only called by executioners.*/
-  virtual void ComputeResidual(const GhostedParallelVector& x,
-                               ParallelVector& r) = 0;
+   * This method is generally only called by executioners.*/
+  virtual void ComputeResidual(const ParallelVector& x, ParallelVector& r) = 0;
 
   /**Computes the Jacobian matrix \p J given a solution vector \p x.
-  * This method is generally only called by executioners.*/
-  virtual void ComputeJacobian(const GhostedParallelVector& x,
-                               ParallelMatrix& J) = 0;
+   * This method is generally only called by executioners.*/
+  virtual void ComputeJacobian(const ParallelVector& x, ParallelMatrix& J) = 0;
 
   /**Sets the current time data.*/
   void SetTimeData(EquationSystemTimeData time_data);
@@ -94,9 +92,9 @@ protected:
   const int64_t num_globl_dofs_;
   const std::vector<int64_t> ghost_ids_;
 
-  GhostedParallelVector main_solution_vector_;
+  std::unique_ptr<ParallelVector> main_solution_vector_;
 
-  std::vector<std::unique_ptr<GhostedParallelVector>> old_solution_vectors_;
+  std::vector<std::unique_ptr<ParallelVector>> old_solution_vectors_;
   std::vector<std::unique_ptr<ParallelVector>> old_residual_vectors_;
 
   size_t num_old_blocks_;

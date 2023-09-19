@@ -17,8 +17,8 @@ hcsystem = hcm.HeatConductionSystem.Create({
     { type = chi_math.SinkSourceFEMKernel.type, value = 100.0e2 }
   },
   bcs = {
-    chi_math.FEMDirichletBC.Create({ boundaries = { "ZMAX" }, bc_value = 1.0 }),
-    chi_math.FEMDirichletBC.Create({ boundaries = { "ZMIN" }, bc_value = 1.0 })
+    { type = chi_math.FEMDirichletBC.type,  boundaries = { "ZMAX" }, bc_value = 1.0 },
+    { type = chi_math.FEMDirichletBC.type,  boundaries = { "ZMIN" }, bc_value = 1.0 }
   }
 })
 
@@ -50,4 +50,6 @@ chi.PostProcessorPrinterSetOptions
 chiSolverInitialize(phys1)
 chiSolverExecute(phys1)
 
---chiExportMultiFieldFunctionToVTK({ "T" }, "test1")
+if (master_export == nil) then
+  chiExportMultiFieldFunctionToVTK({ "T" }, "test1")
+end

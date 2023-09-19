@@ -15,7 +15,7 @@ class MeshContinuum;
 namespace chi_math
 {
 class SpatialDiscretization;
-class GhostedParallelVector;
+class ParallelVector;
 class FEMKernelSystem;
 class NonLinearExecutioner;
 } // namespace chi_math
@@ -44,7 +44,7 @@ protected:
 
   chi_math::UnknownManager T_uk_man_;
 
-  std::unique_ptr<chi_math::GhostedParallelVector> T_old_;
+  std::unique_ptr<chi_math::ParallelVector> T_old_;
   std::shared_ptr<chi_math::FEMKernelSystem> fem_kernel_system_;
   std::unique_ptr<chi_math::NonLinearExecutioner> nl_executioner_;
   std::unique_ptr<chi_math::NonLinearSolver<Mat, Vec, SNES>> nl_solver_;

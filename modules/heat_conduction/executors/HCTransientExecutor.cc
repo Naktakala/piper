@@ -2,7 +2,7 @@
 
 #include "heat_conduction/HeatConductionSystem.h"
 
-#include "math/ParallelVector/ghosted_parallel_vector.h"
+#include "math/ParallelVector/GhostedParallelSTLVector.h"
 #include "math/SpatialDiscretization/spatial_discretization.h"
 
 #include "math/KernelSystem/FEMKernelSystem.h"
@@ -48,7 +48,7 @@ void HCTransientExecutor::Initialize()
   const size_t num_globl_dofs = sdm.GetNumGlobalDOFs(T_uk_man_);
   const auto ghost_ids = sdm.GetGhostDOFIndices(T_uk_man_);
 
-  T_old_ = std::make_unique<chi_math::GhostedParallelVector>(
+  T_old_ = std::make_unique<chi_math::GhostedParallelSTLVector>(
     num_local_dofs, num_globl_dofs, ghost_ids, Chi::mpi.comm);
   T_old_->Set(T_initial_value_);
   T_old_->CommunicateGhostEntries();
