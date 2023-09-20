@@ -1,5 +1,5 @@
-#ifndef CHI_FEMDIRICHLETBC_H
-#define CHI_FEMDIRICHLETBC_H
+#ifndef CHITECH_FEMDIRICHLETBC_H
+#define CHITECH_FEMDIRICHLETBC_H
 
 #include "FEMBoundaryCondition.h"
 
@@ -31,4 +31,4 @@ private:
 
 } // namespace chi_math
 
-#endif // CHI_FEMDIRICHLETBC_H
+#endif // CHITECH_FEMDIRICHLETBC_H

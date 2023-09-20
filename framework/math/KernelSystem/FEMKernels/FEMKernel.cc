@@ -20,6 +20,11 @@ chi::InputParameters FEMKernel::GetInputParameters()
     "A list of material-ids to which this block will be"
     "restricted");
 
+  params.AddRequiredParameter<std::string>(
+    "var", "Name of the variable this kernel acts on.");
+  params.AddOptionalParameter(
+    "var_component", 0, "On which component this kernel is active.");
+
   params.AddRequiredParameter<size_t>("fem_data_handle",
                                       "Handle to a FEMKernelSystemData block.");
 
@@ -28,6 +33,8 @@ chi::InputParameters FEMKernel::GetInputParameters()
 
 FEMKernel::FEMKernel(const chi::InputParameters& params)
   : ChiObject(params),
+    var_name_component_(params.GetParamValue<std::string>("var"),
+      params.GetParamValue<uint32_t>("var_component")),
     fem_data_(Chi::GetStackItem<FEMKernelSystemData>(
       Chi::object_stack,
       params.GetParamValue<size_t>("fem_data_handle"),
@@ -56,6 +63,12 @@ const std::vector<int>& FEMKernel::GetMaterialIDScope() const
 }
 
 bool FEMKernel::IsTimeKernel() const { return false; }
+
+const std::pair<std::string, uint32_t>&
+FEMKernel::ActiveVariableAndComponent() const
+{
+  return var_name_component_;
+}
 
 double FEMKernel::ComputeLocalResidual(uint32_t i)
 {

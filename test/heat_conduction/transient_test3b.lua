@@ -11,11 +11,18 @@ end
 meshgen1 = chi_mesh.OrthogonalMeshGenerator.Create({ node_sets = { nodes, nodes } })
 chi_mesh.MeshGenerator.Execute(meshgen1)
 
-hcsystem = hcm.HeatConductionSystem.Create({
+system1 = chi_math.FEMKernelSystem.Create
+({
+  fields = {
+    chi_physics.FieldFunctionGridBased.Create({
+      name = "T",
+      sdm_type = "PWLC"
+    })
+  },
   kernels = {
-    {type = hcm.ThermalConductionKernel.type, k = 16.0 },
-    {type = chi_math.SinkSourceFEMKernel.type, value = 100.0e2 },
-    {type = chi_math.FEMTimeDerivativeKernel.type,}
+    {type = hcm.ThermalConductionKernel.type, var="T", k = 16.0 },
+    {type = chi_math.SinkSourceFEMKernel.type, var="T", value = 100.0e2 },
+    {type = chi_math.FEMTimeDerivativeKernel.type, var="T",}
   },
   bcs = {
     --{
@@ -26,26 +33,34 @@ hcsystem = hcm.HeatConductionSystem.Create({
       type = hcm.ConvectiveHeatFluxBC.type,
       boundaries = { "XMIN", "YMIN", "YMAX", "XMAX" },
       T_bulk = 100.0,
-      convection_coefficient = 10000.0
+      convection_coefficient = 10000.0,
+      var="T"
     }
-  }
+  },
+  --verbosity = 2
 })
 
-phys1 = hcm.HCTransientExecutor.Create({
-  conduction_system = hcsystem,
+phys1 = chi_math.TransientNonLinearExecutioner.Create
+({
+  name = "phys1",
+  system = system1,
   solver_params =
   {
     nl_method = "PJFNK",
+    --nl_method = "NEWTON",
     l_rel_tol = 1.0e-5,
-    nl_rel_tol = 1.0e-8,
-    nl_abs_tol = 1.0e-8
+    --pc_options =
+    --{
+    --  pc_type = "hypre",
+    --  pc_hypre_type = "boomeramg",
+    --  pc_hypre_boomeramg_coarsen_type = "HMIS"
+    --}
   },
   time_controls =
   {
     dt = 0.001,
     end_time = 1.0
   },
-  time_integrator = chi_math.ImplicitEulerTimeIntegrator.Create({})
 })
 
 chi.AggregateNodalValuePostProcessor.Create
@@ -64,20 +79,6 @@ for k=1,100 do
   chiSolverAdvance(phys1)
 end
 
-
---phys1 = hcm.HCSteadyExecutor.Create({
---  conduction_system = hcsystem,
---  solver_params =
---  {
---    nl_method = "PJFNK",
---    --nl_method = "NEWTON",
---    l_rel_tol = 1.0e-5
---  }
---})
---
---chiSolverInitialize(phys1)
---chiSolverExecute(phys1)
---
 if (master_export == nil) then
   chiExportMultiFieldFunctionToVTK({ "T" }, "transient_test3b")
 end

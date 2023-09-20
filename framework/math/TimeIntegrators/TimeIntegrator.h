@@ -16,6 +16,8 @@ class TimeIntegrator : public ChiObject
 {
 public:
   virtual std::vector<TimeID> GetTimeIDsNeeded() const = 0;
+  virtual size_t NumberOfSolutionHistoriesRequired() const = 0;
+  virtual size_t NumberOfResidualHistoriesRequired() const = 0;
 
   virtual void
   ComputeResidual(ParallelVector& r,

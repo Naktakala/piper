@@ -1,7 +1,7 @@
-#ifndef CHI_FEMKERNELSYSTEM_H
-#define CHI_FEMKERNELSYSTEM_H
+#ifndef CHITECH_FEMKERNELSYSTEM_H
+#define CHITECH_FEMKERNELSYSTEM_H
 
-#include "KernelSystem.h"
+#include "math/Systems/EquationSystem.h"
 #include "math/UnknownManager/unknown_manager.h"
 #include "math/SpatialDiscretization/FiniteElement/finite_element.h"
 #include "math/SpatialDiscretization/CellMappings/cell_mapping_base.h"
@@ -56,23 +56,13 @@ public:
 };
 
 /**General Finite Element Method Kernel system.*/
-class FEMKernelSystem : public KernelSystem
+class FEMKernelSystem : public EquationSystem
 {
 public:
   // 00_constrdestr
+  static chi::InputParameters GetInputParameters();
   /**\brief Basic constructor for a FEMKernelSystem.*/
-  FEMKernelSystem(
-    const SpatialDiscretization& sdm,
-    const UnknownManager& uk_man,
-    const std::vector<chi::ParameterBlock>& volume_kernels_inputs,
-    const std::vector<chi::ParameterBlock>& boundary_condition_inputs,
-    TimeID oldest_time_id);
-
-  /**Returns the Spatial Discretization Method (SDM).*/
-  const SpatialDiscretization& SDM() const;
-
-  /**Returns the nodal unknown structure of each variable set.*/
-  const UnknownManager& UnknownStructure() const;
+  explicit FEMKernelSystem(const chi::InputParameters& params);
 
   /**Obtains the kernels associated with a material.*/
   std::vector<FEMKernelPtr> GetMaterialKernels(int mat_id);
@@ -103,10 +93,6 @@ protected:
   std::vector<std::shared_ptr<FEMKernel>>
   SetupAndGetCellInternalKernels(const chi_mesh::Cell& cell);
 
-  ///**Prepares all the necessary data for boundary kernels.*/
-  // std::vector<std::pair<size_t, FEMBoundaryConditionPtr>>
-  // SetupCellBCKernels(const chi_mesh::Cell& cell);
-
   std::vector<std::pair<size_t, FEMBoundaryConditionPtr>>
   GetCellBCKernels(const chi_mesh::Cell& cell);
 
@@ -117,11 +103,13 @@ protected:
   std::set<uint32_t>
   IdentifyLocalDirichletNodes(const chi_mesh::Cell& cell) const;
 
-  const SpatialDiscretization& sdm_;
-  const UnknownManager uk_man_;
-
   std::map<int, std::vector<FEMKernelPtr>> matid_2_volume_kernels_map_;
-  std::map<uint64_t, FEMBoundaryConditionPtr> bid_2_BCKernel_map_;
+  typedef std::map<uint64_t , FEMBoundaryConditionPtr> BID2BCMap;
+  typedef std::pair<std::string, uint32_t> VarNameComp;
+  std::map<VarNameComp, BID2BCMap> varname_comp_2_bid2bc_map_;
+
+  size_t current_field_index_ = 0;
+  uint32_t current_field_component_ = 0;
 
   /**Utility data structure to store data ahead of executing the kernels*/
   struct CurrentCellData
@@ -149,4 +137,4 @@ protected:
 
 } // namespace chi_math
 
-#endif // CHI_FEMKERNELSYSTEM_H
+#endif // CHITECH_FEMKERNELSYSTEM_H

@@ -11,26 +11,35 @@ end
 meshgen1 = chi_mesh.OrthogonalMeshGenerator.Create({ node_sets = { nodes, nodes } })
 chi_mesh.MeshGenerator.Execute(meshgen1)
 
-hcsystem = hcm.HeatConductionSystem.Create({
+system1 = chi_math.FEMKernelSystem.Create
+({
+  fields = {
+    chi_physics.FieldFunctionGridBased.Create({
+      name = "T",
+      sdm_type = "PWLC"
+    })
+  },
   kernels = {
-    { type = hcm.ThermalConductionKernel.type, k = 16.0 },
+    { type = hcm.ThermalConductionKernel.type, var="T", k = 16.0 },
     --chi_math.SinkSourceFEMKernel.Create({ value = 100.0e2 })
   },
   bcs = {
-    { type = chi_math.FEMDirichletBC.type, boundaries = { "XMIN" }, bc_value = -1.0 },
-    { type = chi_math.FEMDirichletBC.type, boundaries = { "XMAX" }, bc_value = 10.0 },
-    { type = chi_math.FEMDirichletBC.type, boundaries = { "YMIN" }, bc_value = 20.0 },
-    { type = chi_math.FEMDirichletBC.type, boundaries = { "YMAX" }, bc_value = 30.0 }
+    { type = chi_math.FEMDirichletBC.type, var="T", boundaries = { "XMIN" }, bc_value = -1.0 },
+    { type = chi_math.FEMDirichletBC.type, var="T", boundaries = { "XMAX" }, bc_value = 10.0 },
+    { type = chi_math.FEMDirichletBC.type, var="T", boundaries = { "YMIN" }, bc_value = 20.0 },
+    { type = chi_math.FEMDirichletBC.type, var="T", boundaries = { "YMAX" }, bc_value = 30.0 }
   }
+  --verbosity = 2
 })
 
-phys1 = hcm.HCSteadyExecutor.Create({
-  conduction_system = hcsystem,
+phys1 = chi_math.SteadyNonLinearExecutioner.Create
+({
+  name = "phys1",
+  system = system1,
   solver_params =
   {
     nl_method = "PJFNK",
-    l_rel_tol = 1.0e-5
-    --nl_method = "NEWTON"
+    l_rel_tol = 1.0e-5,
   }
 })
 

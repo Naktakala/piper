@@ -3,41 +3,41 @@
 #include "math/Systems/EquationSystem.h"
 #include "math/TimeIntegrators/TimeIntegrator.h"
 
+#include "physics/TimeStepControllers/TimeStepController.h"
+
 #include "chi_runtime.h"
 #include "chi_log.h"
 
+#include "ChiObjectFactory.h"
+
 namespace chi_math
 {
+
+RegisterChiObject(chi_math, TransientNonLinearExecutioner);
 
 chi::InputParameters TransientNonLinearExecutioner::GetInputParameters()
 {
   chi::InputParameters params = NonLinearExecutioner::GetInputParameters();
 
-  params.AddRequiredParameter<size_t>("time_integrator",
-                                      "Handle to a time integrator.");
-
   return params;
 }
 
 TransientNonLinearExecutioner::TransientNonLinearExecutioner(
-  const chi::InputParameters& params,
-  std::shared_ptr<EquationSystem> equation_system)
-  : NonLinearExecutioner(params, std::move(equation_system)),
-    time_integrator_(Chi::GetStackItemPtrAsType<TimeIntegrator>(
-      Chi::object_stack,
-      params.GetParamValue<size_t>("time_integrator"),
-      __FUNCTION__))
+  const chi::InputParameters& params)
+  : NonLinearExecutioner(params)
 {
 }
 
-void TransientNonLinearExecutioner::ComputeResidual(
-  const ParallelVector& x, ParallelVector& r)
+void TransientNonLinearExecutioner::ComputeResidual(const ParallelVector& x,
+                                                    ParallelVector& r)
 {
   eq_system_->SetEquationTermsScope(EqTermScope::TIME_TERMS |
                                     EqTermScope::DOMAIN_TERMS |
                                     EqTermScope::BOUNDARY_TERMS);
 
-  const auto time_ids = time_integrator_->GetTimeIDsNeeded();
+  auto& time_integrator = eq_system_->GetTimeIntegrator();
+
+  const auto time_ids = time_integrator.GetTimeIDsNeeded();
 
   auto time_residual = r.MakeNewVector();
 
@@ -54,21 +54,49 @@ void TransientNonLinearExecutioner::ComputeResidual(
       residuals.push_back(&eq_system_->ResidualVector(time_id));
   }
 
-  time_integrator_->ComputeResidual(r, *time_residual, residuals);
+  time_integrator.ComputeResidual(r, *time_residual, residuals);
 }
 
-void TransientNonLinearExecutioner::ComputeJacobian(
-  const ParallelVector& x, ParallelMatrix& J)
+void TransientNonLinearExecutioner::ComputeJacobian(const ParallelVector& x,
+                                                    ParallelMatrix& J)
 {
   eq_system_->SetEquationTermsScope(EqTermScope::TIME_TERMS |
                                     EqTermScope::DOMAIN_TERMS |
                                     EqTermScope::BOUNDARY_TERMS);
-  time_integrator_->ComputeJacobian(x, J, *eq_system_);
+  eq_system_->GetTimeIntegrator().ComputeJacobian(x, J, *eq_system_);
 }
 
-void TransientNonLinearExecutioner::Advance(EquationSystemTimeData time_data)
+void TransientNonLinearExecutioner::Step()
 {
-  eq_system_->Advance(time_data, *residual_tp1_);
+  Chi::log.Log() << time_step_controller_->StringTimeInfo();
+
+  SetTimeData(
+    {time_step_controller_->GetTimeStepSize(), time_step_controller_->Time()});
+
+  nl_solver_->Solve();
+
+  Chi::log.Log() << nl_solver_->GetConvergedReasonString() << "\n\n";
+}
+
+void TransientNonLinearExecutioner::Advance()
+{
+  const bool last_solve_converged = nl_solver_->IsConverged();
+  if (last_solve_converged)
+  {
+    time_step_controller_->Advance();
+    eq_system_->Advance({time_step_controller_->GetTimeStepSize(),
+                         time_step_controller_->Time()}, *residual_tp1_);
+    eq_system_->UpdateFields();
+  }
+  else
+  {
+    if (not time_step_controller_->Adapt(chi_physics::TimeStepStatus::FAILURE))
+    {
+      Chi::log.Log0Error() << "Solver failed: "
+                           << time_step_controller_->StringTimeInfo();
+      Chi::Exit(EXIT_FAILURE);
+    }
+  }
 }
 
 } // namespace chi_math

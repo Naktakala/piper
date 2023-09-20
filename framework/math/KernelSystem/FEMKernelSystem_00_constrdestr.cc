@@ -6,6 +6,8 @@
 #include "math/KernelSystem/FEMBCs/FEMBoundaryCondition.h"
 #include "math/ParallelMatrix/ParallelMatrix.h"
 
+#include "physics/FieldFunction/fieldfunction_gridbased.h"
+
 #include "mesh/MeshContinuum/chi_meshcontinuum.h"
 
 #include "ChiObjectFactory.h"
@@ -46,22 +48,30 @@ FEMKernelSystemData::FEMKernelSystemData(
 {
 }
 
+RegisterChiObject(chi_math, FEMKernelSystem);
+
+chi::InputParameters FEMKernelSystem::GetInputParameters()
+{
+  chi::InputParameters params = EquationSystem::GetInputParameters();
+
+  params.SetGeneralDescription("An equation system based on kernels.");
+  params.SetDocGroup("doc_KernelSystem");
+
+  params.AddRequiredParameterArray("kernels",
+                                   "A list of kernel in parameter form.");
+  params.AddRequiredParameterArray("bcs",
+                                   "A list of boundary condition handles.");
+
+  return params;
+}
+
 /**\brief Basic constructor for a FEMKernelSystem.
  * This constructor also sorts kernels and BCs into convenient maps.*/
-FEMKernelSystem::FEMKernelSystem(
-  const SpatialDiscretization& sdm,
-  const UnknownManager& uk_man,
-  const std::vector<chi::ParameterBlock>& volume_kernels_inputs,
-  const std::vector<chi::ParameterBlock>& boundary_condition_inputs,
-  TimeID oldest_time_id /*=TimeID::T_PLUS_1*/)
-  : KernelSystem(scint64_t(sdm.GetNumLocalDOFs(uk_man)),
-                 scint64_t(sdm.GetNumGlobalDOFs(uk_man)),
-                 sdm.GetGhostDOFIndices(uk_man),
-                 oldest_time_id),
-    sdm_(sdm),
-    uk_man_(uk_man)
+FEMKernelSystem::FEMKernelSystem(const chi::InputParameters& params)
+  : EquationSystem(params)
 {
-  const auto& grid = sdm_.Grid();
+  const auto& volume_kernels_inputs = params.GetParam("kernels");
+  const auto boundary_condition_inputs = params.GetParam("bcs");
 
   //======================================== Make reference data
   auto reference_data =
@@ -130,6 +140,7 @@ FEMKernelSystem::FEMKernelSystem(
   }
 
   //======================================== Map mat-ids to kernels
+  const auto& grid = field_block_info_.front().field_->SDM().Grid();
   std::set<int> material_ids;
   for (const auto& cell : grid.local_cells)
     material_ids.insert(cell.material_id_);
@@ -160,36 +171,24 @@ FEMKernelSystem::FEMKernelSystem(
 
   for (const auto& [bid, bname] : bndry_id_map)
   {
-    bool assigned = false;
     for (auto& bc : boundary_conditions)
     {
+      const auto& bc_varname_comp = bc->ActiveVariableAndComponent();
       const auto& bndry_scope = bc->GetBoundaryScope();
       if (std::find(bndry_scope.begin(), bndry_scope.end(), bname) !=
           bndry_scope.end())
       {
+        auto& bid2bc_map = varname_comp_2_bid2bc_map_[bc_varname_comp];
         ChiLogicalErrorIf(
-          bid_2_BCKernel_map_.count(bid) != 0,
+          bid2bc_map.count(bid) != 0,
           "More than one boundary condition specified on boundary \"" + bname +
-            "\".");
+            "\" for variable \"" + bc_varname_comp.first + " component " +
+            std::to_string(bc_varname_comp.second));
 
-        if (not assigned)
-        {
-          bid_2_BCKernel_map_[bid] = bc;
-          assigned = true;
-        }
-        else
-          ChiLogicalError("Boundary found with multiple BCs assignment");
+          bid2bc_map[bid] = bc;
       }
     } // for bc
   }   // for item in bndry map
-}
-
-/**Returns the Spatial Discretization Method (SDM).*/
-const SpatialDiscretization& FEMKernelSystem::SDM() const { return sdm_; }
-/**Returns the nodal unknown structure of each variable set.*/
-const UnknownManager& FEMKernelSystem::UnknownStructure() const
-{
-  return uk_man_;
 }
 
 /**Obtains the kernels associated with a material.*/
@@ -208,17 +207,29 @@ std::vector<FEMKernelPtr> FEMKernelSystem::GetMaterialKernels(int mat_id)
   std::vector<std::shared_ptr<FEMKernel>> filtered_kernels;
   const bool time_terms_active = QueryTermsActive(EqTermScope::TIME_TERMS);
   const bool domain_terms_active = QueryTermsActive(EqTermScope::DOMAIN_TERMS);
+  const auto& current_field = field_block_info_.at(current_field_index_).field_;
 
   for (const auto& kernel : kernels)
   {
-    if (kernel->IsTimeKernel() and time_terms_active)
-      filtered_kernels.push_back(kernel);
+    bool kernel_active = false;
+    if (kernel->IsTimeKernel() and time_terms_active) kernel_active = true;
     if (not kernel->IsTimeKernel() and domain_terms_active)
-      filtered_kernels.push_back(kernel);
+      kernel_active = true;
+
+    if (kernel->ActiveVariableAndComponent().first != current_field->TextName())
+      kernel_active = false;
+    if (kernel->ActiveVariableAndComponent().second != current_field_component_)
+      kernel_active = false;
+
+    if (kernel_active) filtered_kernels.push_back(kernel);
   }
 
   if (time_terms_active and filtered_kernels.empty())
     ChiLogicalError("No time kernels in system");
+
+  if (filtered_kernels.empty())
+    ChiLogicalError("No kernels for material id " + std::to_string(mat_id) +
+                    " on field \"" + current_field->TextName() + "\"");
 
   return filtered_kernels;
 }
@@ -229,9 +240,23 @@ FEMKernelSystem::GetBoundaryCondition(uint64_t boundary_id)
 {
   if (not(EquationTermsScope() & EqTermScope::BOUNDARY_TERMS)) return nullptr;
 
-  auto bc_it = bid_2_BCKernel_map_.find(boundary_id);
+  const auto& current_field = field_block_info_.at(current_field_index_).field_;
+  const auto& field_name = current_field->TextName();
 
-  if (bc_it == bid_2_BCKernel_map_.end()) return nullptr;
+  auto& bid2bc_map =
+    varname_comp_2_bid2bc_map_.at({field_name, current_field_component_});
+
+  auto bc_it = bid2bc_map.find(boundary_id);
+
+  if (bc_it == bid2bc_map.end()) return nullptr;
+
+  const auto& bndry_condition = bc_it->second;
+
+  const auto& bc_var_comp = bndry_condition->ActiveVariableAndComponent();
+
+  if (bc_var_comp.first != current_field->TextName() or
+      bc_var_comp.second != current_field_component_)
+    return nullptr;
 
   return bc_it->second;
 }
@@ -239,14 +264,31 @@ FEMKernelSystem::GetBoundaryCondition(uint64_t boundary_id)
 ParallelMatrixSparsityPattern
 FEMKernelSystem::BuildMatrixSparsityPattern() const
 {
-  auto& sdm = SDM();
-  auto& uk_man = UnknownStructure();
+  std::vector<int64_t> master_row_nnz_in_diag;
+  std::vector<int64_t> mastero_row_nnz_off_diag;
 
-  std::vector<int64_t> nodal_nnz_in_diag;
-  std::vector<int64_t> nodal_nnz_off_diag;
-  sdm.BuildSparsityPattern(nodal_nnz_in_diag, nodal_nnz_off_diag, uk_man);
+  auto& a1 = master_row_nnz_in_diag;
+  auto& a2 = mastero_row_nnz_off_diag;
+  for (const auto& field_info : field_block_info_)
+  {
+    auto& field = field_info.field_;
+    auto& sdm = field->SDM();
+    auto& uk_man = field->UnkManager();
 
-  return {nodal_nnz_in_diag, nodal_nnz_off_diag};
+    std::vector<int64_t> nodal_nnz_in_diag;
+    std::vector<int64_t> nodal_nnz_off_diag;
+    sdm.BuildSparsityPattern(nodal_nnz_in_diag, nodal_nnz_off_diag, uk_man);
+
+    // Now append these to the master list
+    auto& b1 = nodal_nnz_in_diag;
+    auto& b2 = nodal_nnz_off_diag;
+
+    using std::begin, std::end;
+    a1.insert(end(a1), begin(b1), end(b1));
+    a2.insert(end(a2), begin(b2), end(b2));
+  }
+
+  return {master_row_nnz_in_diag, mastero_row_nnz_off_diag};
 }
 
 } // namespace chi_math

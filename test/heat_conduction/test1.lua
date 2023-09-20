@@ -11,22 +11,32 @@ end
 meshgen1 = chi_mesh.OrthogonalMeshGenerator.Create({ node_sets = { nodes } })
 chi_mesh.MeshGenerator.Execute(meshgen1)
 
-hcsystem = hcm.HeatConductionSystem.Create({
+system1 = chi_math.FEMKernelSystem.Create
+({
+  fields = {
+    chi_physics.FieldFunctionGridBased.Create({
+      name = "T",
+      sdm_type = "PWLC"
+    })
+  },
   kernels = {
-    { type = hcm.ThermalConductionKernel.type, k = 16.0 }
+    { type = hcm.ThermalConductionKernel.type, var = "T", k = 16.0 }
   },
   bcs = {
-    { type = chi_math.FEMDirichletBC.type, boundaries = { "ZMAX" }, bc_value = -1.0 },
-    { type = chi_math.FEMDirichletBC.type, boundaries = { "ZMIN" }, bc_value = 10.0 }
+    { type = chi_math.FEMDirichletBC.type, var = "T", boundaries = { "ZMAX" }, bc_value = -1.0 },
+    { type = chi_math.FEMDirichletBC.type, var = "T", boundaries = { "ZMIN" }, bc_value = 10.0 }
   }
+  --verbosity = 2
 })
 
-phys1 = hcm.HCSteadyExecutor.Create({
-  conduction_system = hcsystem,
+phys1 = chi_math.SteadyNonLinearExecutioner.Create
+({
+  name = "phys1",
+  system = system1,
   solver_params =
   {
-    --l_max_its = 10
-    nl_method = "PJFNK"
+    nl_method = "PJFNK",
+    l_rel_tol = 1.0e-5,
   }
 })
 

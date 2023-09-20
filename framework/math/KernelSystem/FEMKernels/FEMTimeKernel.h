@@ -1,5 +1,5 @@
-#ifndef CHI_FEMTIMEKERNEL_H
-#define CHI_FEMTIMEKERNEL_H
+#ifndef CHITECH_FEMTIMEKERNEL_H
+#define CHITECH_FEMTIMEKERNEL_H
 
 #include "FEMKernel.h"
 
@@ -23,4 +23,4 @@ protected:
 
 } // namespace chi_math
 
-#endif // CHI_FEMTIMEKERNEL_H
+#endif // CHITECH_FEMTIMEKERNEL_H

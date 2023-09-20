@@ -1,5 +1,5 @@
-#ifndef CHI_FEMKERNEL_H
-#define CHI_FEMKERNEL_H
+#ifndef CHITECH_FEMKERNEL_H
+#define CHITECH_FEMKERNEL_H
 
 #include "ChiObject.h"
 #include "mesh/chi_mesh.h"
@@ -36,7 +36,10 @@ public:
   /**True if this kernel is derived from a Time kernel*/
   virtual bool IsTimeKernel() const;
 
+  const std::pair<std::string, uint32_t>& ActiveVariableAndComponent() const;
+
 protected:
+  const std::pair<std::string, uint32_t> var_name_component_;
   const FEMKernelSystemData& fem_data_;
 
   typedef chi_mesh::Vector3 Vec3;
@@ -66,4 +69,4 @@ private:
 
 } // namespace chi_math
 
-#endif // CHI_FEMKERNEL_H
+#endif // CHITECH_FEMKERNEL_H

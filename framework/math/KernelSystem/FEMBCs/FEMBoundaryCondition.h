@@ -1,5 +1,5 @@
-#ifndef CHI_FEMBOUNDARYCONDITION_H
-#define CHI_FEMBOUNDARYCONDITION_H
+#ifndef CHITECH_FEMBOUNDARYCONDITION_H
+#define CHITECH_FEMBOUNDARYCONDITION_H
 
 #include "ChiObject.h"
 #include "mesh/chi_mesh.h"
@@ -38,7 +38,10 @@ public:
 
   const std::vector<std::string>& GetBoundaryScope() const;
 
+  const std::pair<std::string, uint32_t>& ActiveVariableAndComponent() const;
+
 protected:
+  const std::pair<std::string, uint32_t> var_name_component_;
   const std::vector<std::string> boundary_scope_;
 
   const FEMKernelSystemData& fem_data_;
@@ -69,4 +72,4 @@ protected:
 
 } // namespace chi_math
 
-#endif // CHI_FEMBOUNDARYCONDITION_H
+#endif // CHITECH_FEMBOUNDARYCONDITION_H

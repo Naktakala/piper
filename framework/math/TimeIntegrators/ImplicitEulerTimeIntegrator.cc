@@ -31,6 +31,16 @@ std::vector<TimeID> ImplicitEulerTimeIntegrator::GetTimeIDsNeeded() const
   return {TimeID::T_PLUS_1};
 }
 
+size_t ImplicitEulerTimeIntegrator::NumberOfSolutionHistoriesRequired() const
+{
+  return 1;
+}
+
+size_t ImplicitEulerTimeIntegrator::NumberOfResidualHistoriesRequired() const
+{
+  return 0;
+}
+
 void ImplicitEulerTimeIntegrator::ComputeResidual(
   ParallelVector& r,
   const ParallelVector& time_residual,

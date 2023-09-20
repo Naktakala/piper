@@ -1,5 +1,5 @@
-#ifndef CHI_FEMNEUMANNBC_H
-#define CHI_FEMNEUMANNBC_H
+#ifndef CHITECH_FEMNEUMANNBC_H
+#define CHITECH_FEMNEUMANNBC_H
 
 #include "FEMBoundaryCondition.h"
 
@@ -20,4 +20,4 @@ public:
 
 }
 
-#endif // CHI_FEMNEUMANNBC_H
+#endif // CHITECH_FEMNEUMANNBC_H

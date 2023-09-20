@@ -8,7 +8,6 @@
 namespace chi_math
 {
 
-
 chi::InputParameters FEMBoundaryCondition::GetInputParameters()
 {
   chi::InputParameters params = ChiObject::GetInputParameters();
@@ -20,6 +19,12 @@ chi::InputParameters FEMBoundaryCondition::GetInputParameters()
                                    "A list of boundary names on which this "
                                    "boundary condition mush be supplied.");
 
+  params.AddRequiredParameter<std::string>(
+    "var", "Name of the variable this BC acts on.");
+
+  params.AddOptionalParameter(
+    "var_component", 0, "On which component this BC is active.");
+
   params.AddRequiredParameter<size_t>("fem_data_handle",
                                       "Handle to a FEMKernelSystemData block.");
 
@@ -28,6 +33,8 @@ chi::InputParameters FEMBoundaryCondition::GetInputParameters()
 
 FEMBoundaryCondition::FEMBoundaryCondition(const chi::InputParameters& params)
   : ChiObject(params),
+    var_name_component_(params.GetParamValue<std::string>("var"),
+                        params.GetParamValue<uint32_t>("var_component")),
     boundary_scope_(params.GetParamVectorValue<std::string>("boundaries")),
     fem_data_(Chi::GetStackItem<FEMKernelSystemData>(
       Chi::object_stack,
@@ -51,11 +58,11 @@ FEMBoundaryCondition::FEMBoundaryCondition(const chi::InputParameters& params)
 
 bool FEMBoundaryCondition::IsDirichlet() const { return false; }
 
-//void FEMBoundaryCondition::SetFaceReferenceData(
-//  FaceID face_index, std::shared_ptr<FEMBCRefData>& ref_data_ptr)
-//{
-//  face_id_2_ref_data_ptr_map_[face_index] = ref_data_ptr;
-//}
+const std::pair<std::string, uint32_t>&
+FEMBoundaryCondition::ActiveVariableAndComponent() const
+{
+  return var_name_component_;
+}
 
 const std::vector<std::string>& FEMBoundaryCondition::GetBoundaryScope() const
 {

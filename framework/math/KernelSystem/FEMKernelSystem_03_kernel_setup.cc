@@ -5,6 +5,8 @@
 #include "math/KernelSystem/FEMBCs/FEMDirichletBC.h"
 #include "math/ParallelMatrix/ParallelMatrix.h"
 
+#include "physics/FieldFunction/fieldfunction_gridbased.h"
+
 #include "mesh/MeshContinuum/chi_meshcontinuum.h"
 
 #include "chi_log.h"
@@ -20,7 +22,12 @@ namespace chi_math
 void FEMKernelSystem::InitCellData(const ParallelVector& x,
                                    const chi_mesh::Cell& cell)
 {
-  const auto& cell_mapping = sdm_.GetCellMapping(cell);
+  const auto& field_info = field_block_info_.at(current_field_index_);
+  const auto& field = field_info.field_;
+  const auto& sdm = field->SDM();
+  const auto& uk_man = field->UnkManager();
+
+  const auto& cell_mapping = sdm.GetCellMapping(cell);
   const size_t num_nodes = cell_mapping.NumNodes();
 
   cur_cell_data.cell_mapping_ptr_ = &cell_mapping;
@@ -29,17 +36,23 @@ void FEMKernelSystem::InitCellData(const ParallelVector& x,
   auto& dof_map = cur_cell_data.dof_map_;
   dof_map.assign(num_nodes, 0);
   for (size_t i = 0; i < num_nodes; ++i)
-    dof_map[i] = sdm_.MapDOF(cell, i, uk_man_, 0, 0);
+  {
+    cint64_t block_dof_id = sdm.MapDOF(cell, i, uk_man, 0, 0);
+    dof_map[i] = MapBlockGlobalIDToSystem(field_info, block_dof_id);
+  }
 
-  const size_t max_t =
-    EquationTermsScope() & EqTermScope::TIME_TERMS ? num_old_blocks_ : 0;
+  const size_t max_t = EquationTermsScope() & EqTermScope::TIME_TERMS
+                         ? num_solution_histories_
+                         : 0;
 
   VecDbl local_x(num_nodes, 0.0);
   MatDbl old_local_x(max_t, VecDbl(num_nodes, 0.0));
 
   for (size_t i = 0; i < num_nodes; ++i)
   {
-    cint64_t dof_id = sdm_.MapDOFLocal(cell, i, uk_man_, 0, 0);
+    cint64_t block_dof_id = sdm.MapDOFLocal(cell, i, uk_man, 0, 0);
+    cint64_t dof_id = MapBlockLocalIDToSystem(field_info, block_dof_id);
+
     local_x[i] = x[dof_id];
     for (size_t t = 0; t < max_t; ++t)
       old_local_x[t][i] = old_solution_vectors_[t]->operator[](dof_id);
@@ -90,7 +103,7 @@ FEMKernelSystem::SetupAndGetCellInternalKernels(const chi_mesh::Cell& cell)
   const bool time_kernels_active =
     EquationTermsScope() & EqTermScope::TIME_TERMS;
 
-  const size_t max_t = time_kernels_active ? num_old_blocks_ : 0;
+  const size_t max_t = time_kernels_active ? num_solution_histories_ : 0;
 
   auto& old_var_qp_values = cur_cell_data.old_var_qp_values_;
   old_var_qp_values.assign(max_t, VecDbl(num_qps, 0.0));
@@ -167,7 +180,13 @@ void FEMKernelSystem::SetupFaceIntegralBCKernel(size_t face_index)
 std::set<uint32_t>
 FEMKernelSystem::IdentifyLocalDirichletNodes(const chi_mesh::Cell& cell) const
 {
+  const auto& current_field = field_block_info_.at(current_field_index_).field_;
+  const auto& field_name = current_field->TextName();
+
   const auto& cell_mapping = *cur_cell_data.cell_mapping_ptr_;
+
+  const auto& bid2bc_map =
+    varname_comp_2_bid2bc_map_.at({field_name, current_field_component_});
 
   std::set<uint32_t> dirichlet_nodes;
   const size_t num_faces = cell.faces_.size();
@@ -176,8 +195,8 @@ FEMKernelSystem::IdentifyLocalDirichletNodes(const chi_mesh::Cell& cell) const
     const auto& face = cell.faces_[f];
     if (face.has_neighbor_) continue;
 
-    auto bc_it = bid_2_BCKernel_map_.find(face.neighbor_id_);
-    if (bc_it == bid_2_BCKernel_map_.end()) continue;
+    auto bc_it = bid2bc_map.find(face.neighbor_id_);
+    if (bc_it == bid2bc_map.end()) continue;
 
     const auto& bndry_condition = *bc_it->second;
     if (bndry_condition.IsDirichlet())

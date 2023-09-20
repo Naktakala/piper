@@ -1,5 +1,5 @@
-#ifndef CHI_PARALLELMATRIX_H
-#define CHI_PARALLELMATRIX_H
+#ifndef CHITECH_PARALLELMATRIX_H
+#define CHITECH_PARALLELMATRIX_H
 
 #include "chi_mpi.h"
 
@@ -51,4 +51,4 @@ protected:
 
 } // namespace chi_math
 
-#endif // CHI_PARALLELMATRIX_H
+#endif // CHITECH_PARALLELMATRIX_H

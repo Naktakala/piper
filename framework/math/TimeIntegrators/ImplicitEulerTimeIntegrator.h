@@ -13,6 +13,8 @@ public:
   explicit ImplicitEulerTimeIntegrator(const chi::InputParameters& params);
 
   std::vector<TimeID> GetTimeIDsNeeded() const override;
+  size_t NumberOfSolutionHistoriesRequired() const override;
+  size_t NumberOfResidualHistoriesRequired() const override;
 
   void ComputeResidual(
     ParallelVector& r,

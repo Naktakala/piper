@@ -12,20 +12,15 @@ class TransientNonLinearExecutioner : public NonLinearExecutioner
 {
 public:
   static chi::InputParameters GetInputParameters();
-  explicit TransientNonLinearExecutioner(
-    const chi::InputParameters& params,
-    std::shared_ptr<EquationSystem> equation_system);
+  explicit TransientNonLinearExecutioner(const chi::InputParameters& params);
 
-  void ComputeResidual(const ParallelVector& x,
-                       ParallelVector& r) override;
-  void ComputeJacobian(const ParallelVector& x,
-                       ParallelMatrix& J) override;
+  void ComputeResidual(const ParallelVector& x, ParallelVector& r) override;
+  void ComputeJacobian(const ParallelVector& x, ParallelMatrix& J) override;
 
-  void Advance(EquationSystemTimeData time_data) override;
+  void Step() override;
+  void Advance() override;
 
 protected:
-  std::shared_ptr<TimeIntegrator> time_integrator_;
-
   std::unique_ptr<ParallelVector> residual_tp1_;
 };
 

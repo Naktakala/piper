@@ -10,14 +10,12 @@ class SteadyNonLinearExecutioner : public NonLinearExecutioner
 {
 public:
   static chi::InputParameters GetInputParameters();
-  explicit SteadyNonLinearExecutioner(
-    const chi::InputParameters& params,
-    std::shared_ptr<EquationSystem> equation_system);
+  explicit SteadyNonLinearExecutioner(const chi::InputParameters& params);
 
-  void ComputeResidual(const ParallelVector& x,
-                       ParallelVector& r) override;
-  void ComputeJacobian(const ParallelVector& x,
-                       ParallelMatrix& J) override;
+  void ComputeResidual(const ParallelVector& x, ParallelVector& r) override;
+  void ComputeJacobian(const ParallelVector& x, ParallelMatrix& J) override;
+
+  void Execute() override;
 };
 
 } // namespace chi_math

@@ -1,7 +1,10 @@
 #ifndef CHITECH_NONLINEAREXECUTIONER_H
 #define CHITECH_NONLINEAREXECUTIONER_H
 
-#include "ChiObject.h"
+#include "physics/SolverBase/chi_solver.h"
+#include "math/NonLinearSolver/non_linear_solver.h"
+
+#include <petscsnes.h>
 
 namespace chi_math
 {
@@ -15,7 +18,7 @@ class EquationSystemTimeData;
 
 /**Abstract Non-Linear executioner class that interfaces with
  * BasicNonLinearSolver.*/
-class NonLinearExecutioner : public ChiObject
+class NonLinearExecutioner : public chi_physics::Solver
 {
 public:
   /**Returns the number of local DOFs across all unknowns.*/
@@ -29,10 +32,8 @@ public:
   /**Sets the current solution vector.*/
   virtual void SetInitialSolution();
 
-  virtual void ComputeResidual(const ParallelVector& x,
-                               ParallelVector& r) = 0;
-  virtual void ComputeJacobian(const ParallelVector& x,
-                               ParallelMatrix& J) = 0;
+  virtual void ComputeResidual(const ParallelVector& x, ParallelVector& r) = 0;
+  virtual void ComputeJacobian(const ParallelVector& x, ParallelMatrix& J) = 0;
 
   virtual ParallelMatrixSparsityPattern BuildMatrixSparsityPattern() const;
 
@@ -41,15 +42,16 @@ public:
 
   void SetTimeData(EquationSystemTimeData time_data);
 
-  virtual void Advance(EquationSystemTimeData time_data);
+  void Initialize() override;
 
 protected:
   static chi::InputParameters GetInputParameters();
-  explicit NonLinearExecutioner(
-    const chi::InputParameters& params,
-    std::shared_ptr<EquationSystem> equation_system);
+  explicit NonLinearExecutioner(const chi::InputParameters& params);
+  static std::shared_ptr<EquationSystem> GetEquationSystem(size_t handle);
 
   std::shared_ptr<EquationSystem> eq_system_;
+  const chi::ParameterBlock nl_solver_params_;
+  std::unique_ptr<chi_math::NonLinearSolver<Mat, Vec, SNES>> nl_solver_;
 };
 
 } // namespace chi_math
