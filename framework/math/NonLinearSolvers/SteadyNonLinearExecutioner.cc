@@ -25,16 +25,14 @@ SteadyNonLinearExecutioner::SteadyNonLinearExecutioner(
 void SteadyNonLinearExecutioner::ComputeResidual(const ParallelVector& x,
                                                  ParallelVector& r)
 {
-  eq_system_->SetEquationTermsScope(EqTermScope::DOMAIN_TERMS |
-                                    EqTermScope::BOUNDARY_TERMS);
+  SetModeToNonTimeOnly();
   eq_system_->ComputeResidual(x, r);
 }
 
 void SteadyNonLinearExecutioner::ComputeJacobian(const ParallelVector& x,
                                                  ParallelMatrix& J)
 {
-  eq_system_->SetEquationTermsScope(EqTermScope::DOMAIN_TERMS |
-                                    EqTermScope::BOUNDARY_TERMS);
+  SetModeToNonTimeOnly();
   eq_system_->ComputeJacobian(x, J);
 }
 

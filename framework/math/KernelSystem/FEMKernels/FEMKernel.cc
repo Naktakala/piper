@@ -41,6 +41,7 @@ FEMKernel::FEMKernel(const chi::InputParameters& params)
       __FUNCTION__)),
     dt_(fem_data_.time_data_.dt_),
     time_(fem_data_.time_data_.time_),
+    var_dot_dvar_(fem_data_.time_data_.var_dot_dvar_),
     JxW_values_(fem_data_.qp_data_.JxW_Values()),
     test_values_(fem_data_.qp_data_.ShapeValues()),
     test_grad_values_(fem_data_.qp_data_.ShapeGradValues()),
@@ -48,7 +49,7 @@ FEMKernel::FEMKernel(const chi::InputParameters& params)
     shape_grad_values_(fem_data_.qp_data_.ShapeGradValues()),
     var_value_(fem_data_.var_qp_values_),
     var_grad_value_(fem_data_.var_grad_qp_values_),
-    old_var_value_(fem_data_.old_var_qp_values_),
+    var_dot_value_(fem_data_.var_dot_qp_values_),
     qp_xyz_(fem_data_.qp_data_.QPointsXYZ())
 {
   const auto& user_params = params.ParametersAtAssignment();

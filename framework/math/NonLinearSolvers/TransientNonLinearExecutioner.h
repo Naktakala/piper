@@ -17,11 +17,16 @@ public:
   void ComputeResidual(const ParallelVector& x, ParallelVector& r) override;
   void ComputeJacobian(const ParallelVector& x, ParallelMatrix& J) override;
 
+  /**Sets the current solution vector.*/
+  virtual void SetInitialSolution() override;
+
   void Step() override;
   void Advance() override;
 
 protected:
-  std::unique_ptr<ParallelVector> residual_tp1_;
+  std::unique_ptr<ParallelVector> r_t_tp1_;
+  std::unique_ptr<ParallelVector> r_x_tp1_;
+  std::map<TimeID, const ParallelVector*> r_map_;
 };
 
 } // namespace chi_math

@@ -26,7 +26,7 @@ ImplicitEulerTimeIntegrator::ImplicitEulerTimeIntegrator(
 {
 }
 
-std::vector<TimeID> ImplicitEulerTimeIntegrator::GetTimeIDsNeeded() const
+std::vector<TimeID> ImplicitEulerTimeIntegrator::GetResidualTimeIDsNeeded() const
 {
   return {TimeID::T_PLUS_1};
 }
@@ -41,15 +41,20 @@ size_t ImplicitEulerTimeIntegrator::NumberOfResidualHistoriesRequired() const
   return 0;
 }
 
+double ImplicitEulerTimeIntegrator::GetTimeCoefficient(double dt) const
+{
+  return 1.0/dt;
+}
+
 void ImplicitEulerTimeIntegrator::ComputeResidual(
   ParallelVector& r,
   const ParallelVector& time_residual,
-  const std::vector<const ParallelVector*>& std_residuals)
+  const std::map<TimeID, const ParallelVector*>& std_residuals)
 {
   ChiLogicalErrorIf(std_residuals.size() != 1, "std_residuals too short.");
 
   const auto& r_t_tp1 = time_residual;
-  const auto& r_x_tp1 = *std_residuals[static_cast<int>(TimeID::T_PLUS_1) + 1];
+  const auto& r_x_tp1 = *std_residuals.at(TimeID::T_PLUS_1);
 
   r += r_t_tp1;
   r += r_x_tp1;

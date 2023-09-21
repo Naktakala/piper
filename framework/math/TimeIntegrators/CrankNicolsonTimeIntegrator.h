@@ -1,16 +1,16 @@
-#ifndef CHITECH_IMPLICITEULERTIMEINTEGRATOR_H
-#define CHITECH_IMPLICITEULERTIMEINTEGRATOR_H
+#ifndef CHITECH_CRANKNICOLSONTIMEINTEGRATOR_H
+#define CHITECH_CRANKNICOLSONTIMEINTEGRATOR_H
 
 #include "TimeIntegrator.h"
 
 namespace chi_math
 {
 
-class ImplicitEulerTimeIntegrator : public TimeIntegrator
+class CrankNicolsonTimeIntegrator : public TimeIntegrator
 {
 public:
   static chi::InputParameters GetInputParameters();
-  explicit ImplicitEulerTimeIntegrator(const chi::InputParameters& params);
+  explicit CrankNicolsonTimeIntegrator(const chi::InputParameters& params);
 
   std::vector<TimeID> GetResidualTimeIDsNeeded() const override;
   size_t NumberOfSolutionHistoriesRequired() const override;
@@ -29,4 +29,4 @@ public:
 
 } // namespace chi_math
 
-#endif // CHITECH_IMPLICITEULERTIMEINTEGRATOR_H
+#endif // CHITECH_CRANKNICOLSONTIMEINTEGRATOR_H

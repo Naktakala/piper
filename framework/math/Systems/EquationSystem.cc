@@ -11,8 +11,6 @@
 
 #include <numeric>
 
-
-
 namespace chi_math
 {
 
@@ -48,7 +46,8 @@ EquationSystem::EquationSystem(const chi::InputParameters& params)
       time_integrator_->NumberOfResidualHistoriesRequired()),
     old_solution_vectors_(std::move(InitSolutionHistory())),
     old_residual_vectors_(std::move(InitResidualHistory())),
-    eq_term_scope_(EqTermScope::DOMAIN_TERMS | EqTermScope::BOUNDARY_TERMS)
+    eq_term_scope_(EqTermScope::DOMAIN_TERMS | EqTermScope::BOUNDARY_TERMS),
+    time_data_(0.01, 0.0, 1.0)
 {
 }
 
@@ -317,13 +316,13 @@ void EquationSystem::UpdateFields()
 }
 
 /**Advances the system in time.*/
-void EquationSystem::Advance(EquationSystemTimeData time_data,
-                             const ParallelVector& latest_std_residual)
+void EquationSystem::Advance(
+  EquationSystemTimeData time_data,
+  std::map<TimeID, const ParallelVector*>& latest_std_residuals)
 {
   SetTimeData(time_data);
 
   const auto& sol_vec = main_solution_vector_;
-  const auto& res_vec = latest_std_residual;
 
   if (num_solution_histories_ > 0)
   {
@@ -333,11 +332,18 @@ void EquationSystem::Advance(EquationSystemTimeData time_data,
       vec.insert(start, sol_vec->MakeCopy());
       vec.pop_back();
     }
+  }
+
+  if (num_residual_histories_ > 0)
+  {
+    for (const auto& [time_id, vec_ptr] : latest_std_residuals)
     {
-      auto& vec = old_residual_vectors_;
-      auto start = vec.begin();
-      vec.insert(start, res_vec.MakeCopy());
-      vec.pop_back();
+      //Chi::log.LogAll() << old_residual_vectors_.size();
+      //Chi::log.LogAll() << static_cast<int>(time_id) << " " << (vec_ptr == nullptr ? 0 : 1);
+      const int time_index = static_cast<int>(time_id) + 1;
+      if (time_index >= 0 and time_index < num_residual_histories_)
+      old_residual_vectors_.at(static_cast<int>(time_id) + 1) =
+        vec_ptr->MakeCopy();
     }
   }
 }

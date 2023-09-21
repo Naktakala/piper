@@ -33,19 +33,19 @@
 []
 
 [BCs]
-  # [bc1]
-  #   type = DirichletBC
-  #   variable = T
-  #   value = 0
-  #   boundary = 'left bottom top'
-  # []
-  [bc2]
-    type = ConvectiveHeatFluxBC
+  [bc1]
+    type = DirichletBC
     variable = T
-    T_infinity = 100
-    heat_transfer_coefficient = 10000
+    value = 0
     boundary = 'left bottom top right'
   []
+  # [bc2]
+  #   type = ConvectiveHeatFluxBC
+  #   variable = T
+  #   T_infinity = 100
+  #   heat_transfer_coefficient = 10000
+  #   boundary = 'left bottom top right'
+  # []
 []
 
 [Materials]
@@ -53,6 +53,13 @@
     type = HeatConductionMaterial
     temp = T
     thermal_conductivity = 16.0
+  []
+[]
+
+[Postprocessors]
+  [maxval]
+    type = NodalExtremeValue
+    variable = T
   []
 []
 
@@ -64,6 +71,23 @@
 
   num_steps = 100
   dt = 0.001
+
+  [./TimeIntegrator]
+    # type = ImplicitEuler
+    # type = BDF2
+    type = CrankNicolson
+    # type = ImplicitMidpoint
+    # type = LStableDirk2
+    # type = LStableDirk3
+    # type = LStableDirk4
+    # type = AStableDirk4
+    #
+    # Explicit methods
+    # type = ExplicitEuler
+    # type = ExplicitMidpoint
+    # type = Heun
+    # type = Ralston
+  [../]
 
   # l_tol = 1e-03
   nl_abs_tol = 1e-8

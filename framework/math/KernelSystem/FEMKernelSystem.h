@@ -35,7 +35,7 @@ public:
                       const CellQPData& qp_data,
                       const VecDbl& var_qp_values,
                       const VecVec3& var_grad_qp_values,
-                      const MatDbl& old_var_qp_values,
+                      const VecDbl& var_dot_qp_values,
                       const VecDbl& nodal_var_values,
                       const VecVec3& node_locations,
 
@@ -46,7 +46,7 @@ public:
   const CellQPData& qp_data_;
   const VecDbl& var_qp_values_;
   const VecVec3& var_grad_qp_values_;
-  const MatDbl& old_var_qp_values_;
+  const VecDbl& var_dot_qp_values_;
   const VecDbl& nodal_var_values_;
   const VecVec3& node_locations_;
 
@@ -119,12 +119,12 @@ protected:
     std::vector<chi_mesh::Vector3> node_locations_;
     std::vector<int64_t> dof_map_;
     VecDbl local_x_;
-    MatDbl old_local_x_;
+    VecDbl local_x_dot_;
 
     CellQPData qp_data_;
     VecDbl var_qp_values_;
     VecVec3 var_grad_qp_values_;
-    MatDbl old_var_qp_values_;
+    VecDbl var_dot_qp_values_;
   } cur_cell_data;
 
   struct CurrentFaceData

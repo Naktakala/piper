@@ -25,16 +25,12 @@ FEMTimeDerivativeKernel::FEMTimeDerivativeKernel(
 
 double FEMTimeDerivativeKernel::ResidualEntryAtQP()
 {
-  // if (time_ > 0.0)
-  //   std::cout << old_var_qp_value_[TIME_T] << "\n";
-  return test_values_[i_][qp_] *
-         (var_value_[qp_] - old_var_value_[TIME_T][qp_]) / dt_;
+  return test_values_[i_][qp_] * var_dot_value_[qp_];
 }
 
 double FEMTimeDerivativeKernel::JacobianEntryAtQP()
 {
-  //return test_i_qp_ * shape_j_qp_ / dt_;
-  return test_values_[i_][qp_] * shape_values_[j_][qp_] / dt_;
+  return test_values_[i_][qp_] * shape_values_[j_][qp_] * var_dot_dvar_;
 }
 
 } // namespace chi_math

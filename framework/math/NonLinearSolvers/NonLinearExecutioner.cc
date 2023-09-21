@@ -66,12 +66,34 @@ void NonLinearExecutioner::SetTimeData(EquationSystemTimeData time_data)
   eq_system_->SetTimeData(time_data);
 }
 
+void NonLinearExecutioner::SetModeToTimeOnly()
+{
+  eq_system_->SetEquationTermsScope(EqTermScope::TIME_TERMS);
+}
+void NonLinearExecutioner::SetModeToNonTimeOnly()
+{
+  eq_system_->SetEquationTermsScope(EqTermScope::DOMAIN_TERMS |
+                                    EqTermScope::BOUNDARY_TERMS);
+}
+void NonLinearExecutioner::SetModeToTimeAndNonTime()
+{
+  eq_system_->SetEquationTermsScope(EqTermScope::TIME_TERMS |
+                                    EqTermScope::DOMAIN_TERMS |
+                                    EqTermScope::BOUNDARY_TERMS);
+}
+
+bool NonLinearExecutioner::TimeIDListHasID(const std::vector<TimeID>& time_ids,
+                                     TimeID id)
+{
+  return std::find(time_ids.begin(), time_ids.end(), id) != time_ids.end();
+}
+
 void NonLinearExecutioner::Initialize()
 {
   auto nl_params = chi_math::NonLinearSolverOptions::GetInputParameters();
   nl_params.AssignParameters(nl_solver_params_);
-  nl_solver_ = std::make_unique<chi_math::BasicNonLinearSolver>(
-    *this, nl_params);
+  nl_solver_ =
+    std::make_unique<chi_math::BasicNonLinearSolver>(*this, nl_params);
 
   nl_solver_->Setup();
 }

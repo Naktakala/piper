@@ -31,47 +31,92 @@ TransientNonLinearExecutioner::TransientNonLinearExecutioner(
 void TransientNonLinearExecutioner::ComputeResidual(const ParallelVector& x,
                                                     ParallelVector& r)
 {
-  eq_system_->SetEquationTermsScope(EqTermScope::TIME_TERMS |
-                                    EqTermScope::DOMAIN_TERMS |
-                                    EqTermScope::BOUNDARY_TERMS);
-
   auto& time_integrator = eq_system_->GetTimeIntegrator();
 
-  const auto time_ids = time_integrator.GetTimeIDsNeeded();
+  const auto r_time_ids = time_integrator.GetResidualTimeIDsNeeded();
 
-  auto time_residual = r.MakeNewVector();
+  // Naming convention:
+  // Time residual     : r^t, named r_t
+  // Non-time residual : r(x), named r_x
+  // Time notations    : tp1 = t+1, t=t, tm1 = t-1, tm2 = t-2 etc.
 
-  std::vector<const ParallelVector*> residuals;
-  for (const TimeID time_id : time_ids)
+  r_map_.clear();
+
+  r_t_tp1_ = r.MakeNewVector();
+  SetModeToTimeOnly();
+  eq_system_->ComputeResidual(x, *r_t_tp1_);
+
+  if (TimeIDListHasID(r_time_ids, TimeID::T_PLUS_1))
   {
-    if (time_id == TimeID::T_PLUS_1)
-    {
-      residual_tp1_ = r.MakeNewVector();
-      eq_system_->ComputeResidual(x, *residual_tp1_);
-      residuals.push_back(&(*residual_tp1_));
-    }
-    else
-      residuals.push_back(&eq_system_->ResidualVector(time_id));
+    r_x_tp1_ = r.MakeNewVector();
+    SetModeToNonTimeOnly();
+    eq_system_->ComputeResidual(x, *r_x_tp1_);
+    r_map_[TimeID::T_PLUS_1] = (&(*r_x_tp1_));
   }
 
-  time_integrator.ComputeResidual(r, *time_residual, residuals);
+  for (const TimeID time_id : r_time_ids)
+    if (time_id != TimeID::T_PLUS_1)
+      r_map_[time_id] = (&eq_system_->ResidualVector(time_id));
+
+  time_integrator.ComputeResidual(r, *r_t_tp1_, r_map_);
+
+  // No longer needing r_t_tp1
+  r_t_tp1_ = nullptr;
+
+  // Delete r_x_tp1 if r_x_t is not required
+  if (not TimeIDListHasID(r_time_ids, TimeID::T)) r_x_tp1_ = nullptr;
 }
 
 void TransientNonLinearExecutioner::ComputeJacobian(const ParallelVector& x,
                                                     ParallelMatrix& J)
 {
-  eq_system_->SetEquationTermsScope(EqTermScope::TIME_TERMS |
-                                    EqTermScope::DOMAIN_TERMS |
-                                    EqTermScope::BOUNDARY_TERMS);
+  SetModeToTimeAndNonTime();
   eq_system_->GetTimeIntegrator().ComputeJacobian(x, J, *eq_system_);
+}
+
+void TransientNonLinearExecutioner::SetInitialSolution()
+{
+  if (time_step_controller_->TimeIndex() == 0)
+  {
+    Chi::log.Log() << "Setting initial solution";
+    const double dt = time_step_controller_->GetTimeStepSize();
+    const double time = time_step_controller_->Time();
+    const double var_dot_dvar =
+      eq_system_->GetTimeIntegrator().GetTimeCoefficient(dt);
+
+    eq_system_->SetTimeData({dt, time, var_dot_dvar});
+
+    eq_system_->SetInitialSolution();
+
+    const auto r_time_ids =
+      eq_system_->GetTimeIntegrator().GetResidualTimeIDsNeeded();
+
+    if (TimeIDListHasID(r_time_ids, TimeID::T))
+    {
+      const auto& x = eq_system_->SolutionVector();
+      auto r = x.MakeNewVector();
+      SetModeToNonTimeOnly();
+      eq_system_->ComputeResidual(x, *r);
+
+      r_map_[TimeID::T_PLUS_1] = &(*r);
+      eq_system_->Advance({dt, time, var_dot_dvar},
+                          r_map_);
+
+      eq_system_->UpdateFields();
+    }
+  }
 }
 
 void TransientNonLinearExecutioner::Step()
 {
   Chi::log.Log() << time_step_controller_->StringTimeInfo();
 
-  SetTimeData(
-    {time_step_controller_->GetTimeStepSize(), time_step_controller_->Time()});
+  const double dt = time_step_controller_->GetTimeStepSize();
+  const double time = time_step_controller_->Time();
+  const double var_dot_dvar =
+    eq_system_->GetTimeIntegrator().GetTimeCoefficient(dt);
+
+  eq_system_->SetTimeData({dt, time, var_dot_dvar});
 
   nl_solver_->Solve();
 
@@ -84,9 +129,17 @@ void TransientNonLinearExecutioner::Advance()
   if (last_solve_converged)
   {
     time_step_controller_->Advance();
-    eq_system_->Advance({time_step_controller_->GetTimeStepSize(),
-                         time_step_controller_->Time()}, *residual_tp1_);
+
+    const double dt = time_step_controller_->GetTimeStepSize();
+    const double time = time_step_controller_->Time();
+    const double var_dot_dvar =
+      eq_system_->GetTimeIntegrator().GetTimeCoefficient(dt);
+
+    eq_system_->Advance({dt, time, var_dot_dvar}, r_map_);
+
     eq_system_->UpdateFields();
+    time_ = time;
+    
   }
   else
   {

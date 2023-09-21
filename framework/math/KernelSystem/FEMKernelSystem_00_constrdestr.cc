@@ -25,7 +25,7 @@ FEMKernelSystemData::FEMKernelSystemData(
   const CellQPData& qp_data,
   const VecDbl& var_qp_values,
   const VecVec3& var_grad_qp_values,
-  const MatDbl& old_var_qp_values,
+  const VecDbl& var_dot_qp_values,
   const VecDbl& nodal_var_values,
   const VecVec3& node_locations,
 
@@ -38,7 +38,7 @@ FEMKernelSystemData::FEMKernelSystemData(
     qp_data_(qp_data),
     var_qp_values_(var_qp_values),
     var_grad_qp_values_(var_grad_qp_values),
-    old_var_qp_values_(old_var_qp_values),
+    var_dot_qp_values_(var_dot_qp_values),
     nodal_var_values_(nodal_var_values),
     node_locations_(node_locations),
 
@@ -79,7 +79,7 @@ FEMKernelSystem::FEMKernelSystem(const chi::InputParameters& params)
                                           cur_cell_data.qp_data_,
                                           cur_cell_data.var_qp_values_,
                                           cur_cell_data.var_grad_qp_values_,
-                                          cur_cell_data.old_var_qp_values_,
+                                          cur_cell_data.var_dot_qp_values_,
                                           cur_cell_data.local_x_,
                                           cur_cell_data.node_locations_,
 

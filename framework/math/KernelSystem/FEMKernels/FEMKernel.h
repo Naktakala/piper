@@ -48,6 +48,7 @@ protected:
 
   const double& dt_;
   const double& time_;
+  const double& var_dot_dvar_;
 
   const VecDbl& JxW_values_;
   const MatDbl& test_values_;
@@ -56,7 +57,7 @@ protected:
   const MatVec3& shape_grad_values_;
   const VecDbl& var_value_;
   const VecVec3& var_grad_value_;
-  const MatDbl& old_var_value_;
+  const VecDbl& var_dot_value_;
   const VecVec3& qp_xyz_;
 
   size_t i_ = 0;

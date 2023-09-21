@@ -46,7 +46,8 @@ void FEMKernelSystem::InitCellData(const ParallelVector& x,
                          : 0;
 
   VecDbl local_x(num_nodes, 0.0);
-  MatDbl old_local_x(max_t, VecDbl(num_nodes, 0.0));
+  VecDbl local_x_dot(num_nodes, 0.0);
+  const double dt = time_data_.dt_;
 
   for (size_t i = 0; i < num_nodes; ++i)
   {
@@ -54,12 +55,13 @@ void FEMKernelSystem::InitCellData(const ParallelVector& x,
     cint64_t dof_id = MapBlockLocalIDToSystem(field_info, block_dof_id);
 
     local_x[i] = x[dof_id];
-    for (size_t t = 0; t < max_t; ++t)
-      old_local_x[t][i] = old_solution_vectors_[t]->operator[](dof_id);
+
+    if (max_t > 0)
+      local_x_dot[i] = (local_x[i] - (*old_solution_vectors_[0])[dof_id]) / dt;
   }
 
   cur_cell_data.local_x_ = std::move(local_x);
-  cur_cell_data.old_local_x_ = std::move(old_local_x);
+  cur_cell_data.local_x_dot_ = std::move(local_x_dot);
 }
 
 // ##################################################################
@@ -75,7 +77,7 @@ FEMKernelSystem::SetupAndGetCellInternalKernels(const chi_mesh::Cell& cell)
   const auto& kernels = GetMaterialKernels(cell.material_id_);
 
   const auto& local_x = cur_cell_data.local_x_;
-  const auto& old_local_x = cur_cell_data.old_local_x_;
+  const auto& local_x_dot_ = cur_cell_data.local_x_dot_;
   const size_t num_nodes = cell_mapping.NumNodes();
 
   //====================================== Compute variable values on each qp
@@ -105,17 +107,12 @@ FEMKernelSystem::SetupAndGetCellInternalKernels(const chi_mesh::Cell& cell)
 
   const size_t max_t = time_kernels_active ? num_solution_histories_ : 0;
 
-  auto& old_var_qp_values = cur_cell_data.old_var_qp_values_;
-  old_var_qp_values.assign(max_t, VecDbl(num_qps, 0.0));
-  if (time_kernels_active)
-    for (size_t t = 0; t < max_t; ++t)
-    {
-      auto& old_var_qp_values_t = old_var_qp_values[t];
-
-      for (size_t j = 0; j < num_nodes; ++j)
-        for (uint32_t qp : qp_indices)
-          old_var_qp_values_t[qp] += shape_values[j][qp] * old_local_x[t][j];
-    }
+  auto& var_dot_qp_values = cur_cell_data.var_dot_qp_values_;
+  var_dot_qp_values.assign(num_qps, 0.0);
+  if (time_kernels_active and max_t > 0)
+    for (size_t j = 0; j < num_nodes; ++j)
+      for (uint32_t qp : qp_indices)
+        var_dot_qp_values[qp] += shape_values[j][qp] * local_x_dot_[j];
 
   return kernels;
 }

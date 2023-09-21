@@ -97,7 +97,7 @@ public:
 
   /**Advances the system in time.*/
   void Advance(EquationSystemTimeData time_data,
-               const ParallelVector& latest_std_residual);
+               std::map<TimeID, const ParallelVector*>& latest_std_residuals);
 
 protected:
   static chi::InputParameters GetInputParameters();

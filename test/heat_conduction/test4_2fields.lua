@@ -76,6 +76,5 @@ chi.CellVolumeIntegralPostProcessor.Create
 chi.ExecutePostProcessors({"avgval"})
 
 if (master_export == nil) then
-  chiExportMultiFieldFunctionToVTK({ chiGetFieldFunctionHandleByName("Te"),
-                                     chiGetFieldFunctionHandleByName("T2") }, "test4_2fields")
+  chiExportMultiFieldFunctionToVTK({ "Te", "T2" }, "test4_2fields")
 end

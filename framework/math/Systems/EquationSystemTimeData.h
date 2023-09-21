@@ -20,8 +20,13 @@ std::string TimeIDName(TimeID time_id);
 /**Structure for passing time data.*/
 struct EquationSystemTimeData
 {
+  EquationSystemTimeData(double dt, double time, double var_dot_dvar)
+    : dt_(dt), time_(time), var_dot_dvar_(var_dot_dvar)
+  {
+  }
   double dt_ = 0.001;
   double time_ = 0.0;
+  double var_dot_dvar_ = 1.0;
 };
 
 } // namespace chi_math

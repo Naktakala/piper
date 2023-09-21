@@ -3,6 +3,7 @@
 
 #include "physics/SolverBase/chi_solver.h"
 #include "math/NonLinearSolver/non_linear_solver.h"
+#include "math/Systems/EquationSystemTimeData.h"
 
 #include <petscsnes.h>
 
@@ -42,12 +43,18 @@ public:
 
   void SetTimeData(EquationSystemTimeData time_data);
 
+  void SetModeToTimeOnly();
+  void SetModeToNonTimeOnly();
+  void SetModeToTimeAndNonTime();
+
   void Initialize() override;
 
 protected:
   static chi::InputParameters GetInputParameters();
   explicit NonLinearExecutioner(const chi::InputParameters& params);
   static std::shared_ptr<EquationSystem> GetEquationSystem(size_t handle);
+
+  static bool TimeIDListHasID(const std::vector<TimeID>& time_ids, TimeID id);
 
   std::shared_ptr<EquationSystem> eq_system_;
   const chi::ParameterBlock nl_solver_params_;

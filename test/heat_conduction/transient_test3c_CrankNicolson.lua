@@ -31,6 +31,7 @@ system1 = chi_math.FEMKernelSystem.Create
       var="T"
     },
   },
+  time_integrator = chi_math.CrankNicolsonTimeIntegrator.Create({})
   --verbosity = 2
 })
 
@@ -55,7 +56,6 @@ phys1 = chi_math.TransientNonLinearExecutioner.Create
     dt = 0.001,
     end_time = 1.0
   },
-
 })
 
 chi.AggregateNodalValuePostProcessor.Create
@@ -63,17 +63,17 @@ chi.AggregateNodalValuePostProcessor.Create
   name = "maxval",
   field_function = "T",
   operation = "max",
-  print_on = {"ProgramExecuted"}
+  --print_on = {"ProgramExecuted"}
 })
 
-chi.PostProcessorPrinterSetOptions({ print_scalar_time_history = false })
+--chi.PostProcessorPrinterSetOptions({ print_scalar_time_history = false })
 
 chiSolverInitialize(phys1)
-for k=1,1 do
+for k=1,100 do
   chiSolverStep(phys1)
   chiSolverAdvance(phys1)
 end
 
 if (master_export == nil) then
-  chiExportMultiFieldFunctionToVTK({ "T" }, "transient_test3")
+  chiExportMultiFieldFunctionToVTK({ "T" }, "transient_test3b")
 end
