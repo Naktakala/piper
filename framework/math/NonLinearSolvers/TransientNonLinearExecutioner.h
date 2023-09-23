@@ -22,11 +22,13 @@ public:
 
   void Step() override;
   void Advance() override;
+  void Execute() override;
 
 protected:
   std::unique_ptr<ParallelVector> r_t_tp1_;
   std::unique_ptr<ParallelVector> r_x_tp1_;
   std::map<TimeID, const ParallelVector*> r_map_;
+  bool initial_solution_set_ = false;
 };
 
 } // namespace chi_math

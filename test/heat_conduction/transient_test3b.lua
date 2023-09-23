@@ -1,17 +1,17 @@
-nodes = {}
+znodes = {}
 N = 100
-xmin = 0.0
+zmin = 0.0
 L = 1.0
-nodes = {}
+znodes = {}
 
 dx = L / N
 for i = 0, N do
-  nodes[i + 1] = xmin + dx * i
+  znodes[i + 1] = zmin + dx * i
 end
-meshgen1 = chi_mesh.OrthogonalMeshGenerator.Create({ node_sets = { nodes, nodes } })
+meshgen1 = chi_mesh.OrthogonalMeshGenerator.Create({ node_sets = { znodes, znodes } })
 chi_mesh.MeshGenerator.Execute(meshgen1)
 
-system1 = chi_math.FEMKernelSystem.Create
+system1 = chi_math.KernelSystem.Create
 ({
   fields = {
     chi_physics.FieldFunctionGridBased.Create({
@@ -71,7 +71,10 @@ chi.AggregateNodalValuePostProcessor.Create
   print_on = {"ProgramExecuted"}
 })
 
-chi.PostProcessorPrinterSetOptions({ print_scalar_time_history = false })
+chi.PostProcessorPrinterSetOptions
+({
+  print_scalar_time_history = false
+})
 
 chiSolverInitialize(phys1)
 for k=1,100 do

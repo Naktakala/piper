@@ -1,7 +1,8 @@
-#include "FEMKernelSystem.h"
+#include "KernelSystem.h"
 
 #include "math/SpatialDiscretization/spatial_discretization.h"
 #include "math/KernelSystem/FEMKernels/FEMKernel.h"
+#include "math/KernelSystem/FEMKernels/FEMMaterialProperty.h"
 #include "math/KernelSystem/FEMBCs/FEMDirichletBC.h"
 #include "math/ParallelMatrix/ParallelMatrix.h"
 
@@ -19,8 +20,8 @@ namespace chi_math
 
 // ##################################################################
 /**Initializes cell data prior kernel and BC setup.*/
-void FEMKernelSystem::InitCellData(const ParallelVector& x,
-                                   const chi_mesh::Cell& cell)
+void KernelSystem::InitCellData(const ParallelVector& x,
+                                const chi_mesh::Cell& cell)
 {
   const auto& field_info = field_block_info_.at(current_field_index_);
   const auto& field = field_info.field_;
@@ -67,7 +68,7 @@ void FEMKernelSystem::InitCellData(const ParallelVector& x,
 // ##################################################################
 /**Prepares all the necessary data for internal kernels.*/
 std::vector<std::shared_ptr<FEMKernel>>
-FEMKernelSystem::SetupAndGetCellInternalKernels(const chi_mesh::Cell& cell)
+KernelSystem::SetupAndGetCellInternalKernels(const chi_mesh::Cell& cell)
 {
   const auto& cell_mapping = *cur_cell_data.cell_mapping_ptr_;
 
@@ -120,7 +121,7 @@ FEMKernelSystem::SetupAndGetCellInternalKernels(const chi_mesh::Cell& cell)
 // ##################################################################
 /**Prepares all the necessary data for boundary kernels.*/
 std::vector<std::pair<size_t, FEMBoundaryConditionPtr>>
-FEMKernelSystem::GetCellBCKernels(const chi_mesh::Cell& cell)
+KernelSystem::GetCellBCKernels(const chi_mesh::Cell& cell)
 {
   std::vector<std::pair<size_t, FEMBoundaryConditionPtr>> bndry_conditions;
 
@@ -140,7 +141,40 @@ FEMKernelSystem::GetCellBCKernels(const chi_mesh::Cell& cell)
   return bndry_conditions;
 }
 
-void FEMKernelSystem::SetupFaceIntegralBCKernel(size_t face_index)
+void KernelSystem::PrecomputeMaterialProperties(const chi_mesh::Cell& cell)
+{
+  constexpr double epsilon = 1.0e-8;
+
+  for (auto& property_ptr : fem_material_properties_)
+    if (property_ptr->IsActive(cell.material_id_))
+    {
+      const auto& qp_indices = cur_cell_data.qp_data_.QuadraturePointIndices();
+      const auto& qp_xyz = cur_cell_data.qp_data_.QPointsXYZ();
+      std::vector<double> qp_values(qp_indices.size(), 0.0);
+      std::vector<double> derivative_qp_values_(qp_indices.size(), 0.0);
+
+      for (size_t qp : cur_cell_data.qp_data_.QuadraturePointIndices())
+      {
+        const double var_value_qp = cur_cell_data.var_qp_values_[qp];
+        qp_values[qp] =
+          property_ptr->Evaluate(qp_xyz[qp], time_data_.time_, {var_value_qp});
+        if (property_ptr->HasDerivative())
+        {
+          const double delta_var = (std::fabs(var_value_qp) > epsilon)
+                                     ? var_value_qp * epsilon
+                                     : epsilon;
+          const double qp_valuep = property_ptr->Evaluate(
+            qp_xyz[qp], time_data_.time_, {var_value_qp + delta_var});
+          derivative_qp_values_[qp] = (qp_valuep - qp_values[qp]) / delta_var;
+        }
+      }
+
+      property_ptr->SetQPValues(std::move(qp_values),
+                                std::move(derivative_qp_values_));
+    }
+}
+
+void KernelSystem::SetupFaceIntegralBCKernel(size_t face_index)
 {
   const auto& cell_mapping = *cur_cell_data.cell_mapping_ptr_;
 
@@ -175,7 +209,7 @@ void FEMKernelSystem::SetupFaceIntegralBCKernel(size_t face_index)
 /**Returns a set of dirichlet nodes by looking at the BCs applied on
  * faces. Does not get filtered by time status.*/
 std::set<uint32_t>
-FEMKernelSystem::IdentifyLocalDirichletNodes(const chi_mesh::Cell& cell) const
+KernelSystem::IdentifyLocalDirichletNodes(const chi_mesh::Cell& cell) const
 {
   const auto& current_field = field_block_info_.at(current_field_index_).field_;
   const auto& field_name = current_field->TextName();

@@ -40,6 +40,7 @@ void SteadyNonLinearExecutioner::Execute()
 {
   nl_solver_->Solve();
   eq_system_->UpdateFields();
+  eq_system_->OutputFields();
 }
 
 } // namespace chi_math

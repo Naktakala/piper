@@ -80,7 +80,7 @@ void BasicNonLinearSolver::SetPreconditioner()
                     "pc_hypre_boomeramg_coarsen_type Falgout",
                     //"pc_hypre_boomeramg_interp_type ext+i",
                     "pc_hypre_boomeramg_interp_type classical",
-                    "pc_hypre_boomeramg_P_max 4",
+                    "pc_hypre_boomeramg_P_max 0",
                     "pc_hypre_boomeramg_truncfactor 0.0",
                     "pc_mg_galerkin_mat_product_algorithm hypre"};
 
@@ -100,6 +100,7 @@ void BasicNonLinearSolver::SetPreconditioner()
     }
 
     PCSetFromOptions(pc);
+    KSPSetFromOptions(ksp);
   } // if NEWTON or PJFNK
 }
 
@@ -249,8 +250,6 @@ PetscErrorCode BasicNonLinearSolver::ComputeJacobian(
                                    Chi::mpi.comm);
 
   executioner.ComputeJacobian(*solution_vector, J_proxy);
-
-  J_proxy.Assemble();
 
   return 0;
 }

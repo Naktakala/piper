@@ -14,6 +14,7 @@ public:
   explicit SinkSourceFEMKernel(const chi::InputParameters& params);
 
   double ResidualEntryAtQP() override;
+  double JacobianEntryAtQP() override {return 0.0;}
 
 protected:
   double value_;

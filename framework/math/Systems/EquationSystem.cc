@@ -4,6 +4,7 @@
 #include "physics/FieldFunction/fieldfunction_gridbased.h"
 #include "math/SpatialDiscretization/spatial_discretization.h"
 #include "math/TimeIntegrators/ImplicitEulerTimeIntegrator.h"
+#include "math/ParallelMatrix/ParallelMatrix.h"
 
 #include "ChiObjectFactory.h"
 
@@ -17,6 +18,7 @@ namespace chi_math
 chi::InputParameters EquationSystem::GetInputParameters()
 {
   chi::InputParameters params = ChiObject::GetInputParameters();
+  params += chi::MaterialPropertiesDataInterface::GetInputParameters();
 
   params.AddRequiredParameterArray(
     "fields", "An array of FieldFunctionGridBased handles or names.");
@@ -28,12 +30,20 @@ chi::InputParameters EquationSystem::GetInputParameters()
                               "be used for transient simulations.");
   params.AddOptionalParameter("verbosity", 0, "Level of verbosity");
 
+  params.AddOptionalParameter(
+    "output_filename_base",
+    "",
+    "If present, VTK output will be exported to files with this base name.");
+
   return params;
 }
 
 EquationSystem::EquationSystem(const chi::InputParameters& params)
   : ChiObject(params),
+    chi::MaterialPropertiesDataInterface(params),
     verbosity_(params.GetParamValue<int>("verbosity")),
+    output_file_base_(
+      params.GetParamValue<std::string>("output_filename_base")),
     field_block_info_(
       std::move(MakeFieldBlockInfo(BuildFieldList(params.GetParam("fields"))))),
     num_local_dofs_(DetermineNumLocalDofs(field_block_info_)),
@@ -301,6 +311,36 @@ const EquationSystemTimeData& EquationSystem::GetTimeData() const
   return time_data_;
 }
 
+/**Uses the underlying system to build a sparsity pattern.*/
+ParallelMatrixSparsityPattern EquationSystem::BuildMatrixSparsityPattern() const
+{
+  std::vector<int64_t> master_row_nnz_in_diag;
+  std::vector<int64_t> mastero_row_nnz_off_diag;
+
+  auto& a1 = master_row_nnz_in_diag;
+  auto& a2 = mastero_row_nnz_off_diag;
+  for (const auto& field_info : field_block_info_)
+  {
+    auto& field = field_info.field_;
+    auto& sdm = field->SDM();
+    auto& uk_man = field->UnkManager();
+
+    std::vector<int64_t> nodal_nnz_in_diag;
+    std::vector<int64_t> nodal_nnz_off_diag;
+    sdm.BuildSparsityPattern(nodal_nnz_in_diag, nodal_nnz_off_diag, uk_man);
+
+    // Now append these to the master list
+    auto& b1 = nodal_nnz_in_diag;
+    auto& b2 = nodal_nnz_off_diag;
+
+    using std::begin, std::end;
+    a1.insert(end(a1), begin(b1), end(b1));
+    a2.insert(end(a2), begin(b2), end(b2));
+  }
+
+  return {master_row_nnz_in_diag, mastero_row_nnz_off_diag};
+}
+
 /**Updates the fields.*/
 void EquationSystem::UpdateFields()
 {
@@ -313,6 +353,25 @@ void EquationSystem::UpdateFields()
 
     field_info.field_->UpdateFieldVector(local_solution);
   }
+}
+
+/**Output fields to VTK. The filename passed via the options will be used
+ * plus a time index (if transient). If the file basename is empty then
+ * this method will not do anything.*/
+void EquationSystem::OutputFields(int time_index)
+{
+  if (output_file_base_.empty()) return;
+
+  std::vector<std::shared_ptr<const chi_physics::FieldFunctionGridBased>>
+    ff_list;
+  for (const auto& field_info : field_block_info_)
+    ff_list.push_back(field_info.field_);
+
+  const std::string file_base =
+    (time_index < 0) ? output_file_base_
+                     : output_file_base_ + "_" + std::to_string(time_index);
+
+  chi_physics::FieldFunctionGridBased::ExportMultipleToVTK(file_base, ff_list);
 }
 
 /**Advances the system in time.*/
@@ -338,12 +397,10 @@ void EquationSystem::Advance(
   {
     for (const auto& [time_id, vec_ptr] : latest_std_residuals)
     {
-      //Chi::log.LogAll() << old_residual_vectors_.size();
-      //Chi::log.LogAll() << static_cast<int>(time_id) << " " << (vec_ptr == nullptr ? 0 : 1);
       const int time_index = static_cast<int>(time_id) + 1;
       if (time_index >= 0 and time_index < num_residual_histories_)
-      old_residual_vectors_.at(static_cast<int>(time_id) + 1) =
-        vec_ptr->MakeCopy();
+        old_residual_vectors_.at(static_cast<int>(time_id) + 1) =
+          vec_ptr->MakeCopy();
     }
   }
 }

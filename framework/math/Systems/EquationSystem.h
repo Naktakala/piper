@@ -2,6 +2,7 @@
 #define CHITECH_EQUATIONSYSTEM_H
 
 #include "ChiObject.h"
+#include "interfaces/MaterialPropertiesDataInterface.h"
 
 #include "EquationSystemTimeData.h"
 #include "math/ParallelVector/ParallelVector.h"
@@ -45,7 +46,8 @@ inline bool operator&(const EqTermScope f1, const EqTermScope f2)
 }
 
 /**Base abstract class for a system of equations.*/
-class EquationSystem : public ChiObject
+class EquationSystem : public ChiObject,
+                       public chi::MaterialPropertiesDataInterface
 {
 public:
   typedef chi_mesh::Vector3 Vec3;
@@ -90,10 +92,15 @@ public:
   const EquationSystemTimeData& GetTimeData() const;
 
   /**Uses the underlying system to build a sparsity pattern.*/
-  virtual ParallelMatrixSparsityPattern BuildMatrixSparsityPattern() const = 0;
+  virtual ParallelMatrixSparsityPattern BuildMatrixSparsityPattern() const;
 
   /**Updates the fields.*/
   void UpdateFields();
+
+  /**Output fields to VTK. The filename passed via the options will be used
+  * plus a time index (if transient).*/
+  void OutputFields(int time_index=-1);
+
 
   /**Advances the system in time.*/
   void Advance(EquationSystemTimeData time_data,
@@ -111,7 +118,9 @@ protected:
                                          int64_t block_local_id);
 
   const int verbosity_;
+  const std::string output_file_base_;
 
+  // Runtime parameters
   struct FieldBlockInfo
   {
     std::shared_ptr<chi_physics::FieldFunctionGridBased> field_;

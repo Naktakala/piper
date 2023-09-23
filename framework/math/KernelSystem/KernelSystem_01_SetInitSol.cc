@@ -1,4 +1,4 @@
-#include "FEMKernelSystem.h"
+#include "KernelSystem.h"
 
 #include "math/SpatialDiscretization/spatial_discretization.h"
 #include "math/KernelSystem/FEMBCs/FEMDirichletBC.h"
@@ -14,11 +14,20 @@
 namespace chi_math
 {
 /**Used to create an initial guess. Mostly applies Dirichlet BCs.*/
-void FEMKernelSystem::SetInitialSolution()
+void KernelSystem::SetInitialSolution()
 {
   if (verbosity_ >= 2) Chi::log.LogAll() << "SetInitialSolution " << std::endl;
 
   auto& x = *main_solution_vector_;
+
+  for (auto& field_info : field_block_info_)
+    x.BlockCopyLocalValues(
+      field_info.field_->FieldVector(),
+      field_info.local_offset_,
+      field_info.num_local_dofs_);
+
+  x.CommunicateGhostEntries();
+
   auto dirichlet_vector_ptr = main_solution_vector_->MakeNewVector();
   auto count_vector_ptr = main_solution_vector_->MakeNewVector();
   auto& dirichlet_vector = *dirichlet_vector_ptr;
@@ -109,7 +118,7 @@ void FEMKernelSystem::SetInitialSolution()
       }
     } // for cell
     ++current_field_index_;
-  }   // for field
+  } // for field
 
   dirichlet_vector.Assemble();
   count_vector.Assemble();
@@ -120,8 +129,13 @@ void FEMKernelSystem::SetInitialSolution()
   for (size_t i = 0; i < dirichlet_vector.LocalSize(); ++i)
     if (std::fabs(cnt_raw[i]) > 1.0e-12) sol_raw[i] /= cnt_raw[i];
 
-  dirichlet_vector.CommunicateGhostEntries();
+  //dirichlet_vector.CommunicateGhostEntries();
 
   main_solution_vector_->CopyValues(dirichlet_vector);
+
+  main_solution_vector_->CommunicateGhostEntries();
+  if (num_solution_histories_ > 0)
+    for (size_t t=0; t<num_solution_histories_; ++t)
+      old_solution_vectors_[t] = main_solution_vector_->MakeCopy();
 }
 } // namespace chi_math

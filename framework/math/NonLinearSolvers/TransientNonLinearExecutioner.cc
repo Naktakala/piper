@@ -4,6 +4,7 @@
 #include "math/TimeIntegrators/TimeIntegrator.h"
 
 #include "physics/TimeStepControllers/TimeStepController.h"
+#include "physics/PhysicsEventPublisher.h"
 
 #include "chi_runtime.h"
 #include "chi_log.h"
@@ -76,11 +77,11 @@ void TransientNonLinearExecutioner::ComputeJacobian(const ParallelVector& x,
 
 void TransientNonLinearExecutioner::SetInitialSolution()
 {
-  if (time_step_controller_->TimeIndex() == 0)
+  if (not initial_solution_set_)
   {
-    Chi::log.Log() << "Setting initial solution";
     const double dt = time_step_controller_->GetTimeStepSize();
     const double time = time_step_controller_->Time();
+
     const double var_dot_dvar =
       eq_system_->GetTimeIntegrator().GetTimeCoefficient(dt);
 
@@ -99,24 +100,26 @@ void TransientNonLinearExecutioner::SetInitialSolution()
       eq_system_->ComputeResidual(x, *r);
 
       r_map_[TimeID::T_PLUS_1] = &(*r);
-      eq_system_->Advance({dt, time, var_dot_dvar},
-                          r_map_);
+      eq_system_->Advance({dt, time, var_dot_dvar}, r_map_);
 
       eq_system_->UpdateFields();
     }
+
+    initial_solution_set_ = true;
   }
 }
 
 void TransientNonLinearExecutioner::Step()
 {
-  Chi::log.Log() << time_step_controller_->StringTimeInfo();
-
   const double dt = time_step_controller_->GetTimeStepSize();
   const double time = time_step_controller_->Time();
+
+  Chi::log.Log() << time_step_controller_->StringTimeInfo(time + dt);
+
   const double var_dot_dvar =
     eq_system_->GetTimeIntegrator().GetTimeCoefficient(dt);
 
-  eq_system_->SetTimeData({dt, time, var_dot_dvar});
+  eq_system_->SetTimeData({dt, time + dt, var_dot_dvar});
 
   nl_solver_->Solve();
 
@@ -132,23 +135,50 @@ void TransientNonLinearExecutioner::Advance()
 
     const double dt = time_step_controller_->GetTimeStepSize();
     const double time = time_step_controller_->Time();
+    const int t_index = time_step_controller_->TimeIndex();
     const double var_dot_dvar =
       eq_system_->GetTimeIntegrator().GetTimeCoefficient(dt);
 
-    eq_system_->Advance({dt, time, var_dot_dvar}, r_map_);
+    eq_system_->Advance({dt, time + dt, var_dot_dvar}, r_map_);
 
     eq_system_->UpdateFields();
-    time_ = time;
-    
+    eq_system_->OutputFields(t_index);
+    time_ = time_step_controller_->Time();
   }
   else
   {
     if (not time_step_controller_->Adapt(chi_physics::TimeStepStatus::FAILURE))
+      throw NLSolverFailedException();
+  }
+}
+
+void TransientNonLinearExecutioner::Execute()
+{
+  auto& physics_event_publisher =
+    chi_physics::PhysicsEventPublisher::GetInstance();
+
+  if (not initial_solution_set_)
+  {
+    const double time = time_step_controller_->Time();
+
+    Chi::log.Log() << time_step_controller_->StringTimeInfo(time);
+    Chi::log.Log() << "Setting initial solution";
+
+    SetInitialSolution();
+  }
+
+  try
+  {
+    while (not time_step_controller_->IsFinished())
     {
-      Chi::log.Log0Error() << "Solver failed: "
-                           << time_step_controller_->StringTimeInfo();
-      Chi::Exit(EXIT_FAILURE);
+      physics_event_publisher.SolverStep(*this);
+      physics_event_publisher.SolverAdvance(*this);
     }
+  }
+  catch (const NLSolverFailedException&)
+  {
+    Chi::log.Log0Error() << "Solver failed: "
+                         << time_step_controller_->StringTimeInfo(time_ + dt_);
   }
 }
 

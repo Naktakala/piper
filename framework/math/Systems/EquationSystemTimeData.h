@@ -24,9 +24,9 @@ struct EquationSystemTimeData
     : dt_(dt), time_(time), var_dot_dvar_(var_dot_dvar)
   {
   }
-  double dt_ = 0.001;
-  double time_ = 0.0;
-  double var_dot_dvar_ = 1.0;
+  double dt_;
+  double time_;
+  double var_dot_dvar_;
 };
 
 } // namespace chi_math

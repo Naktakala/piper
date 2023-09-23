@@ -17,6 +17,12 @@ struct ParallelMatrixSparsityPattern;
 class EquationSystem;
 class EquationSystemTimeData;
 
+class NLSolverFailedException : public std::exception
+{
+public:
+  NLSolverFailedException() = default;
+};
+
 /**Abstract Non-Linear executioner class that interfaces with
  * BasicNonLinearSolver.*/
 class NonLinearExecutioner : public chi_physics::Solver

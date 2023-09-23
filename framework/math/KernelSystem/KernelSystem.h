@@ -1,10 +1,15 @@
-#ifndef CHITECH_FEMKERNELSYSTEM_H
-#define CHITECH_FEMKERNELSYSTEM_H
+#ifndef CHITECH_KERNELSYSTEM_H
+#define CHITECH_KERNELSYSTEM_H
 
 #include "math/Systems/EquationSystem.h"
 #include "math/UnknownManager/unknown_manager.h"
 #include "math/SpatialDiscretization/FiniteElement/finite_element.h"
 #include "math/SpatialDiscretization/CellMappings/cell_mapping_base.h"
+
+namespace chi
+{
+class MaterialPropertiesData;
+}
 
 namespace chi_mesh
 {
@@ -17,6 +22,7 @@ class SpatialDiscretization;
 class FEMKernel;
 class FEMBoundaryCondition;
 class ParallelMatrix;
+class FEMMaterialProperty;
 
 typedef finite_element::InternalQuadraturePointData CellQPData;
 typedef finite_element::FaceQuadraturePointData FaceQPData;
@@ -31,7 +37,9 @@ public:
   typedef chi_mesh::Vector3 Vec3;
   typedef std::vector<Vec3> VecVec3;
 
-  FEMKernelSystemData(const EquationSystemTimeData& time_data,
+  FEMKernelSystemData(const std::vector<std::shared_ptr<FEMMaterialProperty>>&
+                        fem_material_properties,
+                      const EquationSystemTimeData& time_data,
                       const CellQPData& qp_data,
                       const VecDbl& var_qp_values,
                       const VecVec3& var_grad_qp_values,
@@ -42,6 +50,9 @@ public:
                       const FaceQPData& face_qp_data,
                       const VecDbl& face_var_qp_values,
                       const VecVec3& face_var_grad_qp_values);
+
+  const std::vector<std::shared_ptr<FEMMaterialProperty>>&
+    fem_material_properties_;
   const EquationSystemTimeData& time_data_;
   const CellQPData& qp_data_;
   const VecDbl& var_qp_values_;
@@ -56,13 +67,13 @@ public:
 };
 
 /**General Finite Element Method Kernel system.*/
-class FEMKernelSystem : public EquationSystem
+class KernelSystem : public EquationSystem
 {
 public:
   // 00_constrdestr
   static chi::InputParameters GetInputParameters();
   /**\brief Basic constructor for a FEMKernelSystem.*/
-  explicit FEMKernelSystem(const chi::InputParameters& params);
+  explicit KernelSystem(const chi::InputParameters& params);
 
   /**Obtains the kernels associated with a material.*/
   std::vector<FEMKernelPtr> GetMaterialKernels(int mat_id);
@@ -81,13 +92,23 @@ public:
   /**Collective method for computing the system Jacobian-matrix.*/
   void ComputeJacobian(const ParallelVector& x, ParallelMatrix& J) override;
 
-  ParallelMatrixSparsityPattern BuildMatrixSparsityPattern() const override;
-
 protected:
+  // 00a_PopulateMaterialProperties
+  void PopulateMaterialProperties();
+
+  // 00b_MakeKernels
+  std::vector<FEMKernelPtr>
+  MakeFEMKernels(const chi::ParameterBlock& volume_kernels_inputs,
+                 size_t fem_data_handle);
+
+  // 00c_MakeBCs
+  std::vector<FEMBoundaryConditionPtr>
+  MakeBCs(const chi::ParameterBlock& boundary_condition_inputs,
+          size_t fem_data_handle);
+
   // 03_kernel_setup
   /**Initializes cell data prior kernel and BC setup.*/
-  void InitCellData(const ParallelVector& x,
-                    const chi_mesh::Cell& cell);
+  void InitCellData(const ParallelVector& x, const chi_mesh::Cell& cell);
 
   /**Prepares all the necessary data for internal kernels.*/
   std::vector<std::shared_ptr<FEMKernel>>
@@ -95,6 +116,8 @@ protected:
 
   std::vector<std::pair<size_t, FEMBoundaryConditionPtr>>
   GetCellBCKernels(const chi_mesh::Cell& cell);
+
+  void PrecomputeMaterialProperties(const chi_mesh::Cell& cell);
 
   void SetupFaceIntegralBCKernel(size_t face_index);
 
@@ -104,9 +127,11 @@ protected:
   IdentifyLocalDirichletNodes(const chi_mesh::Cell& cell) const;
 
   std::map<int, std::vector<FEMKernelPtr>> matid_2_volume_kernels_map_;
-  typedef std::map<uint64_t , FEMBoundaryConditionPtr> BID2BCMap;
+  typedef std::map<uint64_t, FEMBoundaryConditionPtr> BID2BCMap;
   typedef std::pair<std::string, uint32_t> VarNameComp;
   std::map<VarNameComp, BID2BCMap> varname_comp_2_bid2bc_map_;
+
+  std::vector<std::shared_ptr<FEMMaterialProperty>> fem_material_properties_;
 
   size_t current_field_index_ = 0;
   uint32_t current_field_component_ = 0;
@@ -137,4 +162,4 @@ protected:
 
 } // namespace chi_math
 
-#endif // CHITECH_FEMKERNELSYSTEM_H
+#endif // CHITECH_KERNELSYSTEM_H

@@ -25,7 +25,8 @@ public:
 
   MPI_Comm Comm() const;
 
-  virtual void Assemble() = 0;
+  virtual void Assemble(bool final) = 0;
+  virtual void ZeroRow(int64_t row_index, double diag_val) = 0;
 
   virtual void SetValue(int64_t i, int64_t j, double value) = 0;
   virtual void AddValue(int64_t i, int64_t j, double value) = 0;

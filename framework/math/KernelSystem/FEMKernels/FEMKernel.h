@@ -2,6 +2,7 @@
 #define CHITECH_FEMKERNEL_H
 
 #include "ChiObject.h"
+#include "materials/MaterialIDScopeInterface.h"
 #include "mesh/chi_mesh.h"
 #include "math/chi_math.h"
 
@@ -9,13 +10,17 @@ namespace chi_math
 {
 
 class FEMKernelSystemData;
+class FEMMaterialProperty;
 
 /**The abstract base class of a Finite Element Method Kernel.*/
-class FEMKernel : public ChiObject
+class FEMKernel : public ChiObject,
+                  public chi::MaterialIDScopeInterface
 {
 public:
   static chi::InputParameters GetInputParameters();
   explicit FEMKernel(const chi::InputParameters& params);
+
+  virtual void PreComputeValues() {};
 
   /**Computes the current cell's contribution to the residual at cell node i.*/
   virtual double ComputeLocalResidual(uint32_t i);
@@ -25,13 +30,10 @@ public:
   virtual double ComputeLocalJacobian(uint32_t i, uint32_t j);
 
   /**Returns the residual entry at the quadrature point.*/
-  virtual double ResidualEntryAtQP(); // default 0.0
+  virtual double ResidualEntryAtQP() = 0;
 
   /**Returns the jacobian entry at the quadrature point.*/
-  virtual double JacobianEntryAtQP(); // default 0.0
-
-  /**Returns a list of material ids to which this kernel is applied.*/
-  const std::vector<int>& GetMaterialIDScope() const;
+  virtual double JacobianEntryAtQP() = 0;
 
   /**True if this kernel is derived from a Time kernel*/
   virtual bool IsTimeKernel() const;
@@ -39,6 +41,7 @@ public:
   const std::pair<std::string, uint32_t>& ActiveVariableAndComponent() const;
 
 protected:
+  const chi_math::FEMMaterialProperty& GetFEMMaterialProperty(const std::string& name);
   const std::pair<std::string, uint32_t> var_name_component_;
   const FEMKernelSystemData& fem_data_;
 
@@ -63,9 +66,6 @@ protected:
   size_t i_ = 0;
   size_t j_ = 0;
   size_t qp_ = 0;
-
-private:
-  std::vector<int> mat_ids_;
 };
 
 } // namespace chi_math

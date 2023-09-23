@@ -1,7 +1,9 @@
 #include "FEMKernel.h"
 
 #include "math/Systems/EquationSystemTimeData.h"
-#include "math/KernelSystem/FEMKernelSystem.h"
+#include "math/KernelSystem/KernelSystem.h"
+#include "math/KernelSystem/FEMKernels/FEMMaterialProperty.h"
+#include "materials/MaterialPropertiesData.h"
 
 #include "chi_log.h"
 
@@ -11,14 +13,9 @@ namespace chi_math
 chi::InputParameters FEMKernel::GetInputParameters()
 {
   chi::InputParameters params = ChiObject::GetInputParameters();
+  params += chi::MaterialIDScopeInterface::GetInputParameters();
 
   params.AddRequiredParameter<std::string>("type", "The kernel type.");
-
-  params.AddOptionalParameterArray(
-    "mat_ids",
-    std::vector<chi::ParameterBlock>{},
-    "A list of material-ids to which this block will be"
-    "restricted");
 
   params.AddRequiredParameter<std::string>(
     "var", "Name of the variable this kernel acts on.");
@@ -28,13 +25,20 @@ chi::InputParameters FEMKernel::GetInputParameters()
   params.AddRequiredParameter<size_t>("fem_data_handle",
                                       "Handle to a FEMKernelSystemData block.");
 
+  params.AddOptionalParameter(
+    "properties_at_qps",
+    true,
+    "Flag, if false, will evaluate material properties at the centroid instead "
+    "of at quadrature points.");
+
   return params;
 }
 
 FEMKernel::FEMKernel(const chi::InputParameters& params)
   : ChiObject(params),
+    chi::MaterialIDScopeInterface(params),
     var_name_component_(params.GetParamValue<std::string>("var"),
-      params.GetParamValue<uint32_t>("var_component")),
+                        params.GetParamValue<uint32_t>("var_component")),
     fem_data_(Chi::GetStackItem<FEMKernelSystemData>(
       Chi::object_stack,
       params.GetParamValue<size_t>("fem_data_handle"),
@@ -52,15 +56,6 @@ FEMKernel::FEMKernel(const chi::InputParameters& params)
     var_dot_value_(fem_data_.var_dot_qp_values_),
     qp_xyz_(fem_data_.qp_data_.QPointsXYZ())
 {
-  const auto& user_params = params.ParametersAtAssignment();
-
-  if (user_params.Has("mat_ids"))
-    mat_ids_ = params.GetParamVectorValue<int>("mat_ids");
-}
-
-const std::vector<int>& FEMKernel::GetMaterialIDScope() const
-{
-  return mat_ids_;
 }
 
 bool FEMKernel::IsTimeKernel() const { return false; }
@@ -98,7 +93,48 @@ double FEMKernel::ComputeLocalJacobian(uint32_t i, uint32_t j)
   return local_j;
 }
 
-double FEMKernel::ResidualEntryAtQP() { return 0.0; }
-double FEMKernel::JacobianEntryAtQP() { return 0.0; }
+const chi_math::FEMMaterialProperty&
+FEMKernel::GetFEMMaterialProperty(const std::string& name)
+{
+  const auto& kernel_mat_scope = this->GetMaterialIDScope();
+
+  for (const auto& property_ptr : fem_data_.fem_material_properties_)
+  {
+    if (property_ptr->TextName() == name)
+    {
+      const auto& property_mat_scope = property_ptr->GetMaterialIDScope();
+      if (property_mat_scope.empty()) return *property_ptr;
+      else if (kernel_mat_scope.empty())
+      {
+        ChiLogicalError("Kernel defined on all materials but material property "
+                        "\"" +
+                        name + "\" is not.");
+      }
+      else
+      {
+        for (int mi : kernel_mat_scope)
+        {
+          bool found = false;
+          for (int pmi : property_mat_scope)
+          {
+            if (mi == pmi)
+            {
+              found = true;
+              break;
+            }
+          }//for pmi
+
+          ChiLogicalErrorIf(not found,
+                            "Kernel is defined on material id " +
+                              std::to_string(mi) + " but material property \"" +
+                              name + "\" is not.");
+        }// for mi
+      }
+      return *property_ptr;
+    } // if property name found
+  } // for property in map
+
+  ChiLogicalError("Kernel required parameter \"" + name + "\" not found.");
+}
 
 } // namespace chi_math

@@ -1,7 +1,7 @@
 #include "FEMBoundaryCondition.h"
 
 #include "math/Systems/EquationSystemTimeData.h"
-#include "math/KernelSystem/FEMKernelSystem.h"
+#include "math/KernelSystem/KernelSystem.h"
 
 #include "chi_log.h"
 

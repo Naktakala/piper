@@ -15,10 +15,23 @@ ParallelPETScMatrixProxy::ParallelPETScMatrixProxy(Mat matrix,
 {
 }
 
-void ParallelPETScMatrixProxy::Assemble()
+void ParallelPETScMatrixProxy::Assemble(bool final)
 {
-  MatAssemblyBegin(matrix_, MAT_FINAL_ASSEMBLY);
-  MatAssemblyEnd(matrix_, MAT_FINAL_ASSEMBLY);
+  if (final)
+  {
+    MatAssemblyBegin(matrix_, MAT_FINAL_ASSEMBLY);
+    MatAssemblyEnd(matrix_, MAT_FINAL_ASSEMBLY);
+  }
+  else
+  {
+    MatAssemblyBegin(matrix_, MAT_FLUSH_ASSEMBLY);
+    MatAssemblyEnd(matrix_, MAT_FLUSH_ASSEMBLY);
+  }
+}
+
+void ParallelPETScMatrixProxy::ZeroRow(int64_t row_index, double diag_val)
+{
+  MatZeroRows(matrix_, 1, &row_index, diag_val, nullptr, nullptr);
 }
 
 void ParallelPETScMatrixProxy::SetValue(int64_t i, int64_t j, double value)

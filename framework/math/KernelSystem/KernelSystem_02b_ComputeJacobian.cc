@@ -1,4 +1,4 @@
-#include "FEMKernelSystem.h"
+#include "KernelSystem.h"
 
 #include "math/SpatialDiscretization/spatial_discretization.h"
 #include "math/KernelSystem/FEMKernels/FEMKernel.h"
@@ -18,7 +18,7 @@ namespace chi_math
 {
 
 /**Collective method for computing the system Jacobian-matrix.*/
-void FEMKernelSystem::ComputeJacobian(const ParallelVector& x,
+void KernelSystem::ComputeJacobian(const ParallelVector& x,
                                       ParallelMatrix& J)
 {
   if (verbosity_ >= 2)
@@ -38,6 +38,7 @@ void FEMKernelSystem::ComputeJacobian(const ParallelVector& x,
 
       auto kernels = SetupAndGetCellInternalKernels(cell);
       auto bndry_conditions = GetCellBCKernels(cell);
+      PrecomputeMaterialProperties(cell);
 
       const auto& cell_mapping = *cur_cell_data.cell_mapping_ptr_;
       const size_t num_nodes = cell_mapping.NumNodes();
@@ -85,6 +86,8 @@ void FEMKernelSystem::ComputeJacobian(const ParallelVector& x,
 
   if (verbosity_ >= 2)
     Chi::log.LogAll() << "Compute ComputeJacobian Done" << std::endl;
+
+  J.Assemble(/*final=*/true);
 }
 
 } // namespace chi_math

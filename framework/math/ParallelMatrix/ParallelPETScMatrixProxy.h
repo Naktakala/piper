@@ -18,7 +18,8 @@ public:
                       uint64_t num_global_cols,
                       MPI_Comm comm);
 
-  void Assemble() override;
+  void Assemble(bool final) override;
+  virtual void ZeroRow(int64_t row_index, double diag_val) override;
 
   void SetValue(int64_t i, int64_t j, double value) override;
   void AddValue(int64_t i, int64_t j, double value) override;

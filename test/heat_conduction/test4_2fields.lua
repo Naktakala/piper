@@ -1,55 +1,75 @@
-nodes = {}
+znodes = {}
 N = 100
-xmin = 0.0
+zmin = 0.0
 L = 1.0
-nodes = {}
+znodes = {}
 
 dx = L / N
 for i = 0, N do
-  nodes[i + 1] = xmin + dx * i
+  znodes[i + 1] = zmin + dx * i
 end
-meshgen1 = chi_mesh.OrthogonalMeshGenerator.Create({ node_sets = { nodes, nodes } })
+meshgen1 = chi_mesh.OrthogonalMeshGenerator.Create({ node_sets = { znodes, znodes } })
+--meshgen1 = chi_mesh.OrthogonalMeshGenerator.Create({ node_sets = { znodes } })
 chi_mesh.MeshGenerator.Execute(meshgen1)
 
-
-system1 = chi_math.FEMKernelSystem.Create
+func1 = chi_math.functions.PiecewiseLinear1D.Create
 ({
+  x_values = {0.0, 50.0, 100.0},
+  y_values = {0.01, 20.0, 30.0}
+})
+
+mat_props = chi.MaterialPropertiesData.Create
+({
+  properties =
+  {
+    --chi.ConstantMaterialProperty.Create({name = "k", scalar_value = 10.0})
+    --hcm.ThermalConductivity.Create({name="k", constant_value = 8.0})
+    hcm.ThermalConductivity.Create({name="k", value_function = func1})
+  }
+})
+
+system1 = chi_math.KernelSystem.Create
+({
+  material_properties = mat_props,
   fields = {
     chi_physics.FieldFunctionGridBased.Create({
       name = "Te",
       sdm_type = "PWLC"
     }),
-    chi_physics.FieldFunctionGridBased.Create({
-      name = "T2",
-      sdm_type = "PWLC"
-    })
+    --chi_physics.FieldFunctionGridBased.Create({
+    --  name = "T2",
+    --  sdm_type = "PWLC"
+    --})
   },
   kernels = {
-    { type = hcm.ThermalConductionKernel.type, var="Te", k = 16.0 },
+    --{ type = hcm.ThermalConductionKernel.type, var="Te", k=16.0 },
+    { type = hcm.ThermalConductionKernel2.type, var="Te" },
     { type = chi_math.SinkSourceFEMKernel.type, var="Te", value = 100.0e2 },
-    { type = hcm.ThermalConductionKernel.type, var="T2", k = 1.0 },
-    { type = chi_math.SinkSourceFEMKernel.type, var="T2", value = 100.0e2 },
+    --{ type = hcm.ThermalConductionKernel.type, var="T2", k = 1.0 },
+    --{ type = chi_math.SinkSourceFEMKernel.type, var="T2", value = 100.0e2 },
   },
   bcs = {
     {
       type = chi_math.FEMDirichletBC.type,
-      boundaries = { "XMIN", "YMIN", "YMAX" },
+      boundaries = { "XMIN", "YMIN", "YMAX", "XMAX" },
+      --boundaries = { "ZMIN", "ZMAX" },
       var="Te"
     },
-    {
-      type = hcm.ConvectiveHeatFluxBC.type,
-      boundaries = { "XMAX" },
-      T_bulk = 100.0,
-      convection_coefficient = 10000.0,
-      var="Te"
-    },
-    {
-      type = chi_math.FEMDirichletBC.type,
-      boundaries = { "XMIN", "XMAX", "YMIN", "YMAX" },
-      var="T2"
-    },
+    --{
+    --  type = hcm.ConvectiveHeatFluxBC.type,
+    --  boundaries = { "XMIN", "YMIN", "YMAX", "XMAX" },
+    --  T_bulk = 100.0,
+    --  convection_coefficient = 10000.0,
+    --  var="Te"
+    --},
+    --{
+    --  type = chi_math.FEMDirichletBC.type,
+    --  boundaries = { "XMIN", "XMAX", "YMIN", "YMAX" },
+    --  var="T2"
+    --},
   },
   --verbosity = 2
+  output_filename_base = "test4_2fields"
 })
 
 phys1 = chi_math.SteadyNonLinearExecutioner.Create
@@ -58,23 +78,21 @@ phys1 = chi_math.SteadyNonLinearExecutioner.Create
   system = system1,
   solver_params =
   {
-    nl_method = "PJFNK",
+    nl_method = "NEWTON",
     l_rel_tol = 1.0e-5,
+    --nl_max_its = 1
   }
+})
+
+--############################################### PostProcessors
+chi.AggregateNodalValuePostProcessor.Create
+({
+  name = "maxval",
+  field_function = "Te",
+  --compute_volume_average = true
+  operation = "max"
 })
 
 chiSolverInitialize(phys1)
 chiSolverExecute(phys1)
 
---############################################### PostProcessors
-chi.CellVolumeIntegralPostProcessor.Create
-({
-  name = "avgval",
-  field_function = "Te",
-  compute_volume_average = true
-})
-chi.ExecutePostProcessors({"avgval"})
-
-if (master_export == nil) then
-  chiExportMultiFieldFunctionToVTK({ "Te", "T2" }, "test4_2fields")
-end

@@ -1,4 +1,4 @@
-#include "FEMKernelSystem.h"
+#include "KernelSystem.h"
 
 #include "math/SpatialDiscretization/spatial_discretization.h"
 #include "math/KernelSystem/FEMKernels/FEMKernel.h"
@@ -17,7 +17,7 @@ namespace chi_math
 {
 
 /**Collective method for computing the system residual.*/
-void FEMKernelSystem::ComputeResidual(const ParallelVector& x,
+void KernelSystem::ComputeResidual(const ParallelVector& x,
                                       ParallelVector& r)
 {
   if (verbosity_ >= 2) Chi::log.LogAll() << "Compute Residual " << std::endl;
@@ -36,6 +36,7 @@ void FEMKernelSystem::ComputeResidual(const ParallelVector& x,
 
       auto kernels = SetupAndGetCellInternalKernels(cell);
       auto bndry_conditions = GetCellBCKernels(cell);
+      PrecomputeMaterialProperties(cell);
 
       const auto& cell_mapping = *cur_cell_data.cell_mapping_ptr_;
       const size_t num_nodes = cell_mapping.NumNodes();
