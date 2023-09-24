@@ -154,6 +154,11 @@ KernelSystem::KernelSystem(const chi::InputParameters& params)
       }
     } // for bc
   }   // for item in bndry map
+
+  //====== EXPERIMENTAL
+  for (auto& field_info : field_block_info_)
+    field_info.field_->SDM().InitializeQPData(/*internal_faces=*/false,
+                                              /*bndry_faces=*/true);
 }
 
 } // namespace chi_math

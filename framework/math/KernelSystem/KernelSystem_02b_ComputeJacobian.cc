@@ -23,6 +23,7 @@ void KernelSystem::ComputeJacobian(const ParallelVector& x,
 {
   if (verbosity_ >= 2)
     Chi::log.LogAll() << "Compute ComputeJacobian " << std::endl;
+  Chi::log.LogEvent(t_tag_jacobian_, chi::ChiLog::EventType::EVENT_BEGIN);
 
   current_field_index_ = 0;
   for (const auto& field_info : field_block_info_)
@@ -64,7 +65,7 @@ void KernelSystem::ComputeJacobian(const ParallelVector& x,
       for (const auto& [f, bndry_condition] : bndry_conditions)
       {
         if (bndry_condition->IsDirichlet()) continue;
-        SetupFaceIntegralBCKernel(f);
+        SetupFaceIntegralBCKernel(cell, f);
         const size_t face_num_nodes = cell_mapping.NumFaceNodes(f);
         for (size_t fi = 0; fi < face_num_nodes; ++fi)
         {
@@ -88,6 +89,7 @@ void KernelSystem::ComputeJacobian(const ParallelVector& x,
     Chi::log.LogAll() << "Compute ComputeJacobian Done" << std::endl;
 
   J.Assemble(/*final=*/true);
+  Chi::log.LogEvent(t_tag_jacobian_, chi::ChiLog::EventType::EVENT_END);
 }
 
 } // namespace chi_math

@@ -55,12 +55,16 @@ public:
 
   void Initialize() override;
 
+  void PrintTimingInfo() const;
+
 protected:
   static chi::InputParameters GetInputParameters();
   explicit NonLinearExecutioner(const chi::InputParameters& params);
   static std::shared_ptr<EquationSystem> GetEquationSystem(size_t handle);
 
   static bool TimeIDListHasID(const std::vector<TimeID>& time_ids, TimeID id);
+
+  const bool print_timing_info_;
 
   std::shared_ptr<EquationSystem> eq_system_;
   const chi::ParameterBlock nl_solver_params_;

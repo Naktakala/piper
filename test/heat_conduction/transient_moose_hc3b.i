@@ -33,19 +33,19 @@
 []
 
 [BCs]
-  [bc1]
-    type = DirichletBC
-    variable = T
-    value = 0
-    boundary = 'left bottom top right'
-  []
-  # [bc2]
-  #   type = ConvectiveHeatFluxBC
+  # [bc1]
+  #   type = DirichletBC
   #   variable = T
-  #   T_infinity = 100
-  #   heat_transfer_coefficient = 10000
+  #   value = 0
   #   boundary = 'left bottom top right'
   # []
+  [bc2]
+    type = ConvectiveHeatFluxBC
+    variable = T
+    T_infinity = 100
+    heat_transfer_coefficient = 10000
+    boundary = 'left bottom top right'
+  []
 []
 
 [Materials]
@@ -73,9 +73,9 @@
   dt = 0.001
 
   [./TimeIntegrator]
-    # type = ImplicitEuler
+    type = ImplicitEuler
     # type = BDF2
-    type = CrankNicolson
+    # type = CrankNicolson
     # type = ImplicitMidpoint
     # type = LStableDirk2
     # type = LStableDirk3

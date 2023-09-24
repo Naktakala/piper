@@ -62,7 +62,7 @@
   solve_type = PJFNK
   # solve_type = NEWTON
 
-  num_steps = 100
+  num_steps = 2
   dt = 0.001
 
   # l_tol = 1e-03

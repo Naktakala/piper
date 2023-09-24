@@ -21,6 +21,10 @@ void KernelSystem::ComputeResidual(const ParallelVector& x,
                                       ParallelVector& r)
 {
   if (verbosity_ >= 2) Chi::log.LogAll() << "Compute Residual " << std::endl;
+  Chi::log.LogEvent(t_tag_residual_, chi::ChiLog::EventType::EVENT_BEGIN);
+  auto& log = Chi::log;
+  log.LogEvent(t_tags_[0], chi::ChiLog::EventType::EVENT_BEGIN);
+
 
   current_field_index_ = 0;
   for (const auto& field_info : field_block_info_)
@@ -47,6 +51,7 @@ void KernelSystem::ComputeResidual(const ParallelVector& x,
 
       std::vector<double> cell_local_r(num_nodes, 0.0);
 
+
       // Apply domain kernels
       for (const auto& kernel : kernels)
         for (size_t i = 0; i < num_nodes; ++i)
@@ -70,7 +75,7 @@ void KernelSystem::ComputeResidual(const ParallelVector& x,
       for (const auto& [f, bndry_condition] : bndry_conditions)
       {
         if (bndry_condition->IsDirichlet()) continue;
-        SetupFaceIntegralBCKernel(f);
+        SetupFaceIntegralBCKernel(cell, f);
         const size_t face_num_nodes = cell_mapping.NumFaceNodes(f);
         for (size_t fi = 0; fi < face_num_nodes; ++fi)
         {
@@ -84,6 +89,7 @@ void KernelSystem::ComputeResidual(const ParallelVector& x,
       // Contribute to main residual
       for (size_t i = 0; i < num_nodes; ++i)
         r.SetValue(dof_map[i], cell_local_r[i], VecOpType::ADD_VALUE);
+
     } // for cell
 
     ++current_field_index_;
@@ -92,6 +98,7 @@ void KernelSystem::ComputeResidual(const ParallelVector& x,
   if (verbosity_ >= 2) Chi::log.LogAll() << "Compute Residual Done" << std::endl;
 
   r.Assemble();
+  Chi::log.LogEvent(t_tag_residual_, chi::ChiLog::EventType::EVENT_END);
 }
 
 } // namespace chi_math

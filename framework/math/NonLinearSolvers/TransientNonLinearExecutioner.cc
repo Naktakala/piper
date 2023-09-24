@@ -180,6 +180,8 @@ void TransientNonLinearExecutioner::Execute()
     Chi::log.Log0Error() << "Solver failed: "
                          << time_step_controller_->StringTimeInfo(time_ + dt_);
   }
+
+  PrintTimingInfo();
 }
 
 } // namespace chi_math

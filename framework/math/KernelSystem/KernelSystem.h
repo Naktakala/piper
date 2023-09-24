@@ -119,7 +119,7 @@ protected:
 
   void PrecomputeMaterialProperties(const chi_mesh::Cell& cell);
 
-  void SetupFaceIntegralBCKernel(size_t face_index);
+  void SetupFaceIntegralBCKernel(const chi_mesh::Cell& cell, size_t face_index);
 
   /**Returns a set of dirichlet nodes by looking at the BCs applied on
    * faces. Does not get filtered by time status.*/
@@ -135,6 +135,9 @@ protected:
 
   size_t current_field_index_ = 0;
   uint32_t current_field_component_ = 0;
+
+  std::vector<std::unique_ptr<finite_element::InternalQuadraturePointData>>
+    cell_qp_data_;
 
   /**Utility data structure to store data ahead of executing the kernels*/
   struct CurrentCellData

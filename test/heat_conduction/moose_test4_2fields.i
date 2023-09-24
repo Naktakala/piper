@@ -2,8 +2,8 @@
   [gmg]
     type = GeneratedMeshGenerator
     dim = 2
-    nx = 100
-    ny = 100
+    nx = 300
+    ny = 300
   []
   parallel_type = DISTRIBUTED
 []
@@ -57,7 +57,7 @@
   [k]
     type = HeatConductionMaterial
     temp = T
-    # thermal_conductivity = 1.0
+    # thermal_conductivity = 10.0
     thermal_conductivity_temperature_function = tc
   []
 []
@@ -72,9 +72,9 @@
 [Executioner]
   type = Steady
 
-  # solve_type = PJFNK
+  solve_type = PJFNK
   # solve_type = JFNK
-  solve_type = NEWTON
+  # solve_type = NEWTON
 
   # l_tol = 1e-03
   nl_abs_tol = 1e-8
@@ -92,4 +92,5 @@
 [Outputs]
   execute_on = 'timestep_end'
   exodus = true
+  perf_graph = true
 []

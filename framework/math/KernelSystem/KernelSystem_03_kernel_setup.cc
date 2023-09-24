@@ -70,10 +70,15 @@ void KernelSystem::InitCellData(const ParallelVector& x,
 std::vector<std::shared_ptr<FEMKernel>>
 KernelSystem::SetupAndGetCellInternalKernels(const chi_mesh::Cell& cell)
 {
+  const auto& field_info = field_block_info_.at(current_field_index_);
+  const auto& field = field_info.field_;
+  const auto& sdm = field->SDM();
+
   const auto& cell_mapping = *cur_cell_data.cell_mapping_ptr_;
 
-  cur_cell_data.qp_data_ =
-    std::move(cell_mapping.MakeVolumeQuadraturePointData());
+  // cur_cell_data.qp_data_ =
+  //   std::move(cell_mapping.MakeVolumeQuadraturePointData());
+  cur_cell_data.qp_data_ = sdm.GetCellInternalQPData(cell);
 
   const auto& kernels = GetMaterialKernels(cell.material_id_);
 
@@ -174,16 +179,22 @@ void KernelSystem::PrecomputeMaterialProperties(const chi_mesh::Cell& cell)
     }
 }
 
-void KernelSystem::SetupFaceIntegralBCKernel(size_t face_index)
+void KernelSystem::SetupFaceIntegralBCKernel(const chi_mesh::Cell& cell,
+                                             size_t face_index)
 {
+  const auto& field_info = field_block_info_.at(current_field_index_);
+  const auto& field = field_info.field_;
+  const auto& sdm = field->SDM();
+
   const auto& cell_mapping = *cur_cell_data.cell_mapping_ptr_;
 
   const auto& local_x = cur_cell_data.local_x_;
 
   const size_t num_nodes = cell_mapping.NumNodes();
 
-  cur_face_data.qp_data_ =
-    std::move(cell_mapping.MakeFaceQuadraturePointData(face_index));
+   //cur_face_data.qp_data_ =
+   //  std::move(cell_mapping.MakeFaceQuadraturePointData(face_index));
+  cur_face_data.qp_data_ = sdm.GetCellFaceQPData(cell, face_index);
 
   const auto& face_qp_data = cur_face_data.qp_data_;
   const auto& qp_indices = face_qp_data.QuadraturePointIndices();

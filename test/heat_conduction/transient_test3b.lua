@@ -16,7 +16,8 @@ system1 = chi_math.KernelSystem.Create
   fields = {
     chi_physics.FieldFunctionGridBased.Create({
       name = "T",
-      sdm_type = "PWLC"
+      sdm_type = "PWLC",
+      pwl_allow_lagrange = true
     })
   },
   kernels = {
@@ -59,7 +60,8 @@ phys1 = chi_math.TransientNonLinearExecutioner.Create
   time_controls =
   {
     dt = 0.001,
-    end_time = 1.0
+    end_time = 1.0,
+    max_time_steps = 100
   },
 })
 
@@ -77,10 +79,11 @@ chi.PostProcessorPrinterSetOptions
 })
 
 chiSolverInitialize(phys1)
-for k=1,100 do
-  chiSolverStep(phys1)
-  chiSolverAdvance(phys1)
-end
+chiSolverExecute(phys1)
+--for k=1,100 do
+--  chiSolverStep(phys1)
+--  chiSolverAdvance(phys1)
+--end
 
 if (master_export == nil) then
   chiExportMultiFieldFunctionToVTK({ "T" }, "transient_test3b")

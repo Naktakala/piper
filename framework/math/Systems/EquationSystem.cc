@@ -57,8 +57,13 @@ EquationSystem::EquationSystem(const chi::InputParameters& params)
     old_solution_vectors_(std::move(InitSolutionHistory())),
     old_residual_vectors_(std::move(InitResidualHistory())),
     eq_term_scope_(EqTermScope::DOMAIN_TERMS | EqTermScope::BOUNDARY_TERMS),
-    time_data_(0.01, 0.0, 1.0)
+    time_data_(0.01, 0.0, 1.0),
+    t_tag_residual_(Chi::log.GetRepeatingEventTag("ComputeResidual")),
+    t_tag_jacobian_(Chi::log.GetRepeatingEventTag("ComputeJacobian"))
 {
+  for (size_t k = 0; k < 10; ++k)
+    t_tags_.push_back(
+      Chi::log.GetRepeatingEventTag("Timing_" + std::to_string(k)));
 }
 
 // ##################################################################
