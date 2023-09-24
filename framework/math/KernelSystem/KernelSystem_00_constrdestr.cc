@@ -105,7 +105,7 @@ KernelSystem::KernelSystem(const chi::InputParameters& params)
     MakeBCs(boundary_condition_inputs, data_handle);
 
   //======================================== Map mat-ids to kernels
-  const auto& grid = field_block_info_.front().field_->SDM().Grid();
+  const auto& grid = primary_fields_container_->GetSystemCommonGrid();
   std::set<int> material_ids;
   for (const auto& cell : grid.local_cells)
     material_ids.insert(cell.material_id_);
@@ -156,7 +156,7 @@ KernelSystem::KernelSystem(const chi::InputParameters& params)
   }   // for item in bndry map
 
   //====== EXPERIMENTAL
-  for (auto& field_info : field_block_info_)
+  for (auto& field_info : *primary_fields_container_)
     field_info.field_->SDM().InitializeQPData(/*internal_faces=*/false,
                                               /*bndry_faces=*/true);
 }

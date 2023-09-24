@@ -1,5 +1,5 @@
 znodes = {}
-N = 300
+N = 100
 zmin = 0.0
 L = 1.0
 znodes = {}
@@ -9,7 +9,6 @@ for i = 0, N do
   znodes[i + 1] = zmin + dx * i
 end
 meshgen1 = chi_mesh.OrthogonalMeshGenerator.Create({ node_sets = { znodes, znodes } })
---meshgen1 = chi_mesh.OrthogonalMeshGenerator.Create({ node_sets = { znodes } })
 chi_mesh.MeshGenerator.Execute(meshgen1)
 
 func1 = chi_math.functions.PiecewiseLinear1D.Create
@@ -53,7 +52,6 @@ system1 = chi_math.KernelSystem.Create
     {
       type = chi_math.FEMDirichletBC.type,
       boundaries = { "XMIN", "YMIN", "YMAX", "XMAX" },
-      --boundaries = { "ZMIN", "ZMAX" },
       var="Te"
     },
     --{
@@ -62,11 +60,6 @@ system1 = chi_math.KernelSystem.Create
     --  T_bulk = 100.0,
     --  convection_coefficient = 10000.0,
     --  var="Te"
-    --},
-    --{
-    --  type = chi_math.FEMDirichletBC.type,
-    --  boundaries = { "XMIN", "XMAX", "YMIN", "YMAX" },
-    --  var="T2"
     --},
   },
   --verbosity = 2,

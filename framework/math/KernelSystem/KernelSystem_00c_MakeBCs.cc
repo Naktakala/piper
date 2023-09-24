@@ -47,7 +47,8 @@ FEMBoundaryConditionPtr KernelSystem::GetBoundaryCondition(uint64_t boundary_id)
 {
   if (not(EquationTermsScope() & EqTermScope::BOUNDARY_TERMS)) return nullptr;
 
-  const auto& current_field = field_block_info_.at(current_field_index_).field_;
+  const auto& current_field =
+    primary_fields_container_->GetFieldBlockInfo(current_field_index_).field_;
   const auto& field_name = current_field->TextName();
 
   auto& bid2bc_map =

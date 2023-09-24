@@ -20,11 +20,10 @@ void KernelSystem::SetInitialSolution()
 
   auto& x = *main_solution_vector_;
 
-  for (auto& field_info : field_block_info_)
-    x.BlockCopyLocalValues(
-      field_info.field_->FieldVector(),
-      field_info.local_offset_,
-      field_info.num_local_dofs_);
+  for (auto& field_info : *primary_fields_container_)
+    x.BlockCopyLocalValues(field_info.field_->FieldVector(),
+                           field_info.local_offset_,
+                           field_info.num_local_dofs_);
 
   x.CommunicateGhostEntries();
 
@@ -34,11 +33,10 @@ void KernelSystem::SetInitialSolution()
   auto& count_vector = *count_vector_ptr;
 
   current_field_index_ = 0;
-  for (const auto& field_info : field_block_info_)
+  for (const auto& field_info : *primary_fields_container_)
   {
     const auto& field = field_info.field_;
     const auto& sdm = field->SDM();
-    const auto& uk_man = field->UnkManager();
 
     const auto& bid2bc_map = varname_comp_2_bid2bc_map_.at(
       {field->TextName(), current_field_component_});
@@ -57,8 +55,9 @@ void KernelSystem::SetInitialSolution()
 
       for (size_t i = 0; i < num_nodes; ++i)
       {
-        cint64_t block_dof_id = sdm.MapDOFLocal(cell, i, uk_man, 0, 0);
-        cint64_t dof_id = MapBlockLocalIDToSystem(field_info, block_dof_id);
+        cint64_t dof_id =
+          primary_fields_container_->MapDOFLocal(cell, i, field_info, 0);
+
         local_x[i] = x[dof_id];
       }
 
@@ -101,8 +100,8 @@ void KernelSystem::SetInitialSolution()
       //====================================== Contribute to main residual
       for (size_t i = 0; i < num_nodes; ++i)
       {
-        cint64_t block_dof_id = sdm.MapDOF(cell, i, uk_man, 0, 0);
-        cint64_t dof_id = MapBlockGlobalIDToSystem(field_info, block_dof_id);
+        cint64_t dof_id =
+          primary_fields_container_->MapDOF(cell, i, field_info, 0);
 
         if (dirichlet_nodes.find(i) != dirichlet_nodes.end())
         {
@@ -129,13 +128,11 @@ void KernelSystem::SetInitialSolution()
   for (size_t i = 0; i < dirichlet_vector.LocalSize(); ++i)
     if (std::fabs(cnt_raw[i]) > 1.0e-12) sol_raw[i] /= cnt_raw[i];
 
-  //dirichlet_vector.CommunicateGhostEntries();
-
   main_solution_vector_->CopyValues(dirichlet_vector);
 
   main_solution_vector_->CommunicateGhostEntries();
   if (num_solution_histories_ > 0)
-    for (size_t t=0; t<num_solution_histories_; ++t)
+    for (size_t t = 0; t < num_solution_histories_; ++t)
       old_solution_vectors_[t] = main_solution_vector_->MakeCopy();
 }
 } // namespace chi_math

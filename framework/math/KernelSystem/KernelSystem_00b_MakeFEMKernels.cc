@@ -57,7 +57,10 @@ std::vector<FEMKernelPtr> KernelSystem::GetMaterialKernels(int mat_id)
   std::vector<std::shared_ptr<FEMKernel>> filtered_kernels;
   const bool time_terms_active = QueryTermsActive(EqTermScope::TIME_TERMS);
   const bool domain_terms_active = QueryTermsActive(EqTermScope::DOMAIN_TERMS);
-  const auto& current_field = field_block_info_.at(current_field_index_).field_;
+  // const auto& current_field =
+  // field_block_info_.at(current_field_index_).field_;
+  const auto& current_field =
+    primary_fields_container_->GetFieldBlockInfo(current_field_index_).field_;
 
   for (const auto& kernel : kernels)
   {

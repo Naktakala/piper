@@ -6,6 +6,7 @@
 
 #include "EquationSystemTimeData.h"
 #include "math/ParallelVector/ParallelVector.h"
+#include "math/Containers/MultiFieldContainer.h"
 #include "mesh/chi_mesh.h"
 
 namespace chi_physics
@@ -15,6 +16,8 @@ class FieldFunctionGridBased;
 
 namespace chi_math
 {
+
+class MultifieldContainer;
 
 typedef std::vector<std::shared_ptr<chi_physics::FieldFunctionGridBased>>
   FieldList;
@@ -98,9 +101,8 @@ public:
   void UpdateFields();
 
   /**Output fields to VTK. The filename passed via the options will be used
-  * plus a time index (if transient).*/
-  void OutputFields(int time_index=-1);
-
+   * plus a time index (if transient).*/
+  void OutputFields(int time_index = -1);
 
   /**Advances the system in time.*/
   void Advance(EquationSystemTimeData time_data,
@@ -112,28 +114,10 @@ protected:
 
   struct FieldBlockInfo;
 
-  int64_t MapBlockGlobalIDToSystem(const FieldBlockInfo& info,
-                                          int64_t block_global_id) const;
-  int64_t MapBlockLocalIDToSystem(const FieldBlockInfo& info,
-                                         int64_t block_local_id);
-
   const int verbosity_;
   const std::string output_file_base_;
 
-  // Runtime parameters
-  struct FieldBlockInfo
-  {
-    std::shared_ptr<chi_physics::FieldFunctionGridBased> field_;
-    const int64_t num_local_dofs_;
-    const int64_t num_global_dofs_;
-    const int64_t local_offset_;
-    const int64_t ghost_local_offset_;
-    const std::vector<int64_t> ghost_ids_;
-    const std::vector<std::pair<int64_t, int64_t>> locP_global_block_span_;
-    const std::vector<int64_t> locP_system_offsets_;
-  };
-
-  std::vector<FieldBlockInfo> field_block_info_;
+  std::unique_ptr<MultifieldContainer> primary_fields_container_;
 
   const int64_t num_local_dofs_;
   const int64_t num_globl_dofs_;
@@ -153,13 +137,11 @@ protected:
   const size_t t_tag_jacobian_;
 
   std::vector<size_t> t_tags_;
+
 private:
-  /**Makes a list of grid-base field functions given either an array of
-   * warehouse handles or field-function names.*/
-  static FieldList BuildFieldList(const chi::ParameterBlock& param_array);
-  std::vector<FieldBlockInfo> MakeFieldBlockInfo(const FieldList& field_list);
-  static int64_t DetermineNumLocalDofs(const std::vector<FieldBlockInfo>&);
-  static int64_t DetermineNumGlobalDofs(const std::vector<FieldBlockInfo>&);
+  static std::unique_ptr<MultifieldContainer>
+  MakeMultifieldContainer(const chi::ParameterBlock& params);
+
   std::unique_ptr<ParallelVector> MakeSolutionVector();
   static std::shared_ptr<TimeIntegrator>
   InitTimeIntegrator(const chi::InputParameters& params);
@@ -167,7 +149,6 @@ private:
   std::vector<std::unique_ptr<ParallelVector>> InitResidualHistory();
 
   EqTermScope eq_term_scope_;
-
 };
 
 } // namespace chi_math

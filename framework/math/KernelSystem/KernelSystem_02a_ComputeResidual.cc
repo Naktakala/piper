@@ -27,7 +27,7 @@ void KernelSystem::ComputeResidual(const ParallelVector& x,
 
 
   current_field_index_ = 0;
-  for (const auto& field_info : field_block_info_)
+  for (const auto& field_info : *primary_fields_container_)
   {
     const auto& field = field_info.field_;
     const auto& sdm = field->SDM();

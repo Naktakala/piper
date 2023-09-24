@@ -23,10 +23,10 @@ namespace chi_math
 void KernelSystem::InitCellData(const ParallelVector& x,
                                 const chi_mesh::Cell& cell)
 {
-  const auto& field_info = field_block_info_.at(current_field_index_);
+  const auto& field_info =
+    primary_fields_container_->GetFieldBlockInfo(current_field_index_);
   const auto& field = field_info.field_;
   const auto& sdm = field->SDM();
-  const auto& uk_man = field->UnkManager();
 
   const auto& cell_mapping = sdm.GetCellMapping(cell);
   const size_t num_nodes = cell_mapping.NumNodes();
@@ -37,10 +37,8 @@ void KernelSystem::InitCellData(const ParallelVector& x,
   auto& dof_map = cur_cell_data.dof_map_;
   dof_map.assign(num_nodes, 0);
   for (size_t i = 0; i < num_nodes; ++i)
-  {
-    cint64_t block_dof_id = sdm.MapDOF(cell, i, uk_man, 0, 0);
-    dof_map[i] = MapBlockGlobalIDToSystem(field_info, block_dof_id);
-  }
+    dof_map[i] = primary_fields_container_->MapDOF(cell, i, field_info, 0);
+
 
   const size_t max_t = EquationTermsScope() & EqTermScope::TIME_TERMS
                          ? num_solution_histories_
@@ -52,8 +50,8 @@ void KernelSystem::InitCellData(const ParallelVector& x,
 
   for (size_t i = 0; i < num_nodes; ++i)
   {
-    cint64_t block_dof_id = sdm.MapDOFLocal(cell, i, uk_man, 0, 0);
-    cint64_t dof_id = MapBlockLocalIDToSystem(field_info, block_dof_id);
+    cint64_t dof_id =
+      primary_fields_container_->MapDOFLocal(cell, i, field_info, 0);
 
     local_x[i] = x[dof_id];
 
@@ -70,7 +68,8 @@ void KernelSystem::InitCellData(const ParallelVector& x,
 std::vector<std::shared_ptr<FEMKernel>>
 KernelSystem::SetupAndGetCellInternalKernels(const chi_mesh::Cell& cell)
 {
-  const auto& field_info = field_block_info_.at(current_field_index_);
+  const auto& field_info =
+    primary_fields_container_->GetFieldBlockInfo(current_field_index_);
   const auto& field = field_info.field_;
   const auto& sdm = field->SDM();
 
@@ -182,7 +181,8 @@ void KernelSystem::PrecomputeMaterialProperties(const chi_mesh::Cell& cell)
 void KernelSystem::SetupFaceIntegralBCKernel(const chi_mesh::Cell& cell,
                                              size_t face_index)
 {
-  const auto& field_info = field_block_info_.at(current_field_index_);
+  const auto& field_info =
+    primary_fields_container_->GetFieldBlockInfo(current_field_index_);
   const auto& field = field_info.field_;
   const auto& sdm = field->SDM();
 
@@ -192,8 +192,8 @@ void KernelSystem::SetupFaceIntegralBCKernel(const chi_mesh::Cell& cell,
 
   const size_t num_nodes = cell_mapping.NumNodes();
 
-   //cur_face_data.qp_data_ =
-   //  std::move(cell_mapping.MakeFaceQuadraturePointData(face_index));
+  // cur_face_data.qp_data_ =
+  //   std::move(cell_mapping.MakeFaceQuadraturePointData(face_index));
   cur_face_data.qp_data_ = sdm.GetCellFaceQPData(cell, face_index);
 
   const auto& face_qp_data = cur_face_data.qp_data_;
@@ -222,7 +222,8 @@ void KernelSystem::SetupFaceIntegralBCKernel(const chi_mesh::Cell& cell,
 std::set<uint32_t>
 KernelSystem::IdentifyLocalDirichletNodes(const chi_mesh::Cell& cell) const
 {
-  const auto& current_field = field_block_info_.at(current_field_index_).field_;
+  const auto& current_field =
+    primary_fields_container_->GetFieldBlockInfo(current_field_index_).field_;
   const auto& field_name = current_field->TextName();
 
   const auto& cell_mapping = *cur_cell_data.cell_mapping_ptr_;
