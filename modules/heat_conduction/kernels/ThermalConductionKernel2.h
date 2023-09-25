@@ -25,6 +25,7 @@ public:
   double JacobianEntryAtQP() override;
 
 protected:
+  const std::string k_property_name_;
   const chi_math::FEMMaterialProperty& k_;
 };
 

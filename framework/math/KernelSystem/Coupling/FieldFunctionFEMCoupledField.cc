@@ -95,6 +95,14 @@ void FieldFunctionFEMCoupledField::SharedSDMComputeFieldFaceQPValues(
   const auto& shape_values = fem_data_.face_qp_data_.ShapeValues();
 
   const auto& qp_indices = fem_data_.face_qp_data_.QuadraturePointIndices();
+
+  if (num_nodes == 1)
+  {
+    cint64_t dof_id = sdm_.MapDOFLocal(cell, 0, uk_man_, 0, 0);
+    qp_values_.assign(qp_indices.size(), field_data[dof_id]);
+    return;
+  }
+
   qp_values_.assign(qp_indices.size(), 0.0);
   for (uint32_t qp : qp_indices)
   {
@@ -115,6 +123,14 @@ void FieldFunctionFEMCoupledField::NonSharedSDMComputeFieldFaceQPValues(
   std::vector<double> shape_values(num_nodes, 0.0);
 
   const auto& qp_indices = fem_data_.face_qp_data_.QuadraturePointIndices();
+
+  if (num_nodes == 1)
+  {
+    cint64_t dof_id = sdm_.MapDOFLocal(cell, 0, uk_man_, 0, 0);
+    qp_values_.assign(qp_indices.size(), field_data[dof_id]);
+    return;
+  }
+
   const auto& qp_xyz = fem_data_.face_qp_data_.QPointsXYZ();
   qp_values_.assign(qp_indices.size(), 0.0);
   for (uint32_t qp : qp_indices)

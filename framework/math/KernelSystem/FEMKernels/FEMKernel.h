@@ -5,6 +5,7 @@
 #include "materials/MaterialIDScopeInterface.h"
 #include "interfaces/CoupledFieldInterface.h"
 #include "math/KernelSystem/Coupling/FEMCoupledField.h"
+#include "math/KernelSystem/Coupling/FEMMaterialPropertyInterface.h"
 #include "mesh/chi_mesh.h"
 #include "math/chi_math.h"
 
@@ -17,17 +18,22 @@ class FEMMaterialProperty;
 /**The abstract base class of a Finite Element Method Kernel.*/
 class FEMKernel : public ChiObject,
                   public chi::MaterialIDScopeInterface,
-                  public chi_math::CoupledFieldInterface
+                  public chi_math::CoupledFieldInterface,
+                  public chi_math::FEMMaterialPropertyInterface
 {
 public:
   static chi::InputParameters GetInputParameters();
   explicit FEMKernel(const chi::InputParameters& params);
 
+  /**Calls the compute functions of the CoupledFieldInterface and
+  * FEMMaterialPropertyInterface.*/
+  virtual void PreComputeValues();
+
   /**Computes the current cell's contribution to the residual at cell node i.*/
   virtual double ComputeLocalResidual(uint32_t i);
 
   /**Computes the current cell's contribution to the jacobian at cell node i,
-  * referenced to the node associated with cell node j.*/
+   * referenced to the node associated with cell node j.*/
   virtual double ComputeLocalJacobian(uint32_t i, uint32_t j);
 
   /**Returns the residual entry at the quadrature point.*/
@@ -42,7 +48,6 @@ public:
   const std::pair<std::string, uint32_t>& ActiveVariableAndComponent() const;
 
 protected:
-  const chi_math::FEMMaterialProperty& GetFEMMaterialProperty(const std::string& name);
   const std::pair<std::string, uint32_t> var_name_component_;
   const FEMKernelSystemData& fem_data_;
 

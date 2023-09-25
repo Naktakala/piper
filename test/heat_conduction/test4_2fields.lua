@@ -11,10 +11,20 @@ end
 meshgen1 = chi_mesh.OrthogonalMeshGenerator.Create({ node_sets = { znodes, znodes } })
 chi_mesh.MeshGenerator.Execute(meshgen1)
 
+chiVolumeMesherSetMatIDToAll(0)
+lvSW = chi_mesh.RPPLogicalVolume.Create({ xmin=0.0, xmax=L/2.0, ymin=0.0, ymax=L/2.0, infz=true})
+chiVolumeMesherSetProperty(MATID_FROMLOGICAL, lvSW, 1)
+
 func1 = chi_math.functions.PiecewiseLinear1D.Create
 ({
   x_values = {0.0, 50.0, 100.0},
   y_values = {0.01, 20.0, 30.0}
+})
+
+func2 = chi_math.functions.PiecewiseLinear1D.Create
+({
+  x_values = {0.0, 100.0},
+  y_values = {10.0, 10.0}
 })
 
 mat_props = chi.MaterialPropertiesData.Create
@@ -23,13 +33,15 @@ mat_props = chi.MaterialPropertiesData.Create
   {
     --chi.ConstantMaterialProperty.Create({name = "k", scalar_value = 10.0}),
     --hcm.ThermalConductivity.Create({name="k", constant_value = 8.0})
-    hcm.ThermalConductivity.Create({name="k", value_function = func1})
+    hcm.ThermalConductivity.Create({name="kSW", value_function = func1}),
+    hcm.ThermalConductivity.Create({name="kOther", value_function = func2})
   }
 })
 
 tbulk = chi_physics.FieldFunctionGridBased.Create({
   name = "T_bulk",
-  sdm_type = "FiniteVolume",
+  --sdm_type = "FiniteVolume",
+  sdm_type = "PWLC",
   pwl_allow_lagrange = true,
   initial_value = 50.0
 })
@@ -43,19 +55,30 @@ system1 = chi_math.KernelSystem.Create
       sdm_type = "PWLC",
       pwl_allow_lagrange = true
     }),
-    chi_physics.FieldFunctionGridBased.Create({
-      name = "Tb",
-      sdm_type = "PWLC",
-      pwl_allow_lagrange = true
-    })
+    --chi_physics.FieldFunctionGridBased.Create({
+    --  name = "Tb",
+    --  sdm_type = "PWLC",
+    --  pwl_allow_lagrange = true
+    --})
   },
   kernels = {
     --{ type = hcm.ThermalConductionKernel.type, var="Te", k=10.0 },
-    { type = hcm.ThermalConductionKernel2.type, var="Te" },
-    { type = chi_math.SinkSourceFEMKernel.type, var="Te", value = 100.0e2 },
-    { type = hcm.ThermalConductionKernel.type, var="Tb", k = 1.0 },
-    --{ type = hcm.ThermalConductionKernel2.type, var="Tb" },
-    { type = chi_math.SinkSourceFEMKernel.type, var="Tb", value = 10.0e2 },
+    {
+      type = hcm.ThermalConductionKernel2.type,
+      var="Te",
+      k_property_name = "kSW",
+      mat_ids = {1}
+    },
+    {
+      type = hcm.ThermalConductionKernel2.type,
+      var="Te",
+      k_property_name = "kOther",
+      mat_ids = {0}
+    },
+    { type = chi_math.SinkSourceFEMKernel.type, var="Te", value = 100.0e2, mat_ids={1} },
+    --{ type = hcm.ThermalConductionKernel.type, var="Tb", k = 1.0 },
+    ----{ type = hcm.ThermalConductionKernel2.type, var="Tb" },
+    --{ type = chi_math.SinkSourceFEMKernel.type, var="Tb", value = 10.0e2 },
   },
   bcs = {
     {
@@ -68,13 +91,13 @@ system1 = chi_math.KernelSystem.Create
     --  boundaries = { "XMIN", "YMIN", "YMAX", "XMAX" },
     --  var="Tb"
     --},
-    {
-      type = hcm.ConvectiveHeatFluxBC.type,
-      boundaries = { "XMIN", "YMIN", "YMAX" },
-      T_bulk = 80.0,
-      convection_coefficient = 10000.0,
-      var="Tb"
-    },
+    --{
+    --  type = hcm.ConvectiveHeatFluxBC.type,
+    --  boundaries = { "XMIN", "YMIN", "YMAX" },
+    --  T_bulk = 80.0,
+    --  convection_coefficient = 10000.0,
+    --  var="Tb"
+    --},
     --{
     --  type = hcm.ConvectiveHeatFluxBC.type,
     --  boundaries = { "XMAX" },
@@ -82,13 +105,13 @@ system1 = chi_math.KernelSystem.Create
     --  convection_coefficient = 10000.0,
     --  var="Tb"
     --},
-    {
-      type = hcm.CoupledConvectiveHeatFluxBC.type,
-      boundaries = { "XMAX" },
-      T_bulk = "T_bulk",
-      convection_coefficient = 10000.0,
-      var="Tb"
-    },
+    --{
+    --  type = hcm.CoupledConvectiveHeatFluxBC.type,
+    --  boundaries = { "XMAX" },
+    --  T_bulk = "T_bulk",
+    --  convection_coefficient = 10000.0,
+    --  var="Tb"
+    --},
   },
   --verbosity = 2,
   output_filename_base = "test4_2fields"
@@ -101,6 +124,7 @@ phys1 = chi_math.SteadyNonLinearExecutioner.Create
   solver_params =
   {
     nl_method = "PJFNK",
+    --nl_method = "NEWTON",
     l_rel_tol = 1.0e-5,
     --nl_max_its = 1
   },

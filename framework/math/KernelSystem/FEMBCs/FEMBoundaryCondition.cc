@@ -12,6 +12,7 @@ chi::InputParameters FEMBoundaryCondition::GetInputParameters()
 {
   chi::InputParameters params = ChiObject::GetInputParameters();
   params += chi_math::CoupledFieldInterface::GetInputParameters();
+  //params += chi_math::FEMMaterialPropertyInterface::GetInputParameters();
 
   params.AddRequiredParameter<std::string>("type", "The bc-kernel type.");
 
@@ -69,6 +70,11 @@ FEMBoundaryCondition::ActiveVariableAndComponent() const
 const std::vector<std::string>& FEMBoundaryCondition::GetBoundaryScope() const
 {
   return boundary_scope_;
+}
+
+void FEMBoundaryCondition::PreComputeValues()
+{
+  PreComputeFaceCoupledFields();
 }
 
 double FEMBoundaryCondition::ComputeLocalResidual(size_t f, uint32_t i)

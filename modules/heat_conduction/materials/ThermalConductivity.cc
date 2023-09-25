@@ -91,9 +91,17 @@ double ThermalConductivity::ComputeScalarValue(
   }
 }
 
-bool ThermalConductivity::HasDerivative() const
+double ThermalConductivity::ComputeScalarValueSlope(
+  const std::vector<double>& input_params) const
 {
-  return function_ != nullptr;
+  if (not function_) return 0.0;
+  else
+  {
+    auto output = function_->EvaluateSlope(input_params);
+    return output.front();
+  }
 }
+
+bool ThermalConductivity::HasDerivative() const { return function_ != nullptr; }
 
 } // namespace hcm

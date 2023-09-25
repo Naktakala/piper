@@ -15,6 +15,7 @@ chi::InputParameters FEMKernel::GetInputParameters()
   chi::InputParameters params = ChiObject::GetInputParameters();
   params += chi::MaterialIDScopeInterface::GetInputParameters();
   params += chi_math::CoupledFieldInterface::GetInputParameters();
+  params += chi_math::FEMMaterialPropertyInterface::GetInputParameters();
 
   params.AddRequiredParameter<std::string>("type", "The kernel type.");
 
@@ -39,6 +40,7 @@ FEMKernel::FEMKernel(const chi::InputParameters& params)
   : ChiObject(params),
     chi::MaterialIDScopeInterface(params),
     chi_math::CoupledFieldInterface(params),
+    chi_math::FEMMaterialPropertyInterface(params, GetMaterialIDScope()),
     var_name_component_(params.GetParamValue<std::string>("var"),
                         params.GetParamValue<uint32_t>("var_component")),
     fem_data_(Chi::GetStackItem<FEMKernelSystemData>(
@@ -58,6 +60,12 @@ FEMKernel::FEMKernel(const chi::InputParameters& params)
     var_dot_value_(fem_data_.var_dot_qp_values_),
     qp_xyz_(fem_data_.qp_data_.QPointsXYZ())
 {
+}
+
+void FEMKernel::PreComputeValues()
+{
+  PreComputeInternalCoupledFields();
+  PreComputeInternalMaterialProperties();
 }
 
 bool FEMKernel::IsTimeKernel() const { return false; }
@@ -93,50 +101,6 @@ double FEMKernel::ComputeLocalJacobian(uint32_t i, uint32_t j)
     local_j += JxW_values_[qp_] * JacobianEntryAtQP();
 
   return local_j;
-}
-
-const chi_math::FEMMaterialProperty&
-FEMKernel::GetFEMMaterialProperty(const std::string& name)
-{
-  const auto& kernel_mat_scope = this->GetMaterialIDScope();
-
-  for (const auto& property_ptr : fem_data_.fem_material_properties_)
-  {
-    if (property_ptr->TextName() == name)
-    {
-      const auto& property_mat_scope = property_ptr->GetMaterialIDScope();
-      if (property_mat_scope.empty()) return *property_ptr;
-      else if (kernel_mat_scope.empty())
-      {
-        ChiLogicalError("Kernel defined on all materials but material property "
-                        "\"" +
-                        name + "\" is not.");
-      }
-      else
-      {
-        for (int mi : kernel_mat_scope)
-        {
-          bool found = false;
-          for (int pmi : property_mat_scope)
-          {
-            if (mi == pmi)
-            {
-              found = true;
-              break;
-            }
-          }//for pmi
-
-          ChiLogicalErrorIf(not found,
-                            "Kernel is defined on material id " +
-                              std::to_string(mi) + " but material property \"" +
-                              name + "\" is not.");
-        }// for mi
-      }
-      return *property_ptr;
-    } // if property name found
-  } // for property in map
-
-  ChiLogicalError("Kernel required parameter \"" + name + "\" not found.");
 }
 
 } // namespace chi_math

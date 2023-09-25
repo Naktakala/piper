@@ -12,14 +12,13 @@ class FEMCoupledField;
 
 class CoupledFieldInterface
 {
-public:
+protected:
   static chi::InputParameters GetInputParameters();
   explicit CoupledFieldInterface(const chi::InputParameters& params);
 
   void PreComputeInternalCoupledFields();
   void PreComputeFaceCoupledFields();
 
-protected:
   const FEMCoupledField& GetCoupledField(const std::string& field_name);
 
 private:

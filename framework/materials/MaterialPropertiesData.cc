@@ -24,7 +24,8 @@ InputParameters MaterialPropertiesData::GetInputParameters()
 
 MaterialPropertiesData::MaterialPropertiesData(const InputParameters& params)
   : ChiObject(params),
-    property_map_(std::move(BuildPropertyMap(params.GetParam("properties"))))
+    properties_(
+      std::move(AssemblePropertiesList(params.GetParam("properties"))))
 {
 }
 
@@ -33,25 +34,26 @@ std::shared_ptr<MaterialPropertiesData> MaterialPropertiesData::MakeEmptyData()
   return std::make_shared<MaterialPropertiesData>();
 }
 
-const std::map<size_t, std::shared_ptr<const MaterialProperty>>&
-MaterialPropertiesData::PropertyMap() const
+const std::vector<std::shared_ptr<const MaterialProperty>>&
+MaterialPropertiesData::Properties() const
 {
-  return property_map_;
+  return properties_;
 }
 
-std::map<size_t, std::shared_ptr<const MaterialProperty>>
-MaterialPropertiesData::BuildPropertyMap(const ParameterBlock& property_param)
+std::vector<std::shared_ptr<const MaterialProperty>>
+MaterialPropertiesData::AssemblePropertiesList(
+  const ParameterBlock& property_param)
 {
-  std::map<size_t, std::shared_ptr<const MaterialProperty>> property_map;
+  std::vector<std::shared_ptr<const MaterialProperty>> properties;
   for (const auto& sub_param : property_param)
   {
     const size_t handle = sub_param.GetValue<size_t>();
     auto property_ptr = Chi::GetStackItemPtrAsType<MaterialProperty>(
       Chi::object_stack, handle, __FUNCTION__);
 
-    property_map[handle] = property_ptr;
+    properties.push_back(property_ptr);
   }
-  return property_map;
+  return properties;
 }
 
 } // namespace chi

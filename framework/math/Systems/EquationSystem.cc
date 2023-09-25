@@ -6,6 +6,8 @@
 #include "math/TimeIntegrators/ImplicitEulerTimeIntegrator.h"
 #include "math/ParallelMatrix/ParallelMatrix.h"
 
+#include "materials/MaterialPropertiesData.h"
+
 #include "ChiObjectFactory.h"
 
 #include "chi_log.h"
@@ -16,7 +18,6 @@ namespace chi_math
 chi::InputParameters EquationSystem::GetInputParameters()
 {
   chi::InputParameters params = ChiObject::GetInputParameters();
-  params += chi::MaterialPropertiesDataInterface::GetInputParameters();
 
   params.AddRequiredParameterArray(
     "fields", "An array of FieldFunctionGridBased handles or names.");
@@ -27,6 +28,10 @@ chi::InputParameters EquationSystem::GetInputParameters()
                               "ImplicitEuler time integrator will"
                               "be used for transient simulations.");
   params.AddOptionalParameter("verbosity", 0, "Level of verbosity");
+  params.AddOptionalParameter("material_properties",
+                              0,
+                              "Optional handle to a parameter block of type"
+                              "chi::MaterialPropertiesData.");
 
   params.AddOptionalParameter(
     "output_filename_base",
@@ -38,7 +43,7 @@ chi::InputParameters EquationSystem::GetInputParameters()
 
 EquationSystem::EquationSystem(const chi::InputParameters& params)
   : ChiObject(params),
-    chi::MaterialPropertiesDataInterface(params),
+    material_properties_data_(GetOrMakeMaterialPropertiesData(params)),
     verbosity_(params.GetParamValue<int>("verbosity")),
     output_file_base_(
       params.GetParamValue<std::string>("output_filename_base")),
@@ -64,6 +69,29 @@ EquationSystem::EquationSystem(const chi::InputParameters& params)
   for (size_t k = 0; k < 10; ++k)
     t_tags_.push_back(
       Chi::log.GetRepeatingEventTag("Timing_" + std::to_string(k)));
+}
+
+// ##################################################################
+const chi::MaterialPropertiesData&
+EquationSystem::GetOrMakeMaterialPropertiesData(
+  const chi::InputParameters& params)
+{
+  if (params.ParametersAtAssignment().Has("material_properties"))
+  {
+    return Chi::GetStackItem<chi::MaterialPropertiesData>(
+      /*stack=*/Chi::object_stack,
+      /*handle=*/params.GetParamValue<size_t>("material_properties"),
+      /*calling_function_name=*/__FUNCTION__);
+  }
+  else
+  {
+    auto empty_data = chi::MaterialPropertiesData::MakeEmptyData();
+    Chi::object_stack.push_back(empty_data);
+    const size_t handle = Chi::object_stack.size() - 1;
+    empty_data->SetStackID(handle);
+
+    return *empty_data;
+  }
 }
 
 // ##################################################################

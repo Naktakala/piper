@@ -17,16 +17,16 @@ public:
 
   static std::shared_ptr<MaterialPropertiesData> MakeEmptyData();
 
-  const std::map<size_t, std::shared_ptr<const MaterialProperty>>&
-  PropertyMap() const;
+  const std::vector<std::shared_ptr<const MaterialProperty>>&
+  Properties() const;
 
 protected:
-  std::map<size_t, std::shared_ptr<const MaterialProperty>> property_map_;
+  const std::vector<std::shared_ptr<const MaterialProperty>> properties_;
 
 private:
   /**Builds a map of handles to property_ptrs from a list of handles.*/
-  static std::map<size_t, std::shared_ptr<const MaterialProperty>>
-  BuildPropertyMap(const ParameterBlock& property_param);
+  static std::vector<std::shared_ptr<const MaterialProperty>>
+  AssemblePropertiesList(const ParameterBlock& property_param);
 };
 
 } // namespace chi

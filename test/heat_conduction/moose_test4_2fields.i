@@ -2,8 +2,8 @@
   [gmg]
     type = GeneratedMeshGenerator
     dim = 2
-    nx = 100
-    ny = 100
+    nx = 1000
+    ny = 1000
   []
   parallel_type = DISTRIBUTED
 []
@@ -14,11 +14,11 @@
     family = LAGRANGE
     initial_condition = 0.0
   []
-  [T2]
-    order = FIRST
-    family = LAGRANGE
-    initial_condition = 0.0
-  []
+  # [T2]
+  #   order = FIRST
+  #   family = LAGRANGE
+  #   initial_condition = 0.0
+  # []
 []
 [AuxVariables]
   [T_bulk]
@@ -38,15 +38,15 @@
     variable = T
     value = 100e2
   []
-  [heat_conduction2]
-    type = Diffusion
-    variable = T2
-  []
-  [heat_generation2]
-    type = BodyForce
-    variable = T2
-    value = 10e2
-  []
+  # [heat_conduction2]
+  #   type = Diffusion
+  #   variable = T2
+  # []
+  # [heat_generation2]
+  #   type = BodyForce
+  #   variable = T2
+  #   value = 10e2
+  # []
 []
 
 [BCs]
@@ -64,13 +64,13 @@
   #   boundary = 'left bottom top right'
   #   # boundary = 'left right'
   # []
-  [bc2A]
-    type = ConvectiveHeatFluxBC
-    variable = T2
-    T_infinity = 80
-    heat_transfer_coefficient = 10000
-    boundary = 'left bottom top'
-  []
+  # [bc2A]
+  #   type = ConvectiveHeatFluxBC
+  #   variable = T2
+  #   T_infinity = 80
+  #   heat_transfer_coefficient = 10000
+  #   boundary = 'left bottom top'
+  # []
   # [bc2B]
   #   type = ConvectiveHeatFluxBC
   #   variable = T2
@@ -78,13 +78,13 @@
   #   heat_transfer_coefficient = 10000
   #   boundary = 'right'
   # []
-  [bc2B]
-    type = CoupledConvectiveFlux
-    variable = T2
-    T_infinity = T_bulk
-    coefficient = 10000
-    boundary = 'right'
-  []
+  # [bc2B]
+  #   type = CoupledConvectiveFlux
+  #   variable = T2
+  #   T_infinity = T_bulk
+  #   coefficient = 10000
+  #   boundary = 'right'
+  # []
 []
 
 [Functions]
@@ -123,7 +123,7 @@
   nl_rel_tol = 1e-8
   # nl_max_its = 1
   # line_search = l2
-  automatic_scaling = false
+  # automatic_scaling = true
   petsc_options_iname = '-pc_type -pc_hypre_type -ksp_gmres_restart -pc_hypre_boomeramg_strong_threshold'
   petsc_options_value = 'hypre boomeramg 50 0.7'
   # petsc_options_iname = '-pc_type'

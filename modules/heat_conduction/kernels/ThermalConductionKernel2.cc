@@ -17,12 +17,17 @@ chi::InputParameters ThermalConductionKernel2::GetInputParameters()
                                "conductivity is constant.");
   params.SetDocGroup("doc_HeatConduction");
 
+  params.AddOptionalParameter(
+    "k_property_name", "k", "Property name of the thermal conductivity");
+
   return params;
 }
 
 ThermalConductionKernel2::ThermalConductionKernel2(
   const chi::InputParameters& params)
-  : chi_math::FEMKernel(params), k_(GetFEMMaterialProperty("k"))
+  : chi_math::FEMKernel(params),
+    k_property_name_(params.GetParamValue<std::string>("k_property_name")),
+    k_(GetFEMMaterialProperty(k_property_name_))
 {
 }
 

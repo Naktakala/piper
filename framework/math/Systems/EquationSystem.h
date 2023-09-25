@@ -2,12 +2,16 @@
 #define CHITECH_EQUATIONSYSTEM_H
 
 #include "ChiObject.h"
-#include "interfaces/MaterialPropertiesDataInterface.h"
 
 #include "EquationSystemTimeData.h"
 #include "math/ParallelVector/ParallelVector.h"
 #include "math/Containers/MultiFieldContainer.h"
 #include "mesh/chi_mesh.h"
+
+namespace chi
+{
+class MaterialPropertiesData;
+}
 
 namespace chi_physics
 {
@@ -49,8 +53,7 @@ inline bool operator&(const EqTermScope f1, const EqTermScope f2)
 }
 
 /**Base abstract class for a system of equations.*/
-class EquationSystem : public ChiObject,
-                       public chi::MaterialPropertiesDataInterface
+class EquationSystem : public ChiObject
 {
 public:
   typedef chi_mesh::Vector3 Vec3;
@@ -114,6 +117,7 @@ protected:
 
   struct FieldBlockInfo;
 
+  const chi::MaterialPropertiesData& material_properties_data_;
   const int verbosity_;
   const std::string output_file_base_;
 
@@ -139,6 +143,9 @@ protected:
   std::vector<size_t> t_tags_;
 
 private:
+  static const chi::MaterialPropertiesData&
+  GetOrMakeMaterialPropertiesData(const chi::InputParameters& params);
+
   static std::shared_ptr<MultiFieldContainer>
   MakeMultifieldContainer(const chi::ParameterBlock& params);
 

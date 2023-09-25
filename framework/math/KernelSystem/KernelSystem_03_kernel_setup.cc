@@ -2,7 +2,6 @@
 
 #include "math/SpatialDiscretization/spatial_discretization.h"
 #include "math/KernelSystem/FEMKernels/FEMKernel.h"
-#include "math/KernelSystem/Coupling/FEMMaterialProperty.h"
 #include "math/KernelSystem/FEMBCs/FEMDirichletBC.h"
 #include "math/ParallelMatrix/ParallelMatrix.h"
 
@@ -122,7 +121,7 @@ KernelSystem::SetupAndGetCellInternalKernels(const chi_mesh::Cell& cell)
         var_dot_qp_values[qp] += shape_values[j][qp] * local_x_dot_[j];
 
   for (auto& kernel : kernels)
-    kernel->PreComputeInternalCoupledFields();
+    kernel->PreComputeValues();
 
   return kernels;
 }
@@ -148,39 +147,6 @@ KernelSystem::GetCellBCKernels(const chi_mesh::Cell& cell)
   } // for face
 
   return bndry_conditions;
-}
-
-void KernelSystem::PrecomputeMaterialProperties(const chi_mesh::Cell& cell)
-{
-  constexpr double epsilon = 1.0e-8;
-
-  for (auto& property_ptr : fem_material_properties_)
-    if (property_ptr->IsActive(cell.material_id_))
-    {
-      const auto& qp_indices = cur_cell_data.qp_data_.QuadraturePointIndices();
-      const auto& qp_xyz = cur_cell_data.qp_data_.QPointsXYZ();
-      std::vector<double> qp_values(qp_indices.size(), 0.0);
-      std::vector<double> derivative_qp_values_(qp_indices.size(), 0.0);
-
-      for (size_t qp : cur_cell_data.qp_data_.QuadraturePointIndices())
-      {
-        const double var_value_qp = cur_cell_data.var_qp_values_[qp];
-        qp_values[qp] =
-          property_ptr->Evaluate(qp_xyz[qp], time_data_.time_, {var_value_qp});
-        if (property_ptr->HasDerivative())
-        {
-          const double delta_var = (std::fabs(var_value_qp) > epsilon)
-                                     ? var_value_qp * epsilon
-                                     : epsilon;
-          const double qp_valuep = property_ptr->Evaluate(
-            qp_xyz[qp], time_data_.time_, {var_value_qp + delta_var});
-          derivative_qp_values_[qp] = (qp_valuep - qp_values[qp]) / delta_var;
-        }
-      }
-
-      property_ptr->SetQPValues(std::move(qp_values),
-                                std::move(derivative_qp_values_));
-    }
 }
 
 void KernelSystem::SetupFaceIntegralBCKernel(const chi_mesh::Cell& cell,

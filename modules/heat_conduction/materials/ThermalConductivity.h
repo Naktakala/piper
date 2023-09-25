@@ -18,7 +18,10 @@ public:
   explicit ThermalConductivity(const chi::InputParameters& params);
 
   std::vector<std::string> RequiredInputNames() const override;
-  double ComputeScalarValue(const std::vector<double>& input_params) const override;
+  double
+  ComputeScalarValue(const std::vector<double>& input_params) const override;
+  double ComputeScalarValueSlope(
+    const std::vector<double>& input_params) const override;
 
   bool HasDerivative() const override;
 

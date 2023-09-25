@@ -4,7 +4,10 @@
 #include "math/SpatialDiscretization/FiniteElement/finite_element.h"
 #include "math/KernelSystem/FEMKernels/FEMKernel.h"
 #include "math/KernelSystem/FEMBCs/FEMBoundaryCondition.h"
+#include "math/KernelSystem/Coupling/FEMMaterialProperty.h"
 #include "math/ParallelMatrix/ParallelMatrix.h"
+
+#include "materials/MaterialPropertiesData.h"
 
 #include "physics/FieldFunction/fieldfunction_gridbased.h"
 
@@ -21,8 +24,7 @@ namespace chi_math
 {
 
 FEMKernelSystemData::FEMKernelSystemData(
-  const std::vector<std::shared_ptr<FEMMaterialProperty>>&
-    fem_material_properties,
+  const chi::MaterialPropertiesData& mat_props_data,
   const EquationSystemTimeData& time_data,
   const ParallelVector& main_solution_vector,
   const chi_mesh::Cell*& cell_ptr,
@@ -39,7 +41,7 @@ FEMKernelSystemData::FEMKernelSystemData(
   const VecVec3& face_var_grad_qp_values)
 
   : ChiObject(chi::InputParameters{}),
-    fem_material_properties_(fem_material_properties),
+    mat_props_data_(mat_props_data),
     time_data_(time_data),
     main_solution_vector_(main_solution_vector),
     cell_ptr_(cell_ptr),
@@ -82,11 +84,9 @@ KernelSystem::KernelSystem(const chi::InputParameters& params)
   const auto& volume_kernels_inputs = params.GetParam("kernels");
   const auto boundary_condition_inputs = params.GetParam("bcs");
 
-  PopulateMaterialProperties();
-
   //======================================== Make reference data
   auto reference_data =
-    std::make_shared<FEMKernelSystemData>(fem_material_properties_,
+    std::make_shared<FEMKernelSystemData>(material_properties_data_,
                                           time_data_,
                                           *main_solution_vector_,
                                           cur_cell_data.cell_ptr_,

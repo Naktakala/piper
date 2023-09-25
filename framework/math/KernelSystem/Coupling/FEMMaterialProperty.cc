@@ -1,5 +1,6 @@
 #include "FEMMaterialProperty.h"
 
+#include "math/KernelSystem/KernelSystem.h"
 #include "materials/MaterialProperty.h"
 #include "mesh/chi_mesh.h"
 
@@ -8,19 +9,10 @@
 namespace chi_math
 {
 
-FEMMaterialProperty::FEMMaterialProperty(const chi::MaterialProperty& property)
-  : property_(property)
+FEMMaterialProperty::FEMMaterialProperty(const chi::MaterialProperty& property,
+                                         const FEMKernelSystemData& fem_data)
+  : property_(property), fem_data_(fem_data)
 {
-}
-
-const std::string& FEMMaterialProperty::TextName() const
-{
-  return property_.TextName();
-}
-
-const std::vector<int>& FEMMaterialProperty::GetMaterialIDScope() const
-{
-  return property_.GetMaterialIDScope();
 }
 
 double FEMMaterialProperty::operator[](size_t qp_index) const
@@ -38,14 +30,6 @@ bool FEMMaterialProperty::HasDerivative() const
   return property_.HasDerivative();
 }
 
-bool FEMMaterialProperty::IsActive(int material_id) const
-{
-  const auto& mat_scope = property_.GetMaterialIDScope();
-  if (mat_scope.empty()) return true;
-  return std::find(mat_scope.begin(), mat_scope.end(), material_id) !=
-         mat_scope.end();
-}
-
 double FEMMaterialProperty::Evaluate(const chi_mesh::Vector3& xyz,
                                      double t,
                                      const std::vector<double>& v)
@@ -57,6 +41,67 @@ double FEMMaterialProperty::Evaluate(const chi_mesh::Vector3& xyz,
   for (double value : v)
     inputs.push_back(value);
   return property_.ComputeScalarValue(inputs);
+}
+
+double FEMMaterialProperty::EvaluateSlope(const chi_mesh::Vector3& xyz,
+                                          double t,
+                                          const std::vector<double>& v)
+{
+  std::vector<double> inputs;
+  if (property_.IsPositionDependent()) inputs = {xyz.x, xyz.y, xyz.z};
+  if (property_.IsTimeDependent()) inputs.push_back(t);
+
+  for (double value : v)
+    inputs.push_back(value);
+  return property_.ComputeScalarValueSlope(inputs);
+}
+
+void FEMMaterialProperty::PreComputeInternalQPValues()
+{
+  const double time = fem_data_.time_data_.time_;
+
+  const auto& qp_data = fem_data_.qp_data_;
+  const auto& var_qp_values = fem_data_.var_qp_values_;
+
+  const auto& qp_indices = qp_data.QuadraturePointIndices();
+  const auto& qp_xyz = qp_data.QPointsXYZ();
+  qp_values_.assign(qp_indices.size(), 0.0);
+  derivative_qp_values_.assign(qp_indices.size(), 0.0);
+
+  for (size_t qp : qp_indices)
+  {
+    const double var_value_qp = var_qp_values[qp];
+    qp_values_[qp] = this->Evaluate(qp_xyz[qp], time, {var_value_qp});
+
+    if (property_.HasDerivative())
+      derivative_qp_values_[qp] =
+        this->EvaluateSlope(qp_xyz[qp], time, {var_value_qp});
+  }
+}
+
+void FEMMaterialProperty::PreComputeFaceQPValues()
+{
+  const double time = fem_data_.time_data_.time_;
+
+  const auto& qp_data = fem_data_.face_qp_data_;
+  const auto& var_qp_values = fem_data_.face_var_qp_values_;
+
+  const auto& qp_indices = qp_data.QuadraturePointIndices();
+  const auto& qp_xyz = qp_data.QPointsXYZ();
+  qp_values_.assign(qp_indices.size(), 0.0);
+  derivative_qp_values_.assign(qp_indices.size(), 0.0);
+
+  for (size_t qp : qp_indices)
+  {
+    const double var_value_qp = var_qp_values[qp];
+    qp_values_[qp] = this->Evaluate(qp_xyz[qp], time, {var_value_qp});
+
+    if (property_.HasDerivative())
+    {
+      derivative_qp_values_[qp] =
+        this->EvaluateSlope(qp_xyz[qp], time, {var_value_qp});
+    }
+  }
 }
 
 } // namespace chi_math

@@ -3,6 +3,7 @@
 
 #include "ChiObject.h"
 #include "interfaces/CoupledFieldInterface.h"
+#include "math/KernelSystem/Coupling/FEMMaterialPropertyInterface.h"
 #include "math/KernelSystem/Coupling/FEMCoupledField.h"
 #include "mesh/chi_mesh.h"
 #include "math/chi_math.h"
@@ -21,12 +22,15 @@ class FEMKernelSystemData;
  * Kernel.*/
 class FEMBoundaryCondition : public ChiObject,
                              public chi_math::CoupledFieldInterface
+
 {
 public:
   static chi::InputParameters GetInputParameters();
   explicit FEMBoundaryCondition(const chi::InputParameters& params);
 
   virtual bool IsDirichlet() const;
+
+  void PreComputeValues();
 
   /**Computes the current face's contribution to the residual at cell node i.*/
   virtual double ComputeLocalResidual(size_t f, uint32_t i);

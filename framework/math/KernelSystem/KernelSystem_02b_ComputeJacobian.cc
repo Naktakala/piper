@@ -39,7 +39,6 @@ void KernelSystem::ComputeJacobian(const ParallelVector& x,
 
       auto kernels = SetupAndGetCellInternalKernels(cell);
       auto bndry_conditions = GetCellBCKernels(cell);
-      PrecomputeMaterialProperties(cell);
 
       const auto& cell_mapping = *cur_cell_data.cell_mapping_ptr_;
       const size_t num_nodes = cell_mapping.NumNodes();
@@ -66,7 +65,9 @@ void KernelSystem::ComputeJacobian(const ParallelVector& x,
       {
         if (bndry_condition->IsDirichlet()) continue;
         SetupFaceIntegralBCKernel(cell, f);
-        bndry_condition->PreComputeFaceCoupledFields();
+
+        bndry_condition->PreComputeValues();
+
         const size_t face_num_nodes = cell_mapping.NumFaceNodes(f);
         for (size_t fi = 0; fi < face_num_nodes; ++fi)
         {

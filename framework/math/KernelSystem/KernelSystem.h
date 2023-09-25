@@ -5,6 +5,7 @@
 #include "math/UnknownManager/unknown_manager.h"
 #include "math/SpatialDiscretization/FiniteElement/finite_element.h"
 #include "math/SpatialDiscretization/CellMappings/cell_mapping_base.h"
+#include "math/KernelSystem/Coupling/FEMMaterialProperty.h"
 
 namespace chi
 {
@@ -37,25 +38,25 @@ public:
   typedef chi_mesh::Vector3 Vec3;
   typedef std::vector<Vec3> VecVec3;
 
-  FEMKernelSystemData(const std::vector<std::shared_ptr<FEMMaterialProperty>>&
-                        fem_material_properties,
-                      const EquationSystemTimeData& time_data,
-                      const ParallelVector& main_solution_vector,
-                      const chi_mesh::Cell*& cell_ptr,
-                      const chi_math::CellMapping*& cell_mapping_ptr,
-                      const CellQPData& qp_data,
-                      const VecDbl& var_qp_values,
-                      const VecVec3& var_grad_qp_values,
-                      const VecDbl& var_dot_qp_values,
-                      const VecDbl& nodal_var_values,
-                      const VecVec3& node_locations,
+  FEMKernelSystemData(
+    const chi::MaterialPropertiesData& mat_props_data,
+    const EquationSystemTimeData& time_data,
+    const ParallelVector& main_solution_vector,
+    const chi_mesh::Cell*& cell_ptr,
+    const chi_math::CellMapping*& cell_mapping_ptr,
+    const CellQPData& qp_data,
+    const VecDbl& var_qp_values,
+    const VecVec3& var_grad_qp_values,
+    const VecDbl& var_dot_qp_values,
+    const VecDbl& nodal_var_values,
+    const VecVec3& node_locations,
 
-                      const FaceQPData& face_qp_data,
-                      const VecDbl& face_var_qp_values,
-                      const VecVec3& face_var_grad_qp_values);
+    const FaceQPData& face_qp_data,
+    const VecDbl& face_var_qp_values,
+    const VecVec3& face_var_grad_qp_values);
 
-  const std::vector<std::shared_ptr<FEMMaterialProperty>>&
-    fem_material_properties_;
+  const chi::MaterialPropertiesData& mat_props_data_;
+
   const EquationSystemTimeData& time_data_;
 
   const ParallelVector& main_solution_vector_;
@@ -102,9 +103,6 @@ public:
   void ComputeJacobian(const ParallelVector& x, ParallelMatrix& J) override;
 
 protected:
-  // 00a_PopulateMaterialProperties
-  void PopulateMaterialProperties();
-
   // 00b_MakeKernels
   std::vector<FEMKernelPtr>
   MakeFEMKernels(const chi::ParameterBlock& volume_kernels_inputs,
@@ -126,8 +124,6 @@ protected:
   std::vector<std::pair<size_t, FEMBoundaryConditionPtr>>
   GetCellBCKernels(const chi_mesh::Cell& cell);
 
-  void PrecomputeMaterialProperties(const chi_mesh::Cell& cell);
-
   void SetupFaceIntegralBCKernel(const chi_mesh::Cell& cell, size_t face_index);
 
   /**Returns a set of dirichlet nodes by looking at the BCs applied on
@@ -139,8 +135,6 @@ protected:
   typedef std::map<uint64_t, FEMBoundaryConditionPtr> BID2BCMap;
   typedef std::pair<std::string, uint32_t> VarNameComp;
   std::map<VarNameComp, BID2BCMap> varname_comp_2_bid2bc_map_;
-
-  std::vector<std::shared_ptr<FEMMaterialProperty>> fem_material_properties_;
 
   size_t current_field_index_ = 0;
   uint32_t current_field_component_ = 0;
@@ -168,6 +162,7 @@ protected:
     VecDbl var_qp_values_;
     VecVec3 var_grad_qp_values_;
   } cur_face_data;
+
 };
 
 } // namespace chi_math

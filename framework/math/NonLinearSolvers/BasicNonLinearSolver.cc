@@ -82,7 +82,8 @@ void BasicNonLinearSolver::SetPreconditioner()
                     "pc_hypre_boomeramg_interp_type classical",
                     "pc_hypre_boomeramg_P_max 0",
                     "pc_hypre_boomeramg_truncfactor 0.0",
-                    "pc_mg_galerkin_mat_product_algorithm hypre"};
+                    //"pc_hypre_boomeramg_grid_sweeps_coarse 1"
+      };
 
       auto nl_context_ptr = GetKernelBasedContextPtr(context_ptr_);
       nl_context_ptr->executioner_.AddToPreConditionerOptions(pc_options);
@@ -153,7 +154,7 @@ void BasicNonLinearSolver::SetJacobian()
                        "\".");
 
   // MatSNESMFSetReuseBase(J_, PETSC_TRUE);
-  SNESSetLagJacobian(nl_solver_, 1);
+  //SNESSetLagJacobian(nl_solver_, 1);
 }
 
 // ##################################################################
