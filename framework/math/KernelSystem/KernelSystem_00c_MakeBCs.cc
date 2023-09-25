@@ -24,6 +24,9 @@ KernelSystem::MakeBCs(const chi::ParameterBlock& boundary_condition_inputs,
       "A BoundaryCondition input is missing the \"type\" parameter");
 
     bc_input.AddParameter("fem_data_handle", fem_data_handle);
+    bc_input.AddParameter(
+      "multifieldcontainer_handles",
+      std::vector<size_t>{primary_fields_container_->StackID()});
 
     const auto obj_type = bc_input.GetParamValue<std::string>("type");
     chi::InputParameters in_params =

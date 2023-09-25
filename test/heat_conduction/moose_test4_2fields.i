@@ -2,8 +2,8 @@
   [gmg]
     type = GeneratedMeshGenerator
     dim = 2
-    nx = 300
-    ny = 300
+    nx = 100
+    ny = 100
   []
   parallel_type = DISTRIBUTED
 []
@@ -13,6 +13,18 @@
     order = FIRST
     family = LAGRANGE
     initial_condition = 0.0
+  []
+  [T2]
+    order = FIRST
+    family = LAGRANGE
+    initial_condition = 0.0
+  []
+[]
+[AuxVariables]
+  [T_bulk]
+    order = FIRST
+    family = LAGRANGE
+    initial_condition = 50.0
   []
 []
 
@@ -26,6 +38,15 @@
     variable = T
     value = 100e2
   []
+  [heat_conduction2]
+    type = Diffusion
+    variable = T2
+  []
+  [heat_generation2]
+    type = BodyForce
+    variable = T2
+    value = 10e2
+  []
 []
 
 [BCs]
@@ -37,12 +58,33 @@
     # boundary = 'left right'
   []
   # [bc2]
+  #   type = DirichletBC
+  #   variable = T2
+  #   value = 0
+  #   boundary = 'left bottom top right'
+  #   # boundary = 'left right'
+  # []
+  [bc2A]
+    type = ConvectiveHeatFluxBC
+    variable = T2
+    T_infinity = 80
+    heat_transfer_coefficient = 10000
+    boundary = 'left bottom top'
+  []
+  # [bc2B]
   #   type = ConvectiveHeatFluxBC
-  #   variable = T
+  #   variable = T2
   #   T_infinity = 100
   #   heat_transfer_coefficient = 10000
-  #   boundary = 'left bottom top right'
+  #   boundary = 'right'
   # []
+  [bc2B]
+    type = CoupledConvectiveFlux
+    variable = T2
+    T_infinity = T_bulk
+    coefficient = 10000
+    boundary = 'right'
+  []
 []
 
 [Functions]

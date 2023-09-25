@@ -23,6 +23,9 @@ KernelSystem::MakeFEMKernels(const chi::ParameterBlock& volume_kernels_inputs,
                          "A kernel input is missing the \"type\" parameter");
 
     kernel_input.AddParameter("fem_data_handle", fem_data_handle);
+    kernel_input.AddParameter(
+      "multifieldcontainer_handles",
+      std::vector<size_t>{primary_fields_container_->StackID()});
 
     const auto obj_type = kernel_input.GetParamValue<std::string>("type");
     chi::InputParameters in_params =
@@ -57,8 +60,7 @@ std::vector<FEMKernelPtr> KernelSystem::GetMaterialKernels(int mat_id)
   std::vector<std::shared_ptr<FEMKernel>> filtered_kernels;
   const bool time_terms_active = QueryTermsActive(EqTermScope::TIME_TERMS);
   const bool domain_terms_active = QueryTermsActive(EqTermScope::DOMAIN_TERMS);
-  // const auto& current_field =
-  // field_block_info_.at(current_field_index_).field_;
+
   const auto& current_field =
     primary_fields_container_->GetFieldBlockInfo(current_field_index_).field_;
 

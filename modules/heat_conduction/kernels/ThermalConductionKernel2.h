@@ -3,7 +3,7 @@
 
 #include "ChiObject.h"
 #include "math/KernelSystem/FEMKernels/FEMKernel.h"
-#include "math/KernelSystem/FEMKernels/FEMMaterialProperty.h"
+#include "math/KernelSystem/Coupling/FEMMaterialProperty.h"
 
 namespace chi_math
 {

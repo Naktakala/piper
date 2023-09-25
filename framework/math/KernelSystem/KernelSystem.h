@@ -40,6 +40,9 @@ public:
   FEMKernelSystemData(const std::vector<std::shared_ptr<FEMMaterialProperty>>&
                         fem_material_properties,
                       const EquationSystemTimeData& time_data,
+                      const ParallelVector& main_solution_vector,
+                      const chi_mesh::Cell*& cell_ptr,
+                      const chi_math::CellMapping*& cell_mapping_ptr,
                       const CellQPData& qp_data,
                       const VecDbl& var_qp_values,
                       const VecVec3& var_grad_qp_values,
@@ -54,6 +57,12 @@ public:
   const std::vector<std::shared_ptr<FEMMaterialProperty>>&
     fem_material_properties_;
   const EquationSystemTimeData& time_data_;
+
+  const ParallelVector& main_solution_vector_;
+
+  const chi_mesh::Cell*& cell_ptr_;
+  const chi_math::CellMapping*& cell_mapping_ptr_;
+
   const CellQPData& qp_data_;
   const VecDbl& var_qp_values_;
   const VecVec3& var_grad_qp_values_;
@@ -136,12 +145,10 @@ protected:
   size_t current_field_index_ = 0;
   uint32_t current_field_component_ = 0;
 
-  std::vector<std::unique_ptr<finite_element::InternalQuadraturePointData>>
-    cell_qp_data_;
-
   /**Utility data structure to store data ahead of executing the kernels*/
   struct CurrentCellData
   {
+    chi_mesh::Cell const* cell_ptr_ = nullptr;
     const chi_math::CellMapping* cell_mapping_ptr_ = nullptr;
 
     std::vector<chi_mesh::Vector3> node_locations_;

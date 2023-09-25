@@ -2,7 +2,7 @@
 
 #include "math/SpatialDiscretization/spatial_discretization.h"
 #include "math/KernelSystem/FEMKernels/FEMKernel.h"
-#include "math/KernelSystem/FEMKernels/FEMMaterialProperty.h"
+#include "math/KernelSystem/Coupling/FEMMaterialProperty.h"
 #include "math/KernelSystem/FEMBCs/FEMDirichletBC.h"
 #include "math/ParallelMatrix/ParallelMatrix.h"
 
@@ -27,6 +27,8 @@ void KernelSystem::InitCellData(const ParallelVector& x,
     primary_fields_container_->GetFieldBlockInfo(current_field_index_);
   const auto& field = field_info.field_;
   const auto& sdm = field->SDM();
+
+  cur_cell_data.cell_ptr_ = &cell;
 
   const auto& cell_mapping = sdm.GetCellMapping(cell);
   const size_t num_nodes = cell_mapping.NumNodes();
@@ -118,6 +120,9 @@ KernelSystem::SetupAndGetCellInternalKernels(const chi_mesh::Cell& cell)
     for (size_t j = 0; j < num_nodes; ++j)
       for (uint32_t qp : qp_indices)
         var_dot_qp_values[qp] += shape_values[j][qp] * local_x_dot_[j];
+
+  for (auto& kernel : kernels)
+    kernel->PreComputeInternalCoupledFields();
 
   return kernels;
 }

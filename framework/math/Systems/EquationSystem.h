@@ -17,7 +17,7 @@ class FieldFunctionGridBased;
 namespace chi_math
 {
 
-class MultifieldContainer;
+class MultiFieldContainer;
 
 typedef std::vector<std::shared_ptr<chi_physics::FieldFunctionGridBased>>
   FieldList;
@@ -117,7 +117,7 @@ protected:
   const int verbosity_;
   const std::string output_file_base_;
 
-  std::unique_ptr<MultifieldContainer> primary_fields_container_;
+  std::shared_ptr<MultiFieldContainer> primary_fields_container_;
 
   const int64_t num_local_dofs_;
   const int64_t num_globl_dofs_;
@@ -139,7 +139,7 @@ protected:
   std::vector<size_t> t_tags_;
 
 private:
-  static std::unique_ptr<MultifieldContainer>
+  static std::shared_ptr<MultiFieldContainer>
   MakeMultifieldContainer(const chi::ParameterBlock& params);
 
   std::unique_ptr<ParallelVector> MakeSolutionVector();

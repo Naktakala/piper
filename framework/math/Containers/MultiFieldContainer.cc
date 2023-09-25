@@ -13,9 +13,9 @@
 namespace chi_math
 {
 
-RegisterChiObject(chi_math, MultifieldContainer);
+RegisterChiObject(chi_math, MultiFieldContainer);
 
-chi::InputParameters MultifieldContainer::GetInputParameters()
+chi::InputParameters MultiFieldContainer::GetInputParameters()
 {
   chi::InputParameters params = ChiObject::GetInputParameters();
 
@@ -32,7 +32,7 @@ chi::InputParameters MultifieldContainer::GetInputParameters()
   return params;
 }
 
-MultifieldContainer::MultifieldContainer(const chi::InputParameters& params)
+MultiFieldContainer::MultiFieldContainer(const chi::InputParameters& params)
   : ChiObject(params),
     verbosity_(params.GetParamValue<int>("verbosity")),
     field_block_info_(std::move(MakeFieldBlockInfo(
@@ -47,7 +47,7 @@ MultifieldContainer::MultifieldContainer(const chi::InputParameters& params)
 /**Makes a list of grid-base field functions given either an array of
  * warehouse handles or field-function names.*/
 FieldList
-MultifieldContainer::BuildFieldList(const chi::ParameterBlock& param_array)
+MultiFieldContainer::BuildFieldList(const chi::ParameterBlock& param_array)
 {
   ChiInvalidArgumentIf(
     param_array.Type() != chi::ParameterBlockType::ARRAY,
@@ -136,8 +136,8 @@ MultifieldContainer::BuildFieldList(const chi::ParameterBlock& param_array)
 }
 
 // ##################################################################
-std::vector<MultifieldContainer::FieldBlockInfo>
-MultifieldContainer::MakeFieldBlockInfo(const FieldList& field_list,
+std::vector<MultiFieldContainer::FieldBlockInfo>
+MultiFieldContainer::MakeFieldBlockInfo(const FieldList& field_list,
                                         int verbosity)
 {
   const int num_ranks = Chi::mpi.process_count;
@@ -325,7 +325,7 @@ MultifieldContainer::MakeFieldBlockInfo(const FieldList& field_list,
 }
 
 // ##################################################################
-int64_t MultifieldContainer::DetermineNumLocalDofs(
+int64_t MultiFieldContainer::DetermineNumLocalDofs(
   const std::vector<FieldBlockInfo>& field_block_info)
 {
   size_t num_dofs = 0;
@@ -335,7 +335,7 @@ int64_t MultifieldContainer::DetermineNumLocalDofs(
   return static_cast<int64_t>(num_dofs);
 }
 // ##################################################################
-int64_t MultifieldContainer::DetermineNumGlobalDofs(
+int64_t MultiFieldContainer::DetermineNumGlobalDofs(
   const std::vector<FieldBlockInfo>& field_block_info)
 {
   size_t num_dofs = 0;
@@ -346,27 +346,27 @@ int64_t MultifieldContainer::DetermineNumGlobalDofs(
 }
 
 // ##################################################################
-const std::vector<int64_t>& MultifieldContainer::GetSystemGhostIDs() const
+const std::vector<int64_t>& MultiFieldContainer::GetSystemGhostIDs() const
 {
   return system_ghost_ids_;
 }
 
 // ##################################################################
-const MultifieldContainer::FieldBlockInfo&
-MultifieldContainer::GetFieldBlockInfo(size_t field_id) const
+const MultiFieldContainer::FieldBlockInfo&
+MultiFieldContainer::GetFieldBlockInfo(size_t field_id) const
 {
   return field_block_info_.at(field_id);
 }
 
 // ##################################################################
-const chi_mesh::MeshContinuum& MultifieldContainer::GetSystemCommonGrid() const
+const chi_mesh::MeshContinuum& MultiFieldContainer::GetSystemCommonGrid() const
 {
   return field_block_info_.front().field_->SDM().Grid();
 }
 
 // ##################################################################
 int64_t
-MultifieldContainer::MapFieldGlobalIDToSystem(const FieldBlockInfo& info,
+MultiFieldContainer::MapFieldGlobalIDToSystem(const FieldBlockInfo& info,
                                               int64_t field_global_id) const
 {
   const size_t num_ranks = info.locP_global_block_span_.size();
@@ -400,7 +400,7 @@ MultifieldContainer::MapFieldGlobalIDToSystem(const FieldBlockInfo& info,
 
 // ##################################################################
 int64_t
-MultifieldContainer::MapFieldLocalIDToSystem(const FieldBlockInfo& info,
+MultiFieldContainer::MapFieldLocalIDToSystem(const FieldBlockInfo& info,
                                              int64_t field_local_id) const
 {
   int64_t dof_map;
@@ -426,7 +426,7 @@ MultifieldContainer::MapFieldLocalIDToSystem(const FieldBlockInfo& info,
 }
 
 // ##################################################################
-std::vector<int64_t> MultifieldContainer::BuildSystemGhostIDs()
+std::vector<int64_t> MultiFieldContainer::BuildSystemGhostIDs()
 {
   std::vector<int64_t> ghost_ids;
 
@@ -438,7 +438,7 @@ std::vector<int64_t> MultifieldContainer::BuildSystemGhostIDs()
 }
 
 // ##################################################################
-int64_t MultifieldContainer::MapDOF(const chi_mesh::Cell& cell,
+int64_t MultiFieldContainer::MapDOF(const chi_mesh::Cell& cell,
                                     size_t i,
                                     const FieldBlockInfo& info,
                                     size_t component_id) const
@@ -452,7 +452,7 @@ int64_t MultifieldContainer::MapDOF(const chi_mesh::Cell& cell,
 }
 
 // ##################################################################
-int64_t MultifieldContainer::MapDOFLocal(const chi_mesh::Cell& cell,
+int64_t MultiFieldContainer::MapDOFLocal(const chi_mesh::Cell& cell,
                                          size_t i,
                                          const FieldBlockInfo& info,
                                          size_t component_id) const

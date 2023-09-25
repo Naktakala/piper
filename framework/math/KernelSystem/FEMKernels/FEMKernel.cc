@@ -2,7 +2,7 @@
 
 #include "math/Systems/EquationSystemTimeData.h"
 #include "math/KernelSystem/KernelSystem.h"
-#include "math/KernelSystem/FEMKernels/FEMMaterialProperty.h"
+#include "math/KernelSystem/Coupling/FEMMaterialProperty.h"
 #include "materials/MaterialPropertiesData.h"
 
 #include "chi_log.h"
@@ -14,6 +14,7 @@ chi::InputParameters FEMKernel::GetInputParameters()
 {
   chi::InputParameters params = ChiObject::GetInputParameters();
   params += chi::MaterialIDScopeInterface::GetInputParameters();
+  params += chi_math::CoupledFieldInterface::GetInputParameters();
 
   params.AddRequiredParameter<std::string>("type", "The kernel type.");
 
@@ -37,6 +38,7 @@ chi::InputParameters FEMKernel::GetInputParameters()
 FEMKernel::FEMKernel(const chi::InputParameters& params)
   : ChiObject(params),
     chi::MaterialIDScopeInterface(params),
+    chi_math::CoupledFieldInterface(params),
     var_name_component_(params.GetParamValue<std::string>("var"),
                         params.GetParamValue<uint32_t>("var_component")),
     fem_data_(Chi::GetStackItem<FEMKernelSystemData>(

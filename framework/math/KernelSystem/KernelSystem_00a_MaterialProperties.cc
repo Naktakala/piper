@@ -2,7 +2,7 @@
 
 #include "materials/MaterialPropertiesData.h"
 #include "materials/MaterialProperty.h"
-#include "FEMKernels/FEMMaterialProperty.h"
+#include "math/KernelSystem/Coupling/FEMMaterialProperty.h"
 
 namespace chi_math
 {

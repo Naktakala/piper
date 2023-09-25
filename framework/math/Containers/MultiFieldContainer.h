@@ -23,12 +23,12 @@ typedef std::vector<std::shared_ptr<chi_physics::FieldFunctionGridBased>>
 /**A container to hold one or more grid-based field functions. The fields
 can have differing spatial discretizations. The container also allows for
 easy definition of vectors and block vectors.*/
-class MultifieldContainer : public ChiObject
+class MultiFieldContainer : public ChiObject
 {
 public:
   struct FieldBlockInfo;
   static chi::InputParameters GetInputParameters();
-  explicit MultifieldContainer(const chi::InputParameters& params);
+  explicit MultiFieldContainer(const chi::InputParameters& params);
 
   int64_t TotalNumLocalDOFs() const { return total_num_local_dofs_; }
   int64_t TotalNumGlobalDOFs() const { return total_num_global_dofs_; }
@@ -65,7 +65,7 @@ public:
     iterator operator++(int) { ++ref_element_; return *this; }
 
     FieldBlockInfo& operator*() { return ref_vec_[ref_element_]; }
-    bool operator==(const iterator& rhs) const { return ref_element_ == rhs.ref_element_;;}
+    bool operator==(const iterator& rhs) const { return ref_element_ == rhs.ref_element_;}
     bool operator!=(const iterator& rhs) const { return ref_element_ != rhs.ref_element_; }
 
   private:

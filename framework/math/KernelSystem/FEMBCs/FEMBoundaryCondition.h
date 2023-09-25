@@ -2,6 +2,8 @@
 #define CHITECH_FEMBOUNDARYCONDITION_H
 
 #include "ChiObject.h"
+#include "interfaces/CoupledFieldInterface.h"
+#include "math/KernelSystem/Coupling/FEMCoupledField.h"
 #include "mesh/chi_mesh.h"
 #include "math/chi_math.h"
 
@@ -17,7 +19,8 @@ class FEMKernelSystemData;
 
 /**The abstract base class of a Finite Element Method Boundary Condition
  * Kernel.*/
-class FEMBoundaryCondition : public ChiObject
+class FEMBoundaryCondition : public ChiObject,
+                             public chi_math::CoupledFieldInterface
 {
 public:
   static chi::InputParameters GetInputParameters();

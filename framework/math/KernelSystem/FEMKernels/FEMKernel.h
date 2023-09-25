@@ -3,6 +3,8 @@
 
 #include "ChiObject.h"
 #include "materials/MaterialIDScopeInterface.h"
+#include "interfaces/CoupledFieldInterface.h"
+#include "math/KernelSystem/Coupling/FEMCoupledField.h"
 #include "mesh/chi_mesh.h"
 #include "math/chi_math.h"
 
@@ -14,13 +16,12 @@ class FEMMaterialProperty;
 
 /**The abstract base class of a Finite Element Method Kernel.*/
 class FEMKernel : public ChiObject,
-                  public chi::MaterialIDScopeInterface
+                  public chi::MaterialIDScopeInterface,
+                  public chi_math::CoupledFieldInterface
 {
 public:
   static chi::InputParameters GetInputParameters();
   explicit FEMKernel(const chi::InputParameters& params);
-
-  virtual void PreComputeValues() {};
 
   /**Computes the current cell's contribution to the residual at cell node i.*/
   virtual double ComputeLocalResidual(uint32_t i);

@@ -27,6 +27,13 @@ mat_props = chi.MaterialPropertiesData.Create
   }
 })
 
+tbulk = chi_physics.FieldFunctionGridBased.Create({
+  name = "T_bulk",
+  sdm_type = "FiniteVolume",
+  pwl_allow_lagrange = true,
+  initial_value = 50.0
+})
+
 system1 = chi_math.KernelSystem.Create
 ({
   material_properties = mat_props,
@@ -36,17 +43,19 @@ system1 = chi_math.KernelSystem.Create
       sdm_type = "PWLC",
       pwl_allow_lagrange = true
     }),
-    --chi_physics.FieldFunctionGridBased.Create({
-    --  name = "T2",
-    --  sdm_type = "PWLC"
-    --})
+    chi_physics.FieldFunctionGridBased.Create({
+      name = "Tb",
+      sdm_type = "PWLC",
+      pwl_allow_lagrange = true
+    })
   },
   kernels = {
     --{ type = hcm.ThermalConductionKernel.type, var="Te", k=10.0 },
     { type = hcm.ThermalConductionKernel2.type, var="Te" },
     { type = chi_math.SinkSourceFEMKernel.type, var="Te", value = 100.0e2 },
-    --{ type = hcm.ThermalConductionKernel.type, var="T2", k = 1.0 },
-    --{ type = chi_math.SinkSourceFEMKernel.type, var="T2", value = 100.0e2 },
+    { type = hcm.ThermalConductionKernel.type, var="Tb", k = 1.0 },
+    --{ type = hcm.ThermalConductionKernel2.type, var="Tb" },
+    { type = chi_math.SinkSourceFEMKernel.type, var="Tb", value = 10.0e2 },
   },
   bcs = {
     {
@@ -55,12 +64,31 @@ system1 = chi_math.KernelSystem.Create
       var="Te"
     },
     --{
-    --  type = hcm.ConvectiveHeatFluxBC.type,
+    --  type = chi_math.FEMDirichletBC.type,
     --  boundaries = { "XMIN", "YMIN", "YMAX", "XMAX" },
+    --  var="Tb"
+    --},
+    {
+      type = hcm.ConvectiveHeatFluxBC.type,
+      boundaries = { "XMIN", "YMIN", "YMAX" },
+      T_bulk = 80.0,
+      convection_coefficient = 10000.0,
+      var="Tb"
+    },
+    --{
+    --  type = hcm.ConvectiveHeatFluxBC.type,
+    --  boundaries = { "XMAX" },
     --  T_bulk = 100.0,
     --  convection_coefficient = 10000.0,
-    --  var="Te"
+    --  var="Tb"
     --},
+    {
+      type = hcm.CoupledConvectiveHeatFluxBC.type,
+      boundaries = { "XMAX" },
+      T_bulk = "T_bulk",
+      convection_coefficient = 10000.0,
+      var="Tb"
+    },
   },
   --verbosity = 2,
   output_filename_base = "test4_2fields"

@@ -42,8 +42,6 @@ EquationSystem::EquationSystem(const chi::InputParameters& params)
     verbosity_(params.GetParamValue<int>("verbosity")),
     output_file_base_(
       params.GetParamValue<std::string>("output_filename_base")),
-    //field_block_info_(
-    //  std::move(MakeFieldBlockInfo(BuildFieldList(params.GetParam("fields"))))),
 
     primary_fields_container_(
       std::move(MakeMultifieldContainer(params.GetParam("fields")))),
@@ -203,17 +201,25 @@ const EquationSystemTimeData& EquationSystem::GetTimeData() const
   return time_data_;
 }
 
-std::unique_ptr<MultifieldContainer>
+std::shared_ptr<MultiFieldContainer>
 EquationSystem::MakeMultifieldContainer(const chi::ParameterBlock& params)
 {
-  auto valid_params = MultifieldContainer::GetInputParameters();
+  auto valid_params = MultiFieldContainer::GetInputParameters();
   chi::ParameterBlock param_block;
   param_block.AddParameter(params);
 
   valid_params.SetErrorOriginScope("chi_math::MultifieldContainer");
   valid_params.AssignParameters(param_block);
 
-  return std::make_unique<MultifieldContainer>(valid_params);
+  auto container_ptr = std::make_shared<MultiFieldContainer>(valid_params);
+
+  Chi::object_stack.push_back(container_ptr);
+
+  const size_t handle = Chi::object_stack.size() - 1;
+
+  container_ptr->SetStackID(handle);
+
+  return container_ptr;
 }
 
 /**Uses the underlying system to build a sparsity pattern.*/

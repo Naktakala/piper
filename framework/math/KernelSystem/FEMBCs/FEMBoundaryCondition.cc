@@ -11,6 +11,7 @@ namespace chi_math
 chi::InputParameters FEMBoundaryCondition::GetInputParameters()
 {
   chi::InputParameters params = ChiObject::GetInputParameters();
+  params += chi_math::CoupledFieldInterface::GetInputParameters();
 
   params.AddRequiredParameter<std::string>("type", "The bc-kernel type.");
 
@@ -33,6 +34,7 @@ chi::InputParameters FEMBoundaryCondition::GetInputParameters()
 
 FEMBoundaryCondition::FEMBoundaryCondition(const chi::InputParameters& params)
   : ChiObject(params),
+    chi_math::CoupledFieldInterface(params),
     var_name_component_(params.GetParamValue<std::string>("var"),
                         params.GetParamValue<uint32_t>("var_component")),
     boundary_scope_(params.GetParamVectorValue<std::string>("boundaries")),

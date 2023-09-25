@@ -66,6 +66,7 @@ void KernelSystem::ComputeJacobian(const ParallelVector& x,
       {
         if (bndry_condition->IsDirichlet()) continue;
         SetupFaceIntegralBCKernel(cell, f);
+        bndry_condition->PreComputeFaceCoupledFields();
         const size_t face_num_nodes = cell_mapping.NumFaceNodes(f);
         for (size_t fi = 0; fi < face_num_nodes; ++fi)
         {
