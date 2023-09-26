@@ -4,6 +4,8 @@
 
 #include "ChiObjectFactory.h"
 
+#include "chi_log.h"
+
 namespace chi_math
 {
 
@@ -25,21 +27,36 @@ SteadyNonLinearExecutioner::SteadyNonLinearExecutioner(
 void SteadyNonLinearExecutioner::ComputeResidual(const ParallelVector& x,
                                                  ParallelVector& r)
 {
+  Chi::log.LogEvent(t_tag_residual_, chi::ChiLog::EventType::EVENT_BEGIN);
   SetModeToNonTimeOnly();
   eq_system_->ComputeResidual(x, r);
+  Chi::log.LogEvent(t_tag_residual_, chi::ChiLog::EventType::EVENT_END);
 }
 
 void SteadyNonLinearExecutioner::ComputeJacobian(const ParallelVector& x,
                                                  ParallelMatrix& J)
 {
+  Chi::log.LogEvent(t_tag_jacobian_, chi::ChiLog::EventType::EVENT_BEGIN);
   SetModeToNonTimeOnly();
   eq_system_->ComputeJacobian(x, J);
+  Chi::log.LogEvent(t_tag_jacobian_, chi::ChiLog::EventType::EVENT_END);
 }
 
 void SteadyNonLinearExecutioner::Execute()
 {
+  Chi::log.LogEvent(t_tag_solve_, chi::ChiLog::EventType::EVENT_BEGIN);
+
+  if (print_headers_)
+    Chi::log.Log() << "\nExecuting solver \"" + TextName() + "\"";
+
   nl_solver_->Solve();
   eq_system_->UpdateFields();
+
+  if (print_footers_)
+    Chi::log.Log() << nl_solver_->GetConvergedReasonString() << "\n\n";
+
+  Chi::log.LogEvent(t_tag_solve_, chi::ChiLog::EventType::EVENT_END);
+
   eq_system_->OutputFields();
 
   PrintTimingInfo();

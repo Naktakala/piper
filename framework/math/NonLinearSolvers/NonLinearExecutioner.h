@@ -57,6 +57,12 @@ public:
 
   void PrintTimingInfo() const;
 
+  const bool print_timing_info_;
+  const bool print_nl_residual_;
+  const bool print_l_residual_;
+  const bool print_headers_;
+  const bool print_footers_;
+
 protected:
   static chi::InputParameters GetInputParameters();
   explicit NonLinearExecutioner(const chi::InputParameters& params);
@@ -64,7 +70,9 @@ protected:
 
   static bool TimeIDListHasID(const std::vector<TimeID>& time_ids, TimeID id);
 
-  const bool print_timing_info_;
+  const size_t t_tag_residual_;
+  const size_t t_tag_jacobian_;
+  const size_t t_tag_solve_;
 
   std::shared_ptr<EquationSystem> eq_system_;
   const chi::ParameterBlock nl_solver_params_;

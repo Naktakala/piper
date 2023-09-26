@@ -23,12 +23,39 @@ chi::InputParameters NonLinearExecutioner::GetInputParameters()
   params.AddOptionalParameter(
     "print_timing_info", false, "If true, will print timing info.");
 
+  params.AddOptionalParameter(
+    "print_nl_residual",
+    true,
+    "If false, no non-linear residual will be printed.");
+  params.AddOptionalParameter(
+    "print_l_residual", true, "If false, no linear residual will be printed.");
+  params.AddOptionalParameter(
+    "print_header",
+    true,
+    "If false, steady executioner will not print header messages like "
+    "\"Executing...\", whilst"
+    "transient executioners will not print time-info at each timestep.");
+
+  params.AddOptionalParameter(
+    "print_footer",
+    true,
+    "Disables convergence reason printing and stuff below it.");
+
   return params;
 }
 
 NonLinearExecutioner::NonLinearExecutioner(const chi::InputParameters& params)
   : chi_physics::Solver(params),
+    t_tag_residual_(
+      Chi::log.GetRepeatingEventTag(TextName() + "ComputeResidual")),
+    t_tag_jacobian_(
+      Chi::log.GetRepeatingEventTag(TextName() + "ComputeJacobian")),
+    t_tag_solve_(Chi::log.GetRepeatingEventTag(TextName() + "Solve")),
     print_timing_info_(params.GetParamValue<bool>("print_timing_info")),
+    print_nl_residual_(params.GetParamValue<bool>("print_nl_residual")),
+    print_l_residual_(params.GetParamValue<bool>("print_l_residual")),
+    print_headers_(params.GetParamValue<bool>("print_header")),
+    print_footers_(params.GetParamValue<bool>("print_footer")),
     eq_system_(GetEquationSystem(params.GetParamValue<size_t>("system"))),
     nl_solver_params_(params.GetParam("solver_params"))
 {
@@ -108,54 +135,30 @@ void NonLinearExecutioner::PrintTimingInfo() const
 {
   if (not print_timing_info_) return;
 
-  const size_t residual_ev_tag =
-    Chi::log.GetExistingRepeatingEventTag("ComputeResidual");
-  const size_t jacobian_ev_tag =
-    Chi::log.GetExistingRepeatingEventTag("ComputeJacobian");
+  constexpr auto DUR = chi::ChiLog::EventOperation::TOTAL_DURATION;
+  constexpr auto NUM = chi::ChiLog::EventOperation::NUMBER_OF_OCCURRENCES;
+  constexpr auto AVG = chi::ChiLog::EventOperation::AVERAGE_DURATION;
 
   std::stringstream outstr;
   outstr << "ComputeResidual: ";
-  outstr << Chi::log.ProcessEvent(residual_ev_tag,
-                                  chi::ChiLog::EventOperation::TOTAL_DURATION) /
-              1.0e6;
-  outstr << " ("
-         << Chi::log.ProcessEvent(
-              residual_ev_tag,
-              chi::ChiLog::EventOperation::NUMBER_OF_OCCURRENCES)
-         << ")";
-
-  outstr << " avg="
-         << Chi::log.ProcessEvent(
-              residual_ev_tag, chi::ChiLog::EventOperation::AVERAGE_DURATION);
+  outstr << Chi::log.ProcessEvent(t_tag_residual_, DUR) / 1.0e6;
+  outstr << " (" << Chi::log.ProcessEvent(t_tag_residual_, NUM) << ")";
+  outstr << " avg=" << Chi::log.ProcessEvent(t_tag_residual_, AVG);
   outstr << "\n";
 
   outstr << "ComputeJacobian: ";
-  outstr << Chi::log.ProcessEvent(jacobian_ev_tag,
-                                  chi::ChiLog::EventOperation::TOTAL_DURATION) /
-              1.0e6;
-  outstr << " ("
-         << Chi::log.ProcessEvent(
-              jacobian_ev_tag,
-              chi::ChiLog::EventOperation::NUMBER_OF_OCCURRENCES)
-         << ")";
-  outstr << " avg="
-         << Chi::log.ProcessEvent(
-              jacobian_ev_tag, chi::ChiLog::EventOperation::AVERAGE_DURATION);
+  outstr << Chi::log.ProcessEvent(t_tag_jacobian_, DUR) / 1.0e6;
+  outstr << " (" << Chi::log.ProcessEvent(t_tag_jacobian_, NUM) << ")";
+  outstr << " avg=" << Chi::log.ProcessEvent(t_tag_jacobian_, AVG);
   outstr << "\n";
 
-  for (size_t k = 0; k < 10; ++k)
-  {
-    const size_t t_tag =
-      Chi::log.GetExistingRepeatingEventTag("Timing_" + std::to_string(k));
+  outstr << "Solve: ";
+  outstr << Chi::log.ProcessEvent(t_tag_solve_, DUR) / 1.0e6;
+  outstr << " (" << Chi::log.ProcessEvent(t_tag_solve_, NUM) << ")";
+  outstr << " avg=" << Chi::log.ProcessEvent(t_tag_solve_, AVG);
+  outstr << "\n";
 
-    outstr << "Timing_" << k << " " << t_tag << " average "
-           << Chi::log.ProcessEvent(
-                t_tag, chi::ChiLog::EventOperation::TOTAL_DURATION) /
-                1.0e3;
-    outstr << "\n";
-  }
-
-  Chi::log.Log() << outstr.str();
+  Chi::log.Log() << "\n" + TextName() + " timing info:\n" + outstr.str();
 }
 
 } // namespace chi_math

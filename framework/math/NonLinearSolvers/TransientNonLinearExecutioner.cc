@@ -32,6 +32,8 @@ TransientNonLinearExecutioner::TransientNonLinearExecutioner(
 void TransientNonLinearExecutioner::ComputeResidual(const ParallelVector& x,
                                                     ParallelVector& r)
 {
+  Chi::log.LogEvent(t_tag_residual_, chi::ChiLog::EventType::EVENT_BEGIN);
+
   auto& time_integrator = eq_system_->GetTimeIntegrator();
 
   const auto r_time_ids = time_integrator.GetResidualTimeIDsNeeded();
@@ -66,13 +68,17 @@ void TransientNonLinearExecutioner::ComputeResidual(const ParallelVector& x,
 
   // Delete r_x_tp1 if r_x_t is not required
   if (not TimeIDListHasID(r_time_ids, TimeID::T)) r_x_tp1_ = nullptr;
+
+  Chi::log.LogEvent(t_tag_residual_, chi::ChiLog::EventType::EVENT_END);
 }
 
 void TransientNonLinearExecutioner::ComputeJacobian(const ParallelVector& x,
                                                     ParallelMatrix& J)
 {
+  Chi::log.LogEvent(t_tag_jacobian_, chi::ChiLog::EventType::EVENT_BEGIN);
   SetModeToTimeAndNonTime();
   eq_system_->GetTimeIntegrator().ComputeJacobian(x, J, *eq_system_);
+  Chi::log.LogEvent(t_tag_jacobian_, chi::ChiLog::EventType::EVENT_END);
 }
 
 void TransientNonLinearExecutioner::SetInitialSolution()
@@ -111,10 +117,14 @@ void TransientNonLinearExecutioner::SetInitialSolution()
 
 void TransientNonLinearExecutioner::Step()
 {
+  Chi::log.LogEvent(t_tag_solve_, chi::ChiLog::EventType::EVENT_BEGIN);
+
   const double dt = time_step_controller_->GetTimeStepSize();
   const double time = time_step_controller_->Time();
 
-  Chi::log.Log() << time_step_controller_->StringTimeInfo(time + dt);
+  if (print_headers_)
+    Chi::log.Log() << "Solver \"" + TextName() + "\" " +
+                        time_step_controller_->StringTimeInfo(time + dt);
 
   const double var_dot_dvar =
     eq_system_->GetTimeIntegrator().GetTimeCoefficient(dt);
@@ -123,7 +133,10 @@ void TransientNonLinearExecutioner::Step()
 
   nl_solver_->Solve();
 
-  Chi::log.Log() << nl_solver_->GetConvergedReasonString() << "\n\n";
+  if (print_footers_)
+    Chi::log.Log() << nl_solver_->GetConvergedReasonString() << "\n\n";
+
+  Chi::log.LogEvent(t_tag_solve_, chi::ChiLog::EventType::EVENT_END);
 }
 
 void TransientNonLinearExecutioner::Advance()

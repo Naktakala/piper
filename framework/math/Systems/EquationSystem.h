@@ -137,9 +137,6 @@ protected:
 
   EquationSystemTimeData time_data_;
 
-  const size_t t_tag_residual_;
-  const size_t t_tag_jacobian_;
-
   std::vector<size_t> t_tags_;
 
 private:

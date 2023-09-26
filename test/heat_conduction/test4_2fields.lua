@@ -31,8 +31,6 @@ mat_props = chi.MaterialPropertiesData.Create
 ({
   properties =
   {
-    --chi.ConstantMaterialProperty.Create({name = "k", scalar_value = 10.0}),
-    --hcm.ThermalConductivity.Create({name="k", constant_value = 8.0})
     hcm.ThermalConductivity.Create({name="kSW", value_function = func1}),
     hcm.ThermalConductivity.Create({name="kOther", value_function = func2})
   }
@@ -49,20 +47,23 @@ tbulk = chi_physics.FieldFunctionGridBased.Create({
 system1 = chi_math.KernelSystem.Create
 ({
   material_properties = mat_props,
-  fields = {
-    chi_physics.FieldFunctionGridBased.Create({
+  fields =
+  {
+    chi_physics.FieldFunctionGridBased.Create
+    ({
       name = "Te",
       sdm_type = "PWLC",
       pwl_allow_lagrange = true
     }),
-    --chi_physics.FieldFunctionGridBased.Create({
-    --  name = "Tb",
-    --  sdm_type = "PWLC",
-    --  pwl_allow_lagrange = true
-    --})
+    chi_physics.FieldFunctionGridBased.Create
+    ({
+      name = "Tb",
+      sdm_type = "PWLC",
+      pwl_allow_lagrange = true
+    })
   },
-  kernels = {
-    --{ type = hcm.ThermalConductionKernel.type, var="Te", k=10.0 },
+  kernels =
+  {
     {
       type = hcm.ThermalConductionKernel2.type,
       var="Te",
@@ -75,43 +76,42 @@ system1 = chi_math.KernelSystem.Create
       k_property_name = "kOther",
       mat_ids = {0}
     },
-    { type = chi_math.SinkSourceFEMKernel.type, var="Te", value = 100.0e2, mat_ids={1} },
-    --{ type = hcm.ThermalConductionKernel.type, var="Tb", k = 1.0 },
-    ----{ type = hcm.ThermalConductionKernel2.type, var="Tb" },
-    --{ type = chi_math.SinkSourceFEMKernel.type, var="Tb", value = 10.0e2 },
+    {
+      type = chi_math.SinkSourceFEMKernel.type,
+      var="Te",
+      value = 100.0e2,
+      mat_ids={1}
+    },
+    {
+      type = hcm.ThermalConductionKernel2.type,
+      var="Tb",
+      k_property_name = "kOther"
+    },
+    {
+      type = chi_math.SinkSourceFEMKernel.type,
+      var="Tb",
+      value = 10.0e2
+    },
   },
-  bcs = {
+  bcs =
+  {
     {
       type = chi_math.FEMDirichletBC.type,
       boundaries = { "XMIN", "YMIN", "YMAX", "XMAX" },
       var="Te"
     },
-    --{
-    --  type = chi_math.FEMDirichletBC.type,
-    --  boundaries = { "XMIN", "YMIN", "YMAX", "XMAX" },
-    --  var="Tb"
-    --},
-    --{
-    --  type = hcm.ConvectiveHeatFluxBC.type,
-    --  boundaries = { "XMIN", "YMIN", "YMAX" },
-    --  T_bulk = 80.0,
-    --  convection_coefficient = 10000.0,
-    --  var="Tb"
-    --},
-    --{
-    --  type = hcm.ConvectiveHeatFluxBC.type,
-    --  boundaries = { "XMAX" },
-    --  T_bulk = 100.0,
-    --  convection_coefficient = 10000.0,
-    --  var="Tb"
-    --},
-    --{
-    --  type = hcm.CoupledConvectiveHeatFluxBC.type,
-    --  boundaries = { "XMAX" },
-    --  T_bulk = "T_bulk",
-    --  convection_coefficient = 10000.0,
-    --  var="Tb"
-    --},
+    {
+      type = chi_math.FEMDirichletBC.type,
+      boundaries = { "XMIN", "YMIN", "YMAX" },
+      var="Tb"
+    },
+    {
+      type = hcm.CoupledConvectiveHeatFluxBC.type,
+      boundaries = { "XMAX" },
+      T_bulk = "T_bulk",
+      convection_coefficient = 10000.0,
+      var="Tb"
+    },
   },
   --verbosity = 2,
   output_filename_base = "test4_2fields"

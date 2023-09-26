@@ -17,6 +17,8 @@ class MeshContinuum;
 namespace chi_math
 {
 
+struct ParallelMatrixSparsityPattern;
+
 typedef std::vector<std::shared_ptr<chi_physics::FieldFunctionGridBased>>
   FieldList;
 
@@ -34,6 +36,9 @@ public:
   int64_t TotalNumGlobalDOFs() const { return total_num_global_dofs_; }
 
   const std::vector<int64_t>& GetSystemGhostIDs() const;
+
+  /**Uses the underlying system to build a sparsity pattern.*/
+  ParallelMatrixSparsityPattern BuildMatrixSparsityPattern() const;
 
   const FieldBlockInfo& GetFieldBlockInfo(size_t field_id) const;
 

@@ -63,6 +63,9 @@ phys1 = chi_math.TransientNonLinearExecutioner.Create
     end_time = 1.0,
     max_time_steps = 100
   },
+  print_footer = false,
+  print_nl_residual = false,
+  print_l_residual = false
 })
 
 chi.AggregateNodalValuePostProcessor.Create

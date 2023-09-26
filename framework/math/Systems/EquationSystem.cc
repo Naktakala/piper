@@ -62,13 +62,8 @@ EquationSystem::EquationSystem(const chi::InputParameters& params)
     old_solution_vectors_(std::move(InitSolutionHistory())),
     old_residual_vectors_(std::move(InitResidualHistory())),
     eq_term_scope_(EqTermScope::DOMAIN_TERMS | EqTermScope::BOUNDARY_TERMS),
-    time_data_(0.01, 0.0, 1.0),
-    t_tag_residual_(Chi::log.GetRepeatingEventTag("ComputeResidual")),
-    t_tag_jacobian_(Chi::log.GetRepeatingEventTag("ComputeJacobian"))
+    time_data_(0.01, 0.0, 1.0)
 {
-  for (size_t k = 0; k < 10; ++k)
-    t_tags_.push_back(
-      Chi::log.GetRepeatingEventTag("Timing_" + std::to_string(k)));
 }
 
 // ##################################################################
@@ -253,31 +248,7 @@ EquationSystem::MakeMultifieldContainer(const chi::ParameterBlock& params)
 /**Uses the underlying system to build a sparsity pattern.*/
 ParallelMatrixSparsityPattern EquationSystem::BuildMatrixSparsityPattern() const
 {
-  std::vector<int64_t> master_row_nnz_in_diag;
-  std::vector<int64_t> mastero_row_nnz_off_diag;
-
-  auto& a1 = master_row_nnz_in_diag;
-  auto& a2 = mastero_row_nnz_off_diag;
-  for (const auto& field_info : *primary_fields_container_)
-  {
-    auto& field = field_info.field_;
-    auto& sdm = field->SDM();
-    auto& uk_man = field->UnkManager();
-
-    std::vector<int64_t> nodal_nnz_in_diag;
-    std::vector<int64_t> nodal_nnz_off_diag;
-    sdm.BuildSparsityPattern(nodal_nnz_in_diag, nodal_nnz_off_diag, uk_man);
-
-    // Now append these to the master list
-    auto& b1 = nodal_nnz_in_diag;
-    auto& b2 = nodal_nnz_off_diag;
-
-    using std::begin, std::end;
-    a1.insert(end(a1), begin(b1), end(b1));
-    a2.insert(end(a2), begin(b2), end(b2));
-  }
-
-  return {master_row_nnz_in_diag, mastero_row_nnz_off_diag};
+  return primary_fields_container_->BuildMatrixSparsityPattern();
 }
 
 /**Updates the fields.*/

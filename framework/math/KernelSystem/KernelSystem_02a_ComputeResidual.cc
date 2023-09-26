@@ -21,10 +21,6 @@ void KernelSystem::ComputeResidual(const ParallelVector& x,
                                       ParallelVector& r)
 {
   if (verbosity_ >= 2) Chi::log.LogAll() << "Compute Residual " << std::endl;
-  Chi::log.LogEvent(t_tag_residual_, chi::ChiLog::EventType::EVENT_BEGIN);
-  auto& log = Chi::log;
-  log.LogEvent(t_tags_[0], chi::ChiLog::EventType::EVENT_BEGIN);
-
 
   current_field_index_ = 0;
   for (const auto& field_info : *primary_fields_container_)
@@ -101,7 +97,6 @@ void KernelSystem::ComputeResidual(const ParallelVector& x,
   if (verbosity_ >= 2) Chi::log.LogAll() << "Compute Residual Done" << std::endl;
 
   r.Assemble();
-  Chi::log.LogEvent(t_tag_residual_, chi::ChiLog::EventType::EVENT_END);
 }
 
 } // namespace chi_math

@@ -22,6 +22,8 @@ mpiexec -np 2 /Users/vermjc/Repos/ChiTech/piper/bin/piper test1b.lua --suppress_
 [0]  00:00:00 Establishing cell boundary connectivity.
 [0]  00:00:00 Done establishing cell connectivity.
 [0]  MeshGenerator: Cells created = 10
+[0]  
+[0]  Executing solver "phys1"
 [0]  NonLinearSolver non-linear iteration    0 - Residual 3.1130692e+03
 [0]  NonLinearSolver iteration    0 - Residual 3.1130692e+03
 [0]  NonLinearSolver iteration    1 - Residual 2.7503252e+03
@@ -41,6 +43,8 @@ mpiexec -np 2 /Users/vermjc/Repos/ChiTech/piper/bin/piper test1b.lua --suppress_
 [0]  NonLinearSolver iteration    8 - Residual 1.9633193e-05
 [0]  NonLinearSolver iteration    9 - Residual 5.6476444e-19
 [0]  NonLinearSolver non-linear iteration    2 - Residual 2.0827950e-10
+[0]            Converged CONVERGED_FNORM_ABS
+[0]  
 [0]  
 [0]  SCALAR post-processors latest values at event "ProgramExecuted"
 [0]  *----------------------*-----------------*

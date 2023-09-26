@@ -13,7 +13,7 @@
   if (not x)                                                                   \
   throw std::runtime_error(std::string(__PRETTY_FUNCTION__) +                  \
                            ": context casting failure")
-#define GetKernelBasedContextPtr(x)                                            \
+#define GetBasicNLSolverContextPtr(x)                                            \
   std::dynamic_pointer_cast<BasicNLSolverContext>(x);                          \
   CheckContext(x)
 
@@ -37,15 +37,23 @@ BasicNonLinearSolver::BasicNonLinearSolver(NonLinearExecutioner& executioner,
 // ##################################################################
 void BasicNonLinearSolver::SetMonitor()
 {
-  SNESMonitorSet(nl_solver_,
-                 &chi_math::PETScUtils::BasicSNESMonitor,
-                 PETSC_VIEWER_STDOUT_WORLD,
-                 nullptr);
+  auto nl_context_ptr = GetBasicNLSolverContextPtr(context_ptr_);
 
-  KSP ksp;
-  SNESGetKSP(nl_solver_, &ksp);
-  KSPMonitorSet(
-    ksp, &chi_math::PETScUtils::KSPMonitorStraight, nullptr, nullptr);
+  if (nl_context_ptr->executioner_.print_nl_residual_)
+  {
+    SNESMonitorSet(nl_solver_,
+                   &chi_math::PETScUtils::BasicSNESMonitor,
+                   PETSC_VIEWER_STDOUT_WORLD,
+                   nullptr);
+  }
+
+  if (nl_context_ptr->executioner_.print_l_residual_)
+  {
+    KSP ksp;
+    SNESGetKSP(nl_solver_, &ksp);
+    KSPMonitorSet(
+      ksp, &chi_math::PETScUtils::KSPMonitorStraight, nullptr, nullptr);
+  }
 }
 
 // ##################################################################
@@ -85,7 +93,7 @@ void BasicNonLinearSolver::SetPreconditioner()
                     //"pc_hypre_boomeramg_grid_sweeps_coarse 1"
       };
 
-      auto nl_context_ptr = GetKernelBasedContextPtr(context_ptr_);
+      auto nl_context_ptr = GetBasicNLSolverContextPtr(context_ptr_);
       nl_context_ptr->executioner_.AddToPreConditionerOptions(pc_options);
     } // if hypre
 
@@ -274,7 +282,7 @@ void BasicNonLinearSolver::PostSolveCallback()
 // ##################################################################
 void BasicNonLinearSolver::SetupMatrix(Mat& A)
 {
-  auto nl_context_ptr = GetKernelBasedContextPtr(context_ptr_);
+  auto nl_context_ptr = GetBasicNLSolverContextPtr(context_ptr_);
 
   auto& executioner = nl_context_ptr->executioner_;
 

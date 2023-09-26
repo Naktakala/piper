@@ -18,12 +18,10 @@ namespace chi_math
 {
 
 /**Collective method for computing the system Jacobian-matrix.*/
-void KernelSystem::ComputeJacobian(const ParallelVector& x,
-                                      ParallelMatrix& J)
+void KernelSystem::ComputeJacobian(const ParallelVector& x, ParallelMatrix& J)
 {
   if (verbosity_ >= 2)
     Chi::log.LogAll() << "Compute ComputeJacobian " << std::endl;
-  Chi::log.LogEvent(t_tag_jacobian_, chi::ChiLog::EventType::EVENT_BEGIN);
 
   current_field_index_ = 0;
   for (const auto& field_info : *primary_fields_container_)
@@ -85,13 +83,12 @@ void KernelSystem::ComputeJacobian(const ParallelVector& x,
           J.AddValue(dof_map[i], dof_map[j], cell_local_J[i][j]);
     } // for cell
     ++current_field_index_;
-  }   // for field
+  } // for field
 
   if (verbosity_ >= 2)
     Chi::log.LogAll() << "Compute ComputeJacobian Done" << std::endl;
 
   J.Assemble(/*final=*/true);
-  Chi::log.LogEvent(t_tag_jacobian_, chi::ChiLog::EventType::EVENT_END);
 }
 
 } // namespace chi_math

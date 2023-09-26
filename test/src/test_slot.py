@@ -68,7 +68,6 @@ class TestSlot:
             return running
 
         if self.process.poll() is not None:
-
             out, err = self.process.communicate()
 
             self.time_end = time.perf_counter()

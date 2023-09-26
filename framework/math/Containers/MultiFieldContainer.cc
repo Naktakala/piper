@@ -2,6 +2,7 @@
 
 #include "physics/FieldFunction/fieldfunction_gridbased.h"
 #include "math/SpatialDiscretization/spatial_discretization.h"
+#include "math/ParallelMatrix/ParallelMatrix.h"
 
 #include "ChiObjectFactory.h"
 
@@ -349,6 +350,37 @@ int64_t MultiFieldContainer::DetermineNumGlobalDofs(
 const std::vector<int64_t>& MultiFieldContainer::GetSystemGhostIDs() const
 {
   return system_ghost_ids_;
+}
+
+// ##################################################################
+/**Uses the underlying system to build a sparsity pattern.*/
+ParallelMatrixSparsityPattern MultiFieldContainer::BuildMatrixSparsityPattern() const
+{
+  std::vector<int64_t> master_row_nnz_in_diag;
+  std::vector<int64_t> mastero_row_nnz_off_diag;
+
+  auto& a1 = master_row_nnz_in_diag;
+  auto& a2 = mastero_row_nnz_off_diag;
+  for (const auto& field_info : field_block_info_)
+  {
+    auto& field = field_info.field_;
+    auto& sdm = field->SDM();
+    auto& uk_man = field->UnkManager();
+
+    std::vector<int64_t> nodal_nnz_in_diag;
+    std::vector<int64_t> nodal_nnz_off_diag;
+    sdm.BuildSparsityPattern(nodal_nnz_in_diag, nodal_nnz_off_diag, uk_man);
+
+    // Now append these to the master list
+    auto& b1 = nodal_nnz_in_diag;
+    auto& b2 = nodal_nnz_off_diag;
+
+    using std::begin, std::end;
+    a1.insert(end(a1), begin(b1), end(b1));
+    a2.insert(end(a2), begin(b2), end(b2));
+  }
+
+  return {master_row_nnz_in_diag, mastero_row_nnz_off_diag};
 }
 
 // ##################################################################

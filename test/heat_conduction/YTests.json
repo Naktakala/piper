@@ -38,7 +38,7 @@
     "file" : "transient_test3b.lua", "num_procs" : 8, "checks" :
   [
     { "type" :  "ErrorCode", "error_code" :  0},
-    { "type" : "StrCompare", "key" : "maxval(latest)       |      146.340792" }
+    { "type" : "StrCompare", "key" : "maxval(latest)       |      146.342584" }
   ]
   }
 ]
