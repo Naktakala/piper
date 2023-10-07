@@ -3,7 +3,7 @@
 #include "mesh/MeshHandler/chi_meshhandler.h"
 #include "mesh/MeshContinuum/chi_meshcontinuum.h"
 
-#include "math/SpatialDiscretization/FiniteElement/PiecewiseLinear/pwlc.h"
+#include "math/SpatialDiscretization/FiniteElement/PiecewiseLinear/PieceWiseLinearContinuous.h"
 
 #include "ChiObjectFactory.h"
 
@@ -50,7 +50,8 @@ HeatConductionSystem::HeatConductionSystem(const chi::InputParameters& params)
     ChiLogicalError("Failed to get grid. Make sure a mesh has been created.");
   }
 
-  sdm_ptr_ = chi_math::SpatialDiscretization_PWLC::New(Grid());
+  sdm_ptr_ =
+    chi_math::spatial_discretization::PieceWiseLinearContinuous::New(Grid());
 
   const auto volume_kernels_input = params.GetParam("kernels");
 

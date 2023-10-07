@@ -3,7 +3,7 @@
 #include "math/Systems/EquationSystem.h"
 #include "math/TimeIntegrators/TimeIntegrator.h"
 
-#include "physics/TimeStepControllers/TimeStepController.h"
+#include "physics/TimeSteppers/TimeStepper.h"
 #include "physics/PhysicsEventPublisher.h"
 
 #include "chi_runtime.h"
@@ -45,13 +45,13 @@ void TransientNonLinearExecutioner::ComputeResidual(const ParallelVector& x,
 
   r_map_.clear();
 
-  r_t_tp1_ = r.MakeNewVector();
+  r_t_tp1_ = r.MakeClone();
   SetModeToTimeOnly();
   eq_system_->ComputeResidual(x, *r_t_tp1_);
 
   if (TimeIDListHasID(r_time_ids, TimeID::T_PLUS_1))
   {
-    r_x_tp1_ = r.MakeNewVector();
+    r_x_tp1_ = r.MakeClone();
     SetModeToNonTimeOnly();
     eq_system_->ComputeResidual(x, *r_x_tp1_);
     r_map_[TimeID::T_PLUS_1] = (&(*r_x_tp1_));
@@ -85,8 +85,8 @@ void TransientNonLinearExecutioner::SetInitialSolution()
 {
   if (not initial_solution_set_)
   {
-    const double dt = time_step_controller_->GetTimeStepSize();
-    const double time = time_step_controller_->Time();
+    const double dt = timestepper_->TimeStepSize();
+    const double time = timestepper_->Time();
 
     const double var_dot_dvar =
       eq_system_->GetTimeIntegrator().GetTimeCoefficient(dt);
@@ -101,7 +101,7 @@ void TransientNonLinearExecutioner::SetInitialSolution()
     if (TimeIDListHasID(r_time_ids, TimeID::T))
     {
       const auto& x = eq_system_->SolutionVector();
-      auto r = x.MakeNewVector();
+      auto r = x.MakeClone();
       SetModeToNonTimeOnly();
       eq_system_->ComputeResidual(x, *r);
 
@@ -119,12 +119,12 @@ void TransientNonLinearExecutioner::Step()
 {
   Chi::log.LogEvent(t_tag_solve_, chi::ChiLog::EventType::EVENT_BEGIN);
 
-  const double dt = time_step_controller_->GetTimeStepSize();
-  const double time = time_step_controller_->Time();
+  const double dt = timestepper_->TimeStepSize();
+  const double time = timestepper_->Time();
 
   if (print_headers_)
     Chi::log.Log() << "Solver \"" + TextName() + "\" " +
-                        time_step_controller_->StringTimeInfo(time + dt);
+                        timestepper_->StringTimeInfo(false);
 
   const double var_dot_dvar =
     eq_system_->GetTimeIntegrator().GetTimeCoefficient(dt);
@@ -144,23 +144,23 @@ void TransientNonLinearExecutioner::Advance()
   const bool last_solve_converged = nl_solver_->IsConverged();
   if (last_solve_converged)
   {
-    time_step_controller_->Advance();
+    timestepper_->Advance();
 
-    const double dt = time_step_controller_->GetTimeStepSize();
-    const double time = time_step_controller_->Time();
-    const int t_index = time_step_controller_->TimeIndex();
+    const double dt = timestepper_->TimeStepSize();
+    const double time = timestepper_->Time();
+    const size_t t_index = timestepper_->TimeStepIndex();
     const double var_dot_dvar =
       eq_system_->GetTimeIntegrator().GetTimeCoefficient(dt);
 
     eq_system_->Advance({dt, time + dt, var_dot_dvar}, r_map_);
 
     eq_system_->UpdateFields();
-    eq_system_->OutputFields(t_index);
-    time_ = time_step_controller_->Time();
+    eq_system_->OutputFields(static_cast<int>(t_index));
+    // time_ = time_step_controller_->Time();
   }
   else
   {
-    if (not time_step_controller_->Adapt(chi_physics::TimeStepStatus::FAILURE))
+    if (not timestepper_->Adapt(chi_physics::TimeStepStatus::FAILURE))
       throw NLSolverFailedException();
   }
 }
@@ -172,9 +172,9 @@ void TransientNonLinearExecutioner::Execute()
 
   if (not initial_solution_set_)
   {
-    const double time = time_step_controller_->Time();
+    // const double time = timestepper_->Time();
 
-    Chi::log.Log() << time_step_controller_->StringTimeInfo(time);
+    Chi::log.Log() << timestepper_->StringTimeInfo(true);
     Chi::log.Log() << "Setting initial solution";
 
     SetInitialSolution();
@@ -182,7 +182,7 @@ void TransientNonLinearExecutioner::Execute()
 
   try
   {
-    while (not time_step_controller_->IsFinished())
+    while (timestepper_->IsActive())
     {
       physics_event_publisher.SolverStep(*this);
       physics_event_publisher.SolverAdvance(*this);
@@ -191,7 +191,7 @@ void TransientNonLinearExecutioner::Execute()
   catch (const NLSolverFailedException&)
   {
     Chi::log.Log0Error() << "Solver failed: "
-                         << time_step_controller_->StringTimeInfo(time_ + dt_);
+                         << timestepper_->StringTimeInfo(false);
   }
 
   PrintTimingInfo();

@@ -47,7 +47,7 @@ FEMMaterialPropertyInterface::GetFEMMaterialProperty(const std::string& name)
   const auto& fem_data = Chi::GetStackItem<FEMKernelSystemData>(
     Chi::object_stack, fem_data_handle_, __PRETTY_FUNCTION__);
 
-  std::vector<const chi::MaterialProperty*> candidates;
+  std::vector<const chi::MaterialProperty2*> candidates;
   // First we just check which properties match the name
   for (const auto& prop : material_properties_data_.Properties())
     if (prop->TextName() == name) candidates.push_back(&(*prop));

@@ -16,8 +16,7 @@ system1 = chi_math.KernelSystem.Create
   fields = {
     chi_physics.FieldFunctionGridBased.Create({
       name = "T",
-      sdm_type = "PWLC",
-      pwl_allow_lagrange = true
+      sdm_type = "LagrangeC",
     })
   },
   kernels = {
@@ -50,19 +49,11 @@ phys1 = chi_math.TransientNonLinearExecutioner.Create
     nl_method = "PJFNK",
     --nl_method = "NEWTON",
     l_rel_tol = 1.0e-5,
-    --pc_options =
-    --{
-    --  pc_type = "hypre",
-    --  pc_hypre_type = "boomeramg",
-    --  pc_hypre_boomeramg_coarsen_type = "HMIS"
-    --}
   },
-  time_controls =
-  {
-    dt = 0.001,
-    end_time = 1.0,
-    max_time_steps = 100
-  },
+  dt = 0.001,
+  end_time = 1.0,
+  max_time_steps = 100,
+
   print_footer = false,
   print_nl_residual = false,
   print_l_residual = false

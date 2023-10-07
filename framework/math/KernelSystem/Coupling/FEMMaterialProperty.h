@@ -12,7 +12,7 @@ class Vector3;
 
 namespace chi
 {
-class MaterialProperty;
+class MaterialProperty2;
 }
 
 namespace chi_math
@@ -25,7 +25,7 @@ class FEMKernelSystemData;
 class FEMMaterialProperty
 {
 public:
-  explicit FEMMaterialProperty(const chi::MaterialProperty& property,
+  explicit FEMMaterialProperty(const chi::MaterialProperty2& property,
                                const FEMKernelSystemData& fem_data);
 
   double operator[](size_t qp_index) const;
@@ -49,7 +49,7 @@ protected:
                        double t,
                        const std::vector<double>& v);
 
-  const chi::MaterialProperty& property_;
+  const chi::MaterialProperty2& property_;
   const FEMKernelSystemData& fem_data_;
 
   std::vector<double> qp_values_;

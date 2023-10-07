@@ -6,7 +6,7 @@
 namespace chi
 {
 
-class MaterialProperty;
+class MaterialProperty2;
 
 class MaterialPropertiesData : public ChiObject
 {
@@ -17,15 +17,15 @@ public:
 
   static std::shared_ptr<MaterialPropertiesData> MakeEmptyData();
 
-  const std::vector<std::shared_ptr<const MaterialProperty>>&
+  const std::vector<std::shared_ptr<const MaterialProperty2>>&
   Properties() const;
 
 protected:
-  const std::vector<std::shared_ptr<const MaterialProperty>> properties_;
+  const std::vector<std::shared_ptr<const MaterialProperty2>> properties_;
 
 private:
   /**Builds a map of handles to property_ptrs from a list of handles.*/
-  static std::vector<std::shared_ptr<const MaterialProperty>>
+  static std::vector<std::shared_ptr<const MaterialProperty2>>
   AssemblePropertiesList(const ParameterBlock& property_param);
 };
 

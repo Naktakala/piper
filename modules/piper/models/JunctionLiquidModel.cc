@@ -3,6 +3,8 @@
 #include "piper/physics/LiquidPhysics.h"
 #include "piper/utils/Orientation.h"
 
+#include "physics/TimeSteppers/TimeStepper.h"
+
 #include "ChiObjectFactory.h"
 
 #include "chi_runtime.h"
@@ -51,7 +53,7 @@ void JunctionLiquidModel::AssembleEquations()
   typedef std::vector<double> VecDbl;
   typedef chi_mesh::Vector3 Vec3;
 
-  const double dt = physics_.TimeStepSize();
+  const double dt = physics_.GetTimeStepper().TimeStepSize();
   const Vec3& gravity = physics_.GravityVector();
 
   auto& jnc_model = *this;

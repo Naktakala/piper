@@ -12,7 +12,7 @@ RegisterChiObject(hcm, ThermalConductivity);
 
 chi::InputParameters ThermalConductivity::GetInputParameters()
 {
-  chi::InputParameters params = chi::MaterialProperty::GetInputParameters();
+  chi::InputParameters params = chi::MaterialProperty2::GetInputParameters();
 
   params.SetGeneralDescription("Material property for thermal conductivity.");
 
@@ -28,7 +28,7 @@ chi::InputParameters ThermalConductivity::GetInputParameters()
 }
 
 ThermalConductivity::ThermalConductivity(const chi::InputParameters& params)
-  : chi::MaterialProperty(params),
+  : chi::MaterialProperty2(params),
     constant_value_(params.GetParamValue<double>("constant_value")),
     function_(GetFunction(params))
 {

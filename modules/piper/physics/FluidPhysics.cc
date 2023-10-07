@@ -5,6 +5,7 @@
 #include "piper/utils/utils.h"
 
 #include "physics/PhysicsEventPublisher.h"
+#include "physics/TimeSteppers/TimeStepper.h"
 
 #include "mesh/MeshHandler/chi_meshhandler.h"
 
@@ -126,24 +127,28 @@ void FluidPhysics::Execute()
                                     Chi::log.GetRepeatingEventTag("TIMING3"),
                                     Chi::log.GetRepeatingEventTag("TIMING4")};
 
-  t_index_ = 0;
-  while (Time() < EndTime())
+  size_t t_index = 0;
+  while (timestepper_->Time() < timestepper_->EndTime())
   {
     auto& physics_event_publisher =
       chi_physics::PhysicsEventPublisher::GetInstance();
     physics_event_publisher.SolverStep(*this);
     physics_event_publisher.SolverAdvance(*this);
-    ++t_index_;
+    ++t_index;
 
+    const double dt = timestepper_->TimeStepSize();
+    const double time = timestepper_->Time();
     std::stringstream outstr;
-    outstr << "Timestep " << t_index_ << " dt=" << std::scientific
-           << std::setprecision(2) << TimeStepSize() << " time=" << std::scientific
-           << std::setprecision(2) << Time() << std::fixed
+    outstr << "Timestep " << t_index << " dt=" << std::scientific
+           << std::setprecision(2) << dt << " time=" << std::scientific
+           << std::setprecision(2) << time << std::fixed
            << " step_time=" << step_time_ << "ms";
 
     Chi::log.Log() << outstr.str();
 
-    if (max_time_steps_ >= 0 and t_index_ >= max_time_steps_) break;
+    const auto max_time_steps = timestepper_->MaxTimeSteps();
+
+    if (max_time_steps >= 0 and t_index >= max_time_steps) break;
   }
 
   const double jnc_time = Chi::log.ProcessEvent(

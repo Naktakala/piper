@@ -2,7 +2,7 @@
 
 #include "math/ParallelVector/GhostedParallelSTLVector.h"
 #include "physics/FieldFunction/fieldfunction_gridbased.h"
-#include "math/SpatialDiscretization/spatial_discretization.h"
+#include "math/SpatialDiscretization/SpatialDiscretization.h"
 #include "math/TimeIntegrators/ImplicitEulerTimeIntegrator.h"
 #include "math/ParallelMatrix/ParallelMatrix.h"
 
@@ -134,7 +134,7 @@ EquationSystem::InitSolutionHistory()
   std::vector<std::unique_ptr<ParallelVector>> old_solution_vectors;
   for (size_t t = 0; t < num_solution_histories_; ++t)
   {
-    auto vec = main_solution_vector_->MakeNewVector();
+    auto vec = main_solution_vector_->MakeClone();
     old_solution_vectors.push_back(std::move(vec));
   }
 

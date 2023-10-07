@@ -3,8 +3,8 @@
 
 #include "math/Systems/EquationSystem.h"
 #include "math/UnknownManager/unknown_manager.h"
-#include "math/SpatialDiscretization/FiniteElement/finite_element.h"
-#include "math/SpatialDiscretization/CellMappings/cell_mapping_base.h"
+#include "math/SpatialDiscretization/FiniteElement/QuadraturePointData.h"
+#include "math/SpatialDiscretization/CellMappings/CellMapping.h"
 #include "math/KernelSystem/Coupling/FEMMaterialProperty.h"
 
 namespace chi
@@ -25,8 +25,8 @@ class FEMBoundaryCondition;
 class ParallelMatrix;
 class FEMMaterialProperty;
 
-typedef finite_element::InternalQuadraturePointData CellQPData;
-typedef finite_element::FaceQuadraturePointData FaceQPData;
+typedef finite_element::VolumetricQuadraturePointData CellQPData;
+typedef finite_element::SurfaceQuadraturePointData FaceQPData;
 typedef std::shared_ptr<FEMKernel> FEMKernelPtr;
 typedef std::shared_ptr<FEMBoundaryCondition> FEMBoundaryConditionPtr;
 
@@ -38,22 +38,21 @@ public:
   typedef chi_mesh::Vector3 Vec3;
   typedef std::vector<Vec3> VecVec3;
 
-  FEMKernelSystemData(
-    const chi::MaterialPropertiesData& mat_props_data,
-    const EquationSystemTimeData& time_data,
-    const ParallelVector& main_solution_vector,
-    const chi_mesh::Cell*& cell_ptr,
-    const chi_math::CellMapping*& cell_mapping_ptr,
-    const CellQPData& qp_data,
-    const VecDbl& var_qp_values,
-    const VecVec3& var_grad_qp_values,
-    const VecDbl& var_dot_qp_values,
-    const VecDbl& nodal_var_values,
-    const VecVec3& node_locations,
+  FEMKernelSystemData(const chi::MaterialPropertiesData& mat_props_data,
+                      const EquationSystemTimeData& time_data,
+                      const ParallelVector& main_solution_vector,
+                      const chi_mesh::Cell*& cell_ptr,
+                      const chi_math::CellMapping*& cell_mapping_ptr,
+                      const CellQPData& qp_data,
+                      const VecDbl& var_qp_values,
+                      const VecVec3& var_grad_qp_values,
+                      const VecDbl& var_dot_qp_values,
+                      const VecDbl& nodal_var_values,
+                      const VecVec3& node_locations,
 
-    const FaceQPData& face_qp_data,
-    const VecDbl& face_var_qp_values,
-    const VecVec3& face_var_grad_qp_values);
+                      const FaceQPData& face_qp_data,
+                      const VecDbl& face_var_qp_values,
+                      const VecVec3& face_var_grad_qp_values);
 
   const chi::MaterialPropertiesData& mat_props_data_;
 
@@ -136,8 +135,18 @@ protected:
   typedef std::pair<std::string, uint32_t> VarNameComp;
   std::map<VarNameComp, BID2BCMap> varname_comp_2_bid2bc_map_;
 
+  struct CellQPDataContainer
+  {
+    CellQPData cell_qp_data_;
+    std::map<size_t, FaceQPData> faces_qp_data_;
+  };
+  std::map<const SpatialDiscretization*,
+           std::vector<CellQPDataContainer>> sdm_stored_cell_qp_data_;
+
   size_t current_field_index_ = 0;
   uint32_t current_field_component_ = 0;
+  const SpatialDiscretization* current_sdm_;
+  const CellQPDataContainer* current_cell_qp_container_;
 
   /**Utility data structure to store data ahead of executing the kernels*/
   struct CurrentCellData
@@ -162,7 +171,6 @@ protected:
     VecDbl var_qp_values_;
     VecVec3 var_grad_qp_values_;
   } cur_face_data;
-
 };
 
 } // namespace chi_math

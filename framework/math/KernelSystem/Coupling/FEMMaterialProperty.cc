@@ -9,7 +9,7 @@
 namespace chi_math
 {
 
-FEMMaterialProperty::FEMMaterialProperty(const chi::MaterialProperty& property,
+FEMMaterialProperty::FEMMaterialProperty(const chi::MaterialProperty2& property,
                                          const FEMKernelSystemData& fem_data)
   : property_(property), fem_data_(fem_data)
 {

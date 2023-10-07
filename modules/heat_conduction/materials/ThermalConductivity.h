@@ -11,7 +11,7 @@ class FunctionDimAToDimB;
 namespace hcm
 {
 
-class ThermalConductivity : public chi::MaterialProperty
+class ThermalConductivity : public chi::MaterialProperty2
 {
 public:
   static chi::InputParameters GetInputParameters();

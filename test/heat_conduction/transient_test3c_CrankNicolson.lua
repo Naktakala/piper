@@ -16,7 +16,7 @@ system1 = chi_math.KernelSystem.Create
   fields = {
     chi_physics.FieldFunctionGridBased.Create({
       name = "T",
-      sdm_type = "PWLC"
+      sdm_type = "LagrangeC"
     })
   },
   kernels = {
@@ -51,11 +51,8 @@ phys1 = chi_math.TransientNonLinearExecutioner.Create
     --  pc_hypre_boomeramg_coarsen_type = "HMIS"
     --}
   },
-  time_controls =
-  {
-    dt = 0.001,
-    end_time = 1.0
-  },
+  dt = 0.001,
+  end_time = 1.0
 })
 
 chi.AggregateNodalValuePostProcessor.Create

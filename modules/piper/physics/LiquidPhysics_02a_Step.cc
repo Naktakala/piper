@@ -4,6 +4,8 @@
 #include "piper/utils/CoolPropInterface.h"
 #include "piper/components/HardwareComponent.h"
 
+#include "physics/TimeSteppers/TimeStepper.h"
+
 #include "math/chi_math.h"
 
 #include "chi_log.h"
@@ -30,8 +32,9 @@ void LiquidPhysics::Step()
     Chi::log.GetExistingRepeatingEventTag("TIMING3"),
     Chi::log.GetExistingRepeatingEventTag("TIMING4")};
 
-  const double projected_end_time = Time() + TimeStepSize();
-  if (projected_end_time > EndTime()) dt_ = (projected_end_time - Time());
+  const double projected_end_time =
+    timestepper_->Time() + timestepper_->TimeStepSize();
+  //if (projected_end_time > timestepper_->EndTime()) dt_ = (projected_end_time - Time());
 
   const auto& pipe_system = *pipe_system_ptr_;
   const auto& vol_comp_ids = pipe_system.VolumeComponentIDs();
@@ -208,12 +211,12 @@ void LiquidPhysics::Step()
     for (const auto& var_name : var_names)
       vol_model.VarNew(var_name) = state.at(var_name);
 
-    //Chi::log.Log() << "T=" << vol_model.VarNew("T")
-    //               << " rho=" << vol_model.VarNew("rho")
-    //               << " p=" << vol_model.VarNew("p")
-    //               << " e=" << vol_model.VarNew("e")
-    //               << " mu=" << vol_model.VarNew("mu")
-    //               << " u=" << vol_model.VarNew("u");
+    // Chi::log.Log() << "T=" << vol_model.VarNew("T")
+    //                << " rho=" << vol_model.VarNew("rho")
+    //                << " p=" << vol_model.VarNew("p")
+    //                << " e=" << vol_model.VarNew("e")
+    //                << " mu=" << vol_model.VarNew("mu")
+    //                << " u=" << vol_model.VarNew("u");
 
     // Compute Reynold's number
     const double rho = rho_i_tp1;

@@ -180,8 +180,7 @@ void BasicNonLinearSolver::SetInitialGuess()
 
   auto& solution_vector = context->executioner_.SolutionVector();
 
-  chi_math::PETScUtils::CopySTLvectorToVec(
-    solution_vector.RawValues(), x_, solution_vector.LocalSize());
+  chi_math::PETScUtils::CopyParallelVectorToVec(solution_vector, x_);
 }
 
 // ##################################################################
@@ -192,21 +191,23 @@ BasicNonLinearSolver::ResidualFunction(SNES snes, Vec x, Vec r, void*)
   SNESGetApplicationContext(snes, &nl_context_ptr);
 
   auto& executioner = nl_context_ptr->executioner_;
-  auto solution_vector = executioner.SolutionVector().MakeNewVector();
-  auto residual_vector = solution_vector->MakeNewVector();
+  auto solution_vector = executioner.SolutionVector().MakeClone();
+  auto residual_vector = solution_vector->MakeClone();
 
-  chi_math::PETScUtils::CopyVecToSTLvector(x,
-                                           solution_vector->RawValues(),
-                                           solution_vector->LocalSize(),
-                                           /*resize_STL=*/false);
+  //chi_math::PETScUtils::CopyVecToSTLvector(x,
+  //                                         solution_vector->RawValues(),
+  //                                         solution_vector->LocalSize(),
+  //                                         /*resize_STL=*/false);
+  solution_vector->CopyLocalValues(x);
   solution_vector->CommunicateGhostEntries();
 
   residual_vector->Set(0.0);
 
   executioner.ComputeResidual(*solution_vector, *residual_vector);
 
-  chi_math::PETScUtils::CopySTLvectorToVec(
-    residual_vector->RawValues(), r, residual_vector->LocalSize());
+  //chi_math::PETScUtils::CopySTLvectorToVec(
+  //  residual_vector->RawValues(), r, residual_vector->LocalSize());
+  chi_math::PETScUtils::CopyParallelVectorToVec(*residual_vector, r);
 
   return 0;
 }
@@ -220,12 +221,13 @@ PetscErrorCode BasicNonLinearSolver::ComputeJacobian(
   SNESGetApplicationContext(snes, &nl_context_ptr);
 
   auto& executioner = nl_context_ptr->executioner_;
-  auto solution_vector = executioner.SolutionVector().MakeNewVector();
+  auto solution_vector = executioner.SolutionVector().MakeClone();
 
-  chi_math::PETScUtils::CopyVecToSTLvector(x,
-                                           solution_vector->RawValues(),
-                                           solution_vector->LocalSize(),
-                                           /*resize_STL=*/false);
+  //chi_math::PETScUtils::CopyVecToSTLvector(x,
+  //                                         solution_vector->RawValues(),
+  //                                         solution_vector->LocalSize(),
+  //                                         /*resize_STL=*/false);
+  solution_vector->CopyLocalValues(x);
   solution_vector->CommunicateGhostEntries();
 
   auto& options = solver_ptr->options_;
@@ -271,11 +273,11 @@ void BasicNonLinearSolver::PostSolveCallback()
   auto& executioner = context->executioner_;
   auto& solution_vector = executioner.SolutionVector();
 
-  chi_math::PETScUtils::CopyVecToSTLvector(x_,
-                                           solution_vector.RawValues(),
-                                           solution_vector.LocalSize(),
-                                           /*resize_STL=*/false);
-
+  //chi_math::PETScUtils::CopyVecToSTLvector(x_,
+  //                                         solution_vector.RawValues(),
+  //                                         solution_vector.LocalSize(),
+  //                                         /*resize_STL=*/false);
+  solution_vector.CopyLocalValues(x_);
   solution_vector.CommunicateGhostEntries();
 }
 

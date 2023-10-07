@@ -52,3 +52,5 @@ doc/generated_files
 
 #Scratch folder
 scratch/
+
+test/**/*.out

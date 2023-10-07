@@ -1,6 +1,6 @@
 #include "KernelSystem.h"
 
-#include "math/SpatialDiscretization/spatial_discretization.h"
+#include "math/SpatialDiscretization/SpatialDiscretization.h"
 #include "math/KernelSystem/FEMKernels/FEMKernel.h"
 #include "math/KernelSystem/FEMBCs/FEMDirichletBC.h"
 #include "math/ParallelMatrix/ParallelMatrix.h"
@@ -23,13 +23,12 @@ void KernelSystem::ComputeJacobian(const ParallelVector& x, ParallelMatrix& J)
   if (verbosity_ >= 2)
     Chi::log.LogAll() << "Compute ComputeJacobian " << std::endl;
 
+  const auto& grid = primary_fields_container_->GetSystemCommonGrid();
+
   current_field_index_ = 0;
   for (const auto& field_info : *primary_fields_container_)
   {
-    const auto& field = field_info.field_;
-    const auto& sdm = field->SDM();
-
-    const auto& grid = sdm.Grid();
+    current_sdm_ = &field_info.field_->GetSpatialDiscretization();
 
     for (const auto& cell : grid.local_cells)
     {

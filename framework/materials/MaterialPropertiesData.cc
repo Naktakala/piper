@@ -34,21 +34,21 @@ std::shared_ptr<MaterialPropertiesData> MaterialPropertiesData::MakeEmptyData()
   return std::make_shared<MaterialPropertiesData>();
 }
 
-const std::vector<std::shared_ptr<const MaterialProperty>>&
+const std::vector<std::shared_ptr<const MaterialProperty2>>&
 MaterialPropertiesData::Properties() const
 {
   return properties_;
 }
 
-std::vector<std::shared_ptr<const MaterialProperty>>
+std::vector<std::shared_ptr<const MaterialProperty2>>
 MaterialPropertiesData::AssemblePropertiesList(
   const ParameterBlock& property_param)
 {
-  std::vector<std::shared_ptr<const MaterialProperty>> properties;
+  std::vector<std::shared_ptr<const MaterialProperty2>> properties;
   for (const auto& sub_param : property_param)
   {
     const size_t handle = sub_param.GetValue<size_t>();
-    auto property_ptr = Chi::GetStackItemPtrAsType<MaterialProperty>(
+    auto property_ptr = Chi::GetStackItemPtrAsType<MaterialProperty2>(
       Chi::object_stack, handle, __FUNCTION__);
 
     properties.push_back(property_ptr);

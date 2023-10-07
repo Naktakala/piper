@@ -1,7 +1,5 @@
 #include "FEMTimeKernel.h"
 
-#include "math/SpatialDiscretization/FiniteElement/finite_element.h"
-
 namespace chi_math
 {
 

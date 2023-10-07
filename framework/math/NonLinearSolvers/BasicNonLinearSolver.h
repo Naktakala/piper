@@ -1,7 +1,7 @@
 #ifndef CHITECH_BASICNONLINEARSOLVER_H
 #define CHITECH_BASICNONLINEARSOLVER_H
 
-#include "math/NonLinearSolver/non_linear_solver.h"
+#include "math/NonLinearSolver/NonLinearSolver.h"
 #include "math/NonLinearSolver/NonLinearSolverOptions.h"
 
 #include <petscsnes.h>

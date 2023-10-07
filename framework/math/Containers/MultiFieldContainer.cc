@@ -1,12 +1,14 @@
 #include "MultiFieldContainer.h"
 
 #include "physics/FieldFunction/fieldfunction_gridbased.h"
-#include "math/SpatialDiscretization/spatial_discretization.h"
+#include "math/SpatialDiscretization/SpatialDiscretization.h"
 #include "math/ParallelMatrix/ParallelMatrix.h"
 
 #include "ChiObjectFactory.h"
 
 #include "chi_log.h"
+
+#include <iomanip>
 
 #define scint64_t static_cast<int64_t>
 #define cint64_t const int64_t
@@ -150,9 +152,11 @@ MultiFieldContainer::MakeFieldBlockInfo(const FieldList& field_list,
   for (const auto& field : field_list)
   {
     blockB_n_block_local_dofs.push_back(
-      scint64_t(field->SDM().GetNumLocalDOFs(field->UnkManager())));
+      scint64_t(field->GetSpatialDiscretization().GetNumLocalDOFs(
+        field->GetUnknownManager())));
     blockB_n_block_global_dofs.push_back(
-      scint64_t(field->SDM().GetNumGlobalDOFs(field->UnkManager())));
+      scint64_t(field->GetSpatialDiscretization().GetNumGlobalDOFs(
+        field->GetUnknownManager())));
   }
 
   std::vector<int64_t> serial_n_block_local_dofs(num_ranks * num_blocks, 0);
@@ -282,7 +286,8 @@ MultiFieldContainer::MakeFieldBlockInfo(const FieldList& field_list,
   for (size_t b = 0; b < num_blocks; ++b)
   {
     auto& field = field_list[b];
-    blockB_ghost_ids[b] = field->SDM().GetGhostDOFIndices(field->UnkManager());
+    blockB_ghost_ids[b] = field->GetSpatialDiscretization().GetGhostDOFIndices(
+      field->GetUnknownManager());
     primary_ghost_offset += scint64_t(blockB_n_block_local_dofs[b]);
   }
   int64_t secondary_ghost_offset = 0;
@@ -354,7 +359,8 @@ const std::vector<int64_t>& MultiFieldContainer::GetSystemGhostIDs() const
 
 // ##################################################################
 /**Uses the underlying system to build a sparsity pattern.*/
-ParallelMatrixSparsityPattern MultiFieldContainer::BuildMatrixSparsityPattern() const
+ParallelMatrixSparsityPattern
+MultiFieldContainer::BuildMatrixSparsityPattern() const
 {
   std::vector<int64_t> master_row_nnz_in_diag;
   std::vector<int64_t> mastero_row_nnz_off_diag;
@@ -364,8 +370,8 @@ ParallelMatrixSparsityPattern MultiFieldContainer::BuildMatrixSparsityPattern() 
   for (const auto& field_info : field_block_info_)
   {
     auto& field = field_info.field_;
-    auto& sdm = field->SDM();
-    auto& uk_man = field->UnkManager();
+    auto& sdm = field->GetSpatialDiscretization();
+    auto& uk_man = field->GetUnknownManager();
 
     std::vector<int64_t> nodal_nnz_in_diag;
     std::vector<int64_t> nodal_nnz_off_diag;
@@ -393,7 +399,7 @@ MultiFieldContainer::GetFieldBlockInfo(size_t field_id) const
 // ##################################################################
 const chi_mesh::MeshContinuum& MultiFieldContainer::GetSystemCommonGrid() const
 {
-  return field_block_info_.front().field_->SDM().Grid();
+  return field_block_info_.front().field_->GetSpatialDiscretization().Grid();
 }
 
 // ##################################################################
@@ -475,8 +481,8 @@ int64_t MultiFieldContainer::MapDOF(const chi_mesh::Cell& cell,
                                     const FieldBlockInfo& info,
                                     size_t component_id) const
 {
-  cint64_t field_dof_id = info.field_->SDM().MapDOF(
-    cell, i, info.field_->UnkManager(), 0, component_id);
+  cint64_t field_dof_id = info.field_->GetSpatialDiscretization().MapDOF(
+    cell, i, info.field_->GetUnknownManager(), 0, component_id);
 
   cint64_t dof_id = MapFieldGlobalIDToSystem(info, field_dof_id);
 
@@ -489,8 +495,8 @@ int64_t MultiFieldContainer::MapDOFLocal(const chi_mesh::Cell& cell,
                                          const FieldBlockInfo& info,
                                          size_t component_id) const
 {
-  cint64_t field_dof_id = info.field_->SDM().MapDOFLocal(
-    cell, i, info.field_->UnkManager(), 0, component_id);
+  cint64_t field_dof_id = info.field_->GetSpatialDiscretization().MapDOFLocal(
+    cell, i, info.field_->GetUnknownManager(), 0, component_id);
 
   cint64_t dof_id = MapFieldLocalIDToSystem(info, field_dof_id);
 

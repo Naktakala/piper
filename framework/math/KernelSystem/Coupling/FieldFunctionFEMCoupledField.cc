@@ -1,7 +1,7 @@
 #include "FieldFunctionFEMCoupledField.h"
 
 #include "physics/FieldFunction/fieldfunction_gridbased.h"
-#include "math/SpatialDiscretization/spatial_discretization.h"
+#include "math/SpatialDiscretization/SpatialDiscretization.h"
 #include "math/KernelSystem/KernelSystem.h"
 
 #include "chi_log.h"
@@ -17,8 +17,8 @@ FieldFunctionFEMCoupledField::FieldFunctionFEMCoupledField(
   const chi_physics::FieldFunctionGridBased& field)
   : FEMCoupledField(field_name, fem_data),
     field_(field),
-    sdm_(field_.SDM()),
-    uk_man_(field_.UnkManager())
+    sdm_(field_.GetSpatialDiscretization()),
+    uk_man_(field_.GetUnknownManager())
 {
 }
 

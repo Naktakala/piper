@@ -1,4 +1,4 @@
-#include "AdaptiveTimeStepController.h"
+#include "AdaptiveTimeStepper.h"
 
 #include "ChiObjectFactory.h"
 
@@ -7,11 +7,11 @@
 namespace chi_physics
 {
 
-RegisterChiObject(chi_physics, AdaptiveTimeStepController);
+RegisterChiObject(chi_physics, AdaptiveTimeStepper);
 
-chi::InputParameters AdaptiveTimeStepController::GetInputParameters()
+chi::InputParameters AdaptiveTimeStepper::GetInputParameters()
 {
-  chi::InputParameters params = TimeStepController::GetInputParameters();
+  chi::InputParameters params = TimeStepper::GetInputParameters();
 
   params.SetGeneralDescription("General adaptive timestep controller");
   params.SetDocGroup("doc_TimeStepControllers");
@@ -41,9 +41,9 @@ chi::InputParameters AdaptiveTimeStepController::GetInputParameters()
   return params;
 }
 
-AdaptiveTimeStepController::AdaptiveTimeStepController(
+AdaptiveTimeStepper::AdaptiveTimeStepper(
   const chi::InputParameters& params)
-  : TimeStepController(params),
+  : TimeStepper(params),
     decrease_ratio_(params.GetParamValue<double>("decrease_ratio")),
     increase_ratio_(params.GetParamValue<double>("increase_ratio")),
     iteration_window_size_(
@@ -57,22 +57,7 @@ AdaptiveTimeStepController::AdaptiveTimeStepController(
 {
 }
 
-double AdaptiveTimeStepController::GetTimeStepSize()
-{
-  if (t_index_ > (last_change_index_ + iteration_window_size_))
-  {
-    dt_ *= increase_ratio_;
-    dt_ = std::min(dt_, dt_max_);
-  }
-
-  if (not AtEndTime(time_ + dt_)) dt_ = std::max(dt_, dt_min_);
-  else
-    dt_ = StepSizeLimitedToEndTime();
-
-  return dt_;
-}
-
-bool AdaptiveTimeStepController::Adapt(TimeStepStatus time_step_status)
+bool AdaptiveTimeStepper::Adapt(TimeStepStatus time_step_status)
 {
   if (time_step_status == TimeStepStatus::SUCCESS or
       time_step_status == TimeStepStatus::NEUTRAL)

@@ -39,7 +39,32 @@ mat_props = chi.MaterialPropertiesData.Create
 tbulk = chi_physics.FieldFunctionGridBased.Create({
   name = "T_bulk",
   --sdm_type = "FiniteVolume",
+  --sdm_type = "PiecewiseLinear",
+  --sdm_type = "PiecewiseLinearDiscontinuous",
+  --sdm_type = "Lagrange",
+  --sdm_type = "LagrangeDiscontinuous"
+  --sdm_type = "Monomial"
+  --sdm_type = "RaviartThomas"
+  initial_value = 50.0
+})
+
+tbulk = chi_physics.FieldFunctionGridBased.Create({
+  name = "T_bulk",
+  --sdm_type = "FiniteVolume",
+  --sdm_type = "PWLC",
+  --sdm_type = "PWLD",
+  --sdm_type = "Lagrange",
+  --sdm_type = "LagrangeDiscontinuous"
+  --sdm_type = "Monomial"
+  --sdm_type = "RaviartThomas"
+  initial_value = 50.0
+})
+
+tbulk = chi_physics.FieldFunctionGridBased.Create({
+  name = "T_bulk",
+  --sdm_type = "FiniteVolume",
   sdm_type = "PWLC",
+  --sdm_type = "Lagrange"
   pwl_allow_lagrange = true,
   initial_value = 50.0
 })

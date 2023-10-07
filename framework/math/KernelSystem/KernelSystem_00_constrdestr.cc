@@ -1,7 +1,7 @@
 #include "KernelSystem.h"
 
-#include "math/SpatialDiscretization/spatial_discretization.h"
-#include "math/SpatialDiscretization/FiniteElement/finite_element.h"
+#include "math/SpatialDiscretization/SpatialDiscretization.h"
+#include "math/SpatialDiscretization/FiniteElement/QuadraturePointData.h"
 #include "math/KernelSystem/FEMKernels/FEMKernel.h"
 #include "math/KernelSystem/FEMBCs/FEMBoundaryCondition.h"
 #include "math/KernelSystem/Coupling/FEMMaterialProperty.h"
@@ -76,7 +76,7 @@ chi::InputParameters KernelSystem::GetInputParameters()
   return params;
 }
 
-/**\brief Basic constructor for a FEMKernelSystem.
+/**\brief Constructor for a KernelSystem.
  * This constructor also sorts kernels and BCs into convenient maps.*/
 KernelSystem::KernelSystem(const chi::InputParameters& params)
   : EquationSystem(params)
@@ -164,10 +164,37 @@ KernelSystem::KernelSystem(const chi::InputParameters& params)
     } // for bc
   }   // for item in bndry map
 
-  //====== EXPERIMENTAL
+  //======================================== Precompute QPData
   for (auto& field_info : *primary_fields_container_)
-    field_info.field_->SDM().InitializeQPData(/*internal_faces=*/false,
-                                              /*bndry_faces=*/true);
+  {
+    auto& field = field_info.field_;
+    auto& sdm = field->GetSpatialDiscretization();
+    if (sdm_stored_cell_qp_data_.count(&sdm) != 0) continue;
+
+    auto& data_for_cells = sdm_stored_cell_qp_data_[&sdm];
+
+    for (const auto& cell : grid.local_cells)
+    {
+      const auto& cell_mapping = sdm.GetCellMapping(cell);
+      CellQPData cell_qp_data =
+        cell_mapping.MakeVolumetricQuadraturePointData();
+
+      std::map<size_t, FaceQPData> faces_qp_data;
+      size_t f = 0;
+      for (const auto& face : cell.faces_)
+      {
+        if (not face.has_neighbor_)
+          faces_qp_data[f] = cell_mapping.MakeSurfaceQuadraturePointData(f);
+        ++f;
+      }
+
+      data_for_cells.push_back(
+        {std::move(cell_qp_data), std::move(faces_qp_data)});
+    }
+  }
+  // for (auto& field_info : *primary_fields_container_)
+  //   field_info.field_->GetSpatialDiscretization().InitializeQPData(/*internal_faces=*/false,
+  //                                             /*bndry_faces=*/true);
 }
 
 } // namespace chi_math

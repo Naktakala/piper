@@ -1,18 +1,17 @@
 #ifndef CHITECH_ADAPTIVETIMESTEPCONTROLLER_H
 #define CHITECH_ADAPTIVETIMESTEPCONTROLLER_H
 
-#include "physics/TimeStepControllers/TimeStepController.h"
+#include "physics/TimeSteppers/TimeStepper.h"
 
 namespace chi_physics
 {
 
-class AdaptiveTimeStepController : public TimeStepController
+class AdaptiveTimeStepper : public TimeStepper
 {
 public:
   static chi::InputParameters GetInputParameters();
-  explicit AdaptiveTimeStepController(const chi::InputParameters& params);
+  explicit AdaptiveTimeStepper(const chi::InputParameters& params);
 
-  double GetTimeStepSize() override;
   bool Adapt(TimeStepStatus time_step_status) override;
 
 protected:

@@ -2,7 +2,7 @@
 #define CHITECH_NONLINEAREXECUTIONER_H
 
 #include "physics/SolverBase/chi_solver.h"
-#include "math/NonLinearSolver/non_linear_solver.h"
+#include "math/NonLinearSolver/NonLinearSolver.h"
 #include "math/Systems/EquationSystemTimeData.h"
 
 #include <petscsnes.h>

@@ -50,12 +50,9 @@ phys1 = chi_math.TransientNonLinearExecutioner.Create
     --  pc_hypre_boomeramg_coarsen_type = "HMIS"
     --}
   },
-  time_controls =
-  {
-    dt = 0.001,
-    end_time = 1.0
-  },
-
+  dt = 0.001,
+  end_time = 1.0,
+  max_time_steps = 2
 })
 
 chi.AggregateNodalValuePostProcessor.Create
@@ -69,10 +66,11 @@ chi.AggregateNodalValuePostProcessor.Create
 chi.PostProcessorPrinterSetOptions({ print_scalar_time_history = false })
 
 chiSolverInitialize(phys1)
-for k=1,2 do
-  chiSolverStep(phys1)
-  chiSolverAdvance(phys1)
-end
+chiSolverExecute(phys1)
+--for k=1,2 do
+--  chiSolverStep(phys1)
+--  chiSolverAdvance(phys1)
+--end
 
 if (master_export == nil) then
   chiExportMultiFieldFunctionToVTK({ "T" }, "transient_test3")

@@ -1,7 +1,7 @@
 #include "FFContainerFEMCoupledVariable.h"
 
 #include "physics/FieldFunction/fieldfunction_gridbased.h"
-#include "math/SpatialDiscretization/spatial_discretization.h"
+#include "math/SpatialDiscretization/SpatialDiscretization.h"
 #include "math/KernelSystem/KernelSystem.h"
 #include "math/Containers/MultiFieldContainer.h"
 
@@ -18,7 +18,8 @@ FFContainerFEMCoupledVariable::FFContainerFEMCoupledVariable(
   : FEMCoupledField(field_name, fem_data),
     container_(multifield_container),
     field_index_(field_index),
-    sdm_(container_.GetFieldBlockInfo(field_index_).field_->SDM())
+    sdm_(container_.GetFieldBlockInfo(field_index_)
+           .field_->GetSpatialDiscretization())
 {
 }
 

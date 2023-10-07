@@ -1,6 +1,6 @@
 #include "KernelSystem.h"
 
-#include "math/SpatialDiscretization/spatial_discretization.h"
+#include "math/SpatialDiscretization/SpatialDiscretization.h"
 #include "math/KernelSystem/FEMBCs/FEMDirichletBC.h"
 
 #include "physics/FieldFunction/fieldfunction_gridbased.h"
@@ -21,14 +21,14 @@ void KernelSystem::SetInitialSolution()
   auto& x = *main_solution_vector_;
 
   for (auto& field_info : *primary_fields_container_)
-    x.BlockCopyLocalValues(field_info.field_->FieldVector(),
+    x.BlockSet(field_info.field_->FieldVector(),
                            field_info.local_offset_,
                            field_info.num_local_dofs_);
 
   x.CommunicateGhostEntries();
 
-  auto dirichlet_vector_ptr = main_solution_vector_->MakeNewVector();
-  auto count_vector_ptr = main_solution_vector_->MakeNewVector();
+  auto dirichlet_vector_ptr = main_solution_vector_->MakeClone();
+  auto count_vector_ptr = main_solution_vector_->MakeClone();
   auto& dirichlet_vector = *dirichlet_vector_ptr;
   auto& count_vector = *count_vector_ptr;
 
@@ -36,7 +36,7 @@ void KernelSystem::SetInitialSolution()
   for (const auto& field_info : *primary_fields_container_)
   {
     const auto& field = field_info.field_;
-    const auto& sdm = field->SDM();
+    const auto& sdm = field->GetSpatialDiscretization();
 
     const auto& bid2bc_map = varname_comp_2_bid2bc_map_.at(
       {field->TextName(), current_field_component_});
@@ -122,13 +122,13 @@ void KernelSystem::SetInitialSolution()
   dirichlet_vector.Assemble();
   count_vector.Assemble();
 
-  auto& sol_raw = dirichlet_vector.RawValues();
-  auto& cnt_raw = count_vector.RawValues();
+  double* sol_raw = dirichlet_vector.Data();
+  const double* cnt_raw = count_vector.Data();
 
   for (size_t i = 0; i < dirichlet_vector.LocalSize(); ++i)
     if (std::fabs(cnt_raw[i]) > 1.0e-12) sol_raw[i] /= cnt_raw[i];
 
-  main_solution_vector_->CopyValues(dirichlet_vector);
+  main_solution_vector_->CopyLocalValues(dirichlet_vector);
 
   main_solution_vector_->CommunicateGhostEntries();
   if (num_solution_histories_ > 0)

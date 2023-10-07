@@ -1,6 +1,6 @@
 #include "KernelSystem.h"
 
-#include "math/SpatialDiscretization/spatial_discretization.h"
+#include "math/SpatialDiscretization/SpatialDiscretization.h"
 #include "math/KernelSystem/FEMKernels/FEMKernel.h"
 #include "math/KernelSystem/FEMBCs/FEMDirichletBC.h"
 #include "math/ParallelMatrix/ParallelMatrix.h"
@@ -25,7 +25,10 @@ void KernelSystem::InitCellData(const ParallelVector& x,
   const auto& field_info =
     primary_fields_container_->GetFieldBlockInfo(current_field_index_);
   const auto& field = field_info.field_;
-  const auto& sdm = field->SDM();
+  const auto& sdm = field->GetSpatialDiscretization();
+
+  current_cell_qp_container_ =
+    &sdm_stored_cell_qp_data_.at(&sdm).at(cell.local_id_);
 
   cur_cell_data.cell_ptr_ = &cell;
 
@@ -33,13 +36,12 @@ void KernelSystem::InitCellData(const ParallelVector& x,
   const size_t num_nodes = cell_mapping.NumNodes();
 
   cur_cell_data.cell_mapping_ptr_ = &cell_mapping;
-  cur_cell_data.node_locations_ = std::move(cell_mapping.GetNodeLocations());
+  cur_cell_data.node_locations_ = cell_mapping.GetNodeLocations();
 
   auto& dof_map = cur_cell_data.dof_map_;
   dof_map.assign(num_nodes, 0);
   for (size_t i = 0; i < num_nodes; ++i)
     dof_map[i] = primary_fields_container_->MapDOF(cell, i, field_info, 0);
-
 
   const size_t max_t = EquationTermsScope() & EqTermScope::TIME_TERMS
                          ? num_solution_histories_
@@ -72,13 +74,11 @@ KernelSystem::SetupAndGetCellInternalKernels(const chi_mesh::Cell& cell)
   const auto& field_info =
     primary_fields_container_->GetFieldBlockInfo(current_field_index_);
   const auto& field = field_info.field_;
-  const auto& sdm = field->SDM();
+  const auto& sdm = field->GetSpatialDiscretization();
 
   const auto& cell_mapping = *cur_cell_data.cell_mapping_ptr_;
 
-  // cur_cell_data.qp_data_ =
-  //   std::move(cell_mapping.MakeVolumeQuadraturePointData());
-  cur_cell_data.qp_data_ = sdm.GetCellInternalQPData(cell);
+  cur_cell_data.qp_data_ = current_cell_qp_container_->cell_qp_data_;
 
   const auto& kernels = GetMaterialKernels(cell.material_id_);
 
@@ -152,20 +152,14 @@ KernelSystem::GetCellBCKernels(const chi_mesh::Cell& cell)
 void KernelSystem::SetupFaceIntegralBCKernel(const chi_mesh::Cell& cell,
                                              size_t face_index)
 {
-  const auto& field_info =
-    primary_fields_container_->GetFieldBlockInfo(current_field_index_);
-  const auto& field = field_info.field_;
-  const auto& sdm = field->SDM();
-
   const auto& cell_mapping = *cur_cell_data.cell_mapping_ptr_;
 
   const auto& local_x = cur_cell_data.local_x_;
 
   const size_t num_nodes = cell_mapping.NumNodes();
 
-  // cur_face_data.qp_data_ =
-  //   std::move(cell_mapping.MakeFaceQuadraturePointData(face_index));
-  cur_face_data.qp_data_ = sdm.GetCellFaceQPData(cell, face_index);
+  cur_face_data.qp_data_ =
+    current_cell_qp_container_->faces_qp_data_.at(face_index);
 
   const auto& face_qp_data = cur_face_data.qp_data_;
   const auto& qp_indices = face_qp_data.QuadraturePointIndices();
