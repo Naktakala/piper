@@ -51,6 +51,9 @@ void KernelSystem::InitCellData(const ParallelVector& x,
   VecDbl local_x_dot(num_nodes, 0.0);
   const double dt = time_data_.dt_;
 
+  const auto& x_old =
+    max_t > 0 ? SolutionVector(TimeID::T) : SolutionVector(TimeID::T_PLUS_1);
+
   for (size_t i = 0; i < num_nodes; ++i)
   {
     cint64_t dof_id =
@@ -93,12 +96,15 @@ KernelSystem::SetupAndGetCellInternalKernels(const chi_mesh::Cell& cell)
 
   const auto& shape_values = qp_data.ShapeValues();
   const auto& shape_grad_values = qp_data.ShapeGradValues();
+  const auto& qpxyz_values = qp_data.QPointsXYZ();
 
   auto& var_qp_values = cur_cell_data.var_qp_values_;
   auto& var_grad_qp_values = cur_cell_data.var_grad_qp_values_;
+  auto& coord_qp_values = cur_cell_data.coord_qp_values_;
 
   var_qp_values.assign(num_qps, 0.0);
   var_grad_qp_values.assign(num_qps, {});
+  coord_qp_values.assign(num_qps, 0.0);
 
   for (size_t j = 0; j < num_nodes; ++j)
     for (uint32_t qp : qp_indices)
@@ -106,6 +112,9 @@ KernelSystem::SetupAndGetCellInternalKernels(const chi_mesh::Cell& cell)
       var_qp_values[qp] += shape_values[j][qp] * local_x[j];
       var_grad_qp_values[qp] += shape_grad_values[j][qp] * local_x[j];
     }
+
+  for (uint32_t qp : qp_indices)
+    coord_qp_values[qp] = current_spatial_weight_function_(qpxyz_values[qp]);
 
   //======================================== Compute old time values if needed
   const bool time_kernels_active =
@@ -167,12 +176,15 @@ void KernelSystem::SetupFaceIntegralBCKernel(const chi_mesh::Cell& cell,
 
   const auto& shape_values = face_qp_data.ShapeValues();
   const auto& shape_grad_values = face_qp_data.ShapeGradValues();
+  const auto& qpxyz_values = face_qp_data.QPointsXYZ();
 
   auto& var_qp_values = cur_face_data.var_qp_values_;
   auto& var_grad_qp_values = cur_face_data.var_grad_qp_values_;
+  auto& coord_qp_values = cur_face_data.coord_qp_values_;
 
   var_qp_values.assign(num_qps, 0.0);
   var_grad_qp_values.assign(num_qps, {});
+  coord_qp_values.assign(num_qps, 0.0);
 
   for (size_t j = 0; j < num_nodes; ++j)
     for (uint32_t qp : qp_indices)
@@ -180,6 +192,9 @@ void KernelSystem::SetupFaceIntegralBCKernel(const chi_mesh::Cell& cell,
       var_qp_values[qp] += shape_values[j][qp] * local_x[j];
       var_grad_qp_values[qp] += shape_grad_values[j][qp] * local_x[j];
     }
+
+  for (uint32_t qp : qp_indices)
+    coord_qp_values[qp] = current_spatial_weight_function_(qpxyz_values[qp]);
 }
 
 /**Returns a set of dirichlet nodes by looking at the BCs applied on

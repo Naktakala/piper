@@ -1,0 +1,15 @@
+[
+  {
+    "file" : "prk2_test1.lua", "num_procs" : 2, "checks" :
+  [
+    { "type" :  "ErrorCode", "error_code" :  0},
+    {
+      "type" : "FloatCompare",
+      "key" : "period(s)(latest)",
+      "wordnum" : 4,
+      "gold" : 15.705714,
+      "tol" : 1.0e-4
+    }
+  ]
+  }
+]

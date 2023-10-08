@@ -62,8 +62,7 @@ void ImplicitEulerTimeIntegrator::ComputeResidual(
 
 void ImplicitEulerTimeIntegrator::ComputeJacobian(
   const ParallelVector& x,
-  ParallelMatrix& J,
-  EquationSystem& equation_system)
+  ParallelMatrix& J, EquationSystem& equation_system)
 {
   equation_system.ComputeJacobian(x, J);
 }

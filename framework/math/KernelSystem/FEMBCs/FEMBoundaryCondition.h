@@ -71,6 +71,7 @@ protected:
   const VecVec3& normal_;
   const VecDbl& nodal_var_values_;
   const VecVec3& node_locations_;
+  const VecDbl& coord_;
 
   size_t i_ = 0;
   size_t j_ = 0;

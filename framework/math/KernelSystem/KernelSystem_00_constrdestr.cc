@@ -33,12 +33,14 @@ FEMKernelSystemData::FEMKernelSystemData(
   const VecDbl& var_qp_values,
   const VecVec3& var_grad_qp_values,
   const VecDbl& var_dot_qp_values,
+  const VecDbl& coord_qp_values,
   const VecDbl& nodal_var_values,
   const VecVec3& node_locations,
 
   const FaceQPData& face_qp_data,
   const VecDbl& face_var_qp_values,
-  const VecVec3& face_var_grad_qp_values)
+  const VecVec3& face_var_grad_qp_values,
+  const VecDbl& face_coord_qp_values)
 
   : ChiObject(chi::InputParameters{}),
     mat_props_data_(mat_props_data),
@@ -50,12 +52,14 @@ FEMKernelSystemData::FEMKernelSystemData(
     var_qp_values_(var_qp_values),
     var_grad_qp_values_(var_grad_qp_values),
     var_dot_qp_values_(var_dot_qp_values),
+    coord_qp_values_(coord_qp_values),
     nodal_var_values_(nodal_var_values),
     node_locations_(node_locations),
 
     face_qp_data_(face_qp_data),
     face_var_qp_values_(face_var_qp_values),
-    face_var_grad_qp_values_(face_var_grad_qp_values)
+    face_var_grad_qp_values_(face_var_grad_qp_values),
+    face_coord_qp_values_(face_coord_qp_values)
 {
 }
 
@@ -63,7 +67,7 @@ RegisterChiObject(chi_math, KernelSystem);
 
 chi::InputParameters KernelSystem::GetInputParameters()
 {
-  chi::InputParameters params = EquationSystem::GetInputParameters();
+  chi::InputParameters params = FieldEquationSystem::GetInputParameters();
 
   params.SetGeneralDescription("An equation system based on kernels.");
   params.SetDocGroup("doc_KernelSystem");
@@ -79,7 +83,7 @@ chi::InputParameters KernelSystem::GetInputParameters()
 /**\brief Constructor for a KernelSystem.
  * This constructor also sorts kernels and BCs into convenient maps.*/
 KernelSystem::KernelSystem(const chi::InputParameters& params)
-  : EquationSystem(params)
+  : FieldEquationSystem(params)
 {
   const auto& volume_kernels_inputs = params.GetParam("kernels");
   const auto boundary_condition_inputs = params.GetParam("bcs");
@@ -95,12 +99,14 @@ KernelSystem::KernelSystem(const chi::InputParameters& params)
                                           cur_cell_data.var_qp_values_,
                                           cur_cell_data.var_grad_qp_values_,
                                           cur_cell_data.var_dot_qp_values_,
+                                          cur_cell_data.coord_qp_values_,
                                           cur_cell_data.local_x_,
                                           cur_cell_data.node_locations_,
 
                                           cur_face_data.qp_data_,
                                           cur_face_data.var_qp_values_,
-                                          cur_face_data.var_grad_qp_values_);
+                                          cur_face_data.var_grad_qp_values_,
+                                          cur_face_data.coord_qp_values_);
 
   Chi::object_stack.push_back(reference_data);
   const size_t data_handle = Chi::object_stack.size() - 1;

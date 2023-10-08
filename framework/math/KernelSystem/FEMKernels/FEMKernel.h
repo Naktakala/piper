@@ -67,6 +67,7 @@ protected:
   const VecDbl& var_value_;
   const VecVec3& var_grad_value_;
   const VecDbl& var_dot_value_;
+  const VecDbl& coord_;
   const VecVec3& qp_xyz_;
 
   size_t i_ = 0;

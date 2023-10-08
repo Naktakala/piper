@@ -54,8 +54,8 @@ NonLinearExecutioner::NonLinearExecutioner(const chi::InputParameters& params)
     print_timing_info_(params.GetParamValue<bool>("print_timing_info")),
     print_nl_residual_(params.GetParamValue<bool>("print_nl_residual")),
     print_l_residual_(params.GetParamValue<bool>("print_l_residual")),
-    print_headers_(params.GetParamValue<bool>("print_header")),
-    print_footers_(params.GetParamValue<bool>("print_footer")),
+    print_header_(params.GetParamValue<bool>("print_header")),
+    print_footer_(params.GetParamValue<bool>("print_footer")),
     eq_system_(GetEquationSystem(params.GetParamValue<size_t>("system"))),
     nl_solver_params_(params.GetParam("solver_params"))
 {
@@ -159,6 +159,12 @@ void NonLinearExecutioner::PrintTimingInfo() const
   outstr << "\n";
 
   Chi::log.Log() << "\n" + TextName() + " timing info:\n" + outstr.str();
+}
+
+chi::ParameterBlock
+NonLinearExecutioner::GetInfo(const chi::ParameterBlock& params) const
+{
+  return eq_system_->GetInfo(params);
 }
 
 } // namespace chi_math

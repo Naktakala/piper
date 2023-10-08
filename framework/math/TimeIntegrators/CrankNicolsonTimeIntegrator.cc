@@ -66,8 +66,7 @@ void CrankNicolsonTimeIntegrator::ComputeResidual(
 
 void CrankNicolsonTimeIntegrator::ComputeJacobian(
   const ParallelVector& x,
-  ParallelMatrix& J,
-  EquationSystem& equation_system)
+  ParallelMatrix& J, EquationSystem& equation_system)
 {
   equation_system.ComputeJacobian(x, J);
 }

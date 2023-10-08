@@ -58,6 +58,7 @@ FEMKernel::FEMKernel(const chi::InputParameters& params)
     var_value_(fem_data_.var_qp_values_),
     var_grad_value_(fem_data_.var_grad_qp_values_),
     var_dot_value_(fem_data_.var_dot_qp_values_),
+    coord_(fem_data_.coord_qp_values_),
     qp_xyz_(fem_data_.qp_data_.QPointsXYZ())
 {
 }
@@ -84,7 +85,7 @@ double FEMKernel::ComputeLocalResidual(uint32_t i)
   double local_r = 0.0;
 
   for (qp_ = 0; qp_ < num_qpoints; ++qp_)
-    local_r += JxW_values_[qp_] * ResidualEntryAtQP();
+    local_r += coord_[qp_] *JxW_values_[qp_] * ResidualEntryAtQP();
 
   return local_r;
 }
@@ -98,7 +99,7 @@ double FEMKernel::ComputeLocalJacobian(uint32_t i, uint32_t j)
   double local_j = 0.0;
 
   for (qp_ = 0; qp_ < num_qpoints; ++qp_)
-    local_j += JxW_values_[qp_] * JacobianEntryAtQP();
+    local_j += coord_[qp_] * JxW_values_[qp_] * JacobianEntryAtQP();
 
   return local_j;
 }

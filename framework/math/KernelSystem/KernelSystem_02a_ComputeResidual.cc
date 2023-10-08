@@ -17,8 +17,7 @@ namespace chi_math
 {
 
 /**Collective method for computing the system residual.*/
-void KernelSystem::ComputeResidual(const ParallelVector& x,
-                                      ParallelVector& r)
+void KernelSystem::ComputeResidual(const ParallelVector& x, ParallelVector& r)
 {
   if (verbosity_ >= 2) Chi::log.LogAll() << "Compute Residual " << std::endl;
 
@@ -28,6 +27,8 @@ void KernelSystem::ComputeResidual(const ParallelVector& x,
   for (const auto& field_info : *primary_fields_container_)
   {
     current_sdm_ = &field_info.field_->GetSpatialDiscretization();
+    current_spatial_weight_function_ =
+      current_sdm_->GetSpatialWeightingFunction();
 
     for (const auto& cell : grid.local_cells)
     {
@@ -44,7 +45,6 @@ void KernelSystem::ComputeResidual(const ParallelVector& x,
         IdentifyLocalDirichletNodes(cell);
 
       std::vector<double> cell_local_r(num_nodes, 0.0);
-
 
       // Apply domain kernels
       for (const auto& kernel : kernels)
@@ -93,7 +93,8 @@ void KernelSystem::ComputeResidual(const ParallelVector& x,
     ++current_field_index_;
   } // for field
 
-  if (verbosity_ >= 2) Chi::log.LogAll() << "Compute Residual Done" << std::endl;
+  if (verbosity_ >= 2)
+    Chi::log.LogAll() << "Compute Residual Done" << std::endl;
 
   r.Assemble();
 }

@@ -1,7 +1,7 @@
--- Cylindrical coordinate diffusion with dirichlet boundary condition
--- Analytical solution Tmax = 0.25 * q/k * R^2 + Tb
--- With k=2, q=1e4, Tb=300, R=1.35
--- Tmax = 2578.125
+-- Cylindrical coordinate diffusion with convection boundary condition
+-- Analytical solution Tmax = 0.25 * q/k * R^2 + Tb + 0.5 * R^2 * q/h
+-- With k=2, q=1e4, Tb=300, R=1.35, h=100.0
+-- Tmax = 2669.25
 
 rnodes = {}
 znodes = {}
@@ -43,19 +43,19 @@ system1 = chi_math.KernelSystem.Create
     {type = chi_math.FEMTimeDerivativeKernel.type, var="T",}
   },
   bcs = {
-    --{
-    --  type = hcm.ConvectiveHeatFluxBC.type,
-    --  boundaries = { "XMAX" },
-    --  T_bulk = 300.0,
-    --  convection_coefficient = 100.0,
-    --  var="T"
-    --}
     {
-      type = chi_math.FEMDirichletBC.type,
-      boundaries = {"XMAX"},
-      bc_value = 300.0,
-      var = "T"
+      type = hcm.ConvectiveHeatFluxBC.type,
+      boundaries = { "XMAX" },
+      T_bulk = 300.0,
+      convection_coefficient = 100.0,
+      var="T"
     }
+    --{
+    --  type = chi_math.FEMDirichletBC.type,
+    --  boundaries = {"XMAX"},
+    --  bc_value = 300.0,
+    --  var = "T"
+    --}
   },
   time_integrator = chi_math.CrankNicolsonTimeIntegrator.Create({}),
   --verbosity = 2

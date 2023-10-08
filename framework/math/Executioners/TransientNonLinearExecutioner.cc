@@ -1,6 +1,6 @@
 #include "TransientNonLinearExecutioner.h"
 
-#include "math/Systems/EquationSystem.h"
+#include "math/Systems/FieldEquationSystem.h"
 #include "math/TimeIntegrators/TimeIntegrator.h"
 
 #include "physics/TimeSteppers/TimeStepper.h"
@@ -122,7 +122,7 @@ void TransientNonLinearExecutioner::Step()
   const double dt = timestepper_->TimeStepSize();
   const double time = timestepper_->Time();
 
-  if (print_headers_)
+  if (print_header_)
     Chi::log.Log() << "Solver \"" + TextName() + "\" " +
                         timestepper_->StringTimeInfo(false);
 
@@ -133,7 +133,7 @@ void TransientNonLinearExecutioner::Step()
 
   nl_solver_->Solve();
 
-  if (print_footers_)
+  if (print_footer_)
     Chi::log.Log() << nl_solver_->GetConvergedReasonString() << "\n\n";
 
   Chi::log.LogEvent(t_tag_solve_, chi::ChiLog::EventType::EVENT_END);
@@ -156,7 +156,6 @@ void TransientNonLinearExecutioner::Advance()
 
     eq_system_->UpdateFields();
     eq_system_->OutputFields(static_cast<int>(t_index));
-    // time_ = time_step_controller_->Time();
   }
   else
   {
@@ -172,8 +171,6 @@ void TransientNonLinearExecutioner::Execute()
 
   if (not initial_solution_set_)
   {
-    // const double time = timestepper_->Time();
-
     Chi::log.Log() << timestepper_->StringTimeInfo(true);
     Chi::log.Log() << "Setting initial solution";
 

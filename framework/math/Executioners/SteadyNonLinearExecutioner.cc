@@ -1,6 +1,6 @@
 #include "SteadyNonLinearExecutioner.h"
 
-#include "math/Systems/EquationSystem.h"
+#include "math/Systems/FieldEquationSystem.h"
 
 #include "ChiObjectFactory.h"
 
@@ -46,18 +46,18 @@ void SteadyNonLinearExecutioner::Execute()
 {
   Chi::log.LogEvent(t_tag_solve_, chi::ChiLog::EventType::EVENT_BEGIN);
 
-  if (print_headers_)
+  if (print_header_)
     Chi::log.Log() << "\nExecuting solver \"" + TextName() + "\"";
 
   nl_solver_->Solve();
   eq_system_->UpdateFields();
 
-  if (print_footers_)
+  if (print_footer_)
     Chi::log.Log() << nl_solver_->GetConvergedReasonString() << "\n\n";
 
   Chi::log.LogEvent(t_tag_solve_, chi::ChiLog::EventType::EVENT_END);
 
-  eq_system_->OutputFields();
+  eq_system_->OutputFields(-1); // -1 = latest
 
   PrintTimingInfo();
 }

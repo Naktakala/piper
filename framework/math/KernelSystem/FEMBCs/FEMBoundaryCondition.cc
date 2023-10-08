@@ -55,7 +55,8 @@ FEMBoundaryCondition::FEMBoundaryCondition(const chi::InputParameters& params)
     qp_xyz_(fem_data_.face_qp_data_.QPointsXYZ()),
     normal_(fem_data_.face_qp_data_.Normals()),
     nodal_var_values_(fem_data_.nodal_var_values_),
-    node_locations_(fem_data_.node_locations_)
+    node_locations_(fem_data_.node_locations_),
+    coord_(fem_data_.coord_qp_values_)
 {
 }
 

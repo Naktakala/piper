@@ -57,11 +57,13 @@ public:
 
   void PrintTimingInfo() const;
 
+  chi::ParameterBlock GetInfo(const chi::ParameterBlock& params) const override;
+
   const bool print_timing_info_;
   const bool print_nl_residual_;
   const bool print_l_residual_;
-  const bool print_headers_;
-  const bool print_footers_;
+  const bool print_header_;
+  const bool print_footer_;
 
 protected:
   static chi::InputParameters GetInputParameters();

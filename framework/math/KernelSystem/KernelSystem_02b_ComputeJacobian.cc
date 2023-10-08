@@ -29,6 +29,8 @@ void KernelSystem::ComputeJacobian(const ParallelVector& x, ParallelMatrix& J)
   for (const auto& field_info : *primary_fields_container_)
   {
     current_sdm_ = &field_info.field_->GetSpatialDiscretization();
+    current_spatial_weight_function_ =
+      current_sdm_->GetSpatialWeightingFunction();
 
     for (const auto& cell : grid.local_cells)
     {

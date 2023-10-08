@@ -40,5 +40,31 @@
     { "type" :  "ErrorCode", "error_code" :  0},
     { "type" : "StrCompare", "key" : "maxval(latest)       |      146.342584" }
   ]
+  },
+  {
+    "file" : "transient_cylTest1.lua", "num_procs" : 4, "checks" :
+  [
+    { "type" :  "ErrorCode", "error_code" :  0},
+    {
+      "type" : "FloatCompare",
+      "key" : "maxval(latest)",
+      "wordnum" : 4,
+      "gold" : 2578.143900,
+      "tol" : 1.0e-3
+    }
+  ]
+  },
+  {
+    "file" : "transient_cylTest2.lua", "num_procs" : 4, "checks" :
+  [
+    { "type" :  "ErrorCode", "error_code" :  0},
+    {
+      "type" : "FloatCompare",
+      "key" : "maxval(latest)",
+      "wordnum" : 4,
+      "gold" : 2669.268892,
+      "tol" : 1.0e-3
+    }
+  ]
   }
 ]

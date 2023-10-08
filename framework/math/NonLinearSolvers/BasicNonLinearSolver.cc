@@ -1,7 +1,7 @@
 #include "BasicNonLinearSolver.h"
 
 #include "math/PETScUtils/petsc_utils.h"
-#include "math/NonLinearSolvers/NonLinearExecutioner.h"
+#include "math/Executioners/NonLinearExecutioner.h"
 #include "math/PETScUtils/petsc_snes_utils.h"
 #include "math/ParallelMatrix/ParallelPETScMatrixProxy.h"
 #include "math/ParallelVector/ParallelVector.h"
@@ -152,7 +152,7 @@ void BasicNonLinearSolver::SetJacobian()
     SNESSetJacobian(nl_solver_, J_, P_, ComputeJacobian, this);
     SNESSetUseMatrixFree(nl_solver_, PETSC_TRUE, PETSC_FALSE);
   }
-  else if (options_.nl_method_ == "NEWTON")
+  else if (options_.nl_method_ == "NEWTON" or options_.nl_method_ == "LINEAR")
   {
     SetupMatrix(J_);
     SNESSetJacobian(nl_solver_, J_, J_, ComputeJacobian, this);
@@ -194,19 +194,12 @@ BasicNonLinearSolver::ResidualFunction(SNES snes, Vec x, Vec r, void*)
   auto solution_vector = executioner.SolutionVector().MakeClone();
   auto residual_vector = solution_vector->MakeClone();
 
-  //chi_math::PETScUtils::CopyVecToSTLvector(x,
-  //                                         solution_vector->RawValues(),
-  //                                         solution_vector->LocalSize(),
-  //                                         /*resize_STL=*/false);
   solution_vector->CopyLocalValues(x);
   solution_vector->CommunicateGhostEntries();
 
   residual_vector->Set(0.0);
-
   executioner.ComputeResidual(*solution_vector, *residual_vector);
 
-  //chi_math::PETScUtils::CopySTLvectorToVec(
-  //  residual_vector->RawValues(), r, residual_vector->LocalSize());
   chi_math::PETScUtils::CopyParallelVectorToVec(*residual_vector, r);
 
   return 0;
@@ -223,10 +216,6 @@ PetscErrorCode BasicNonLinearSolver::ComputeJacobian(
   auto& executioner = nl_context_ptr->executioner_;
   auto solution_vector = executioner.SolutionVector().MakeClone();
 
-  //chi_math::PETScUtils::CopyVecToSTLvector(x,
-  //                                         solution_vector->RawValues(),
-  //                                         solution_vector->LocalSize(),
-  //                                         /*resize_STL=*/false);
   solution_vector->CopyLocalValues(x);
   solution_vector->CommunicateGhostEntries();
 
@@ -246,7 +235,7 @@ PetscErrorCode BasicNonLinearSolver::ComputeJacobian(
   }
   // For NEWTON the jacobian and the preconditioner is the same therefore
   // we don't need to touch Pmat
-  else if (options.nl_method_ == "NEWTON")
+  else if (options.nl_method_ == "NEWTON" or options.nl_method_ == "LINEAR")
     matrix_to_assemble = Jmat;
   else
     ChiInvalidArgument("Unsupported nl_method \"" + options.nl_method_ + "\".");
@@ -273,10 +262,6 @@ void BasicNonLinearSolver::PostSolveCallback()
   auto& executioner = context->executioner_;
   auto& solution_vector = executioner.SolutionVector();
 
-  //chi_math::PETScUtils::CopyVecToSTLvector(x_,
-  //                                         solution_vector.RawValues(),
-  //                                         solution_vector.LocalSize(),
-  //                                         /*resize_STL=*/false);
   solution_vector.CopyLocalValues(x_);
   solution_vector.CommunicateGhostEntries();
 }

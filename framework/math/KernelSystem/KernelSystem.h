@@ -1,7 +1,7 @@
 #ifndef CHITECH_KERNELSYSTEM_H
 #define CHITECH_KERNELSYSTEM_H
 
-#include "math/Systems/EquationSystem.h"
+#include "math/Systems/FieldEquationSystem.h"
 #include "math/UnknownManager/unknown_manager.h"
 #include "math/SpatialDiscretization/FiniteElement/QuadraturePointData.h"
 #include "math/SpatialDiscretization/CellMappings/CellMapping.h"
@@ -47,12 +47,14 @@ public:
                       const VecDbl& var_qp_values,
                       const VecVec3& var_grad_qp_values,
                       const VecDbl& var_dot_qp_values,
+                      const VecDbl& coord_qp_values,
                       const VecDbl& nodal_var_values,
                       const VecVec3& node_locations,
 
                       const FaceQPData& face_qp_data,
                       const VecDbl& face_var_qp_values,
-                      const VecVec3& face_var_grad_qp_values);
+                      const VecVec3& face_var_grad_qp_values,
+                      const VecDbl& face_coord_qp_values);
 
   const chi::MaterialPropertiesData& mat_props_data_;
 
@@ -67,16 +69,18 @@ public:
   const VecDbl& var_qp_values_;
   const VecVec3& var_grad_qp_values_;
   const VecDbl& var_dot_qp_values_;
+  const VecDbl& coord_qp_values_;
   const VecDbl& nodal_var_values_;
   const VecVec3& node_locations_;
 
   const FaceQPData& face_qp_data_;
   const VecDbl& face_var_qp_values_;
   const VecVec3& face_var_grad_qp_values_;
+  const VecDbl& face_coord_qp_values_;
 };
 
 /**General Finite Element Method Kernel system.*/
-class KernelSystem : public EquationSystem
+class KernelSystem : public FieldEquationSystem
 {
 public:
   // 00_constrdestr
@@ -148,6 +152,9 @@ protected:
   const SpatialDiscretization* current_sdm_;
   const CellQPDataContainer* current_cell_qp_container_;
 
+  typedef std::function<double(const chi_mesh::Vector3&)> SpatialWeightFunction;
+  SpatialWeightFunction current_spatial_weight_function_;
+
   /**Utility data structure to store data ahead of executing the kernels*/
   struct CurrentCellData
   {
@@ -162,6 +169,7 @@ protected:
     CellQPData qp_data_;
     VecDbl var_qp_values_;
     VecVec3 var_grad_qp_values_;
+    VecDbl coord_qp_values_;
     VecDbl var_dot_qp_values_;
   } cur_cell_data;
 
@@ -170,6 +178,7 @@ protected:
     FaceQPData qp_data_;
     VecDbl var_qp_values_;
     VecVec3 var_grad_qp_values_;
+    VecDbl coord_qp_values_;
   } cur_face_data;
 };
 
