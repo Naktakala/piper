@@ -60,8 +60,8 @@ void FEMMaterialProperty::PreComputeInternalQPValues()
 {
   const double time = fem_data_.time_data_.time_;
 
-  const auto& qp_data = fem_data_.qp_data_;
-  const auto& var_qp_values = fem_data_.var_qp_values_;
+  const auto& qp_data = fem_data_.cell_data_.qp_data_;
+  const auto& var_qp_values = fem_data_.cell_data_.var_qp_values_;
 
   const auto& qp_indices = qp_data.QuadraturePointIndices();
   const auto& qp_xyz = qp_data.QPointsXYZ();
@@ -83,8 +83,8 @@ void FEMMaterialProperty::PreComputeFaceQPValues()
 {
   const double time = fem_data_.time_data_.time_;
 
-  const auto& qp_data = fem_data_.face_qp_data_;
-  const auto& var_qp_values = fem_data_.face_var_qp_values_;
+  const auto& qp_data = fem_data_.face_data_.qp_data_;
+  const auto& var_qp_values = fem_data_.face_data_.var_qp_values_;
 
   const auto& qp_indices = qp_data.QuadraturePointIndices();
   const auto& qp_xyz = qp_data.QPointsXYZ();

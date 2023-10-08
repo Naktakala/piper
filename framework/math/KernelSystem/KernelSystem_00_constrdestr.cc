@@ -1,7 +1,6 @@
 #include "KernelSystem.h"
 
 #include "math/SpatialDiscretization/SpatialDiscretization.h"
-#include "math/SpatialDiscretization/FiniteElement/QuadraturePointData.h"
 #include "math/KernelSystem/FEMKernels/FEMKernel.h"
 #include "math/KernelSystem/FEMBCs/FEMBoundaryCondition.h"
 #include "math/KernelSystem/Coupling/FEMMaterialProperty.h"
@@ -22,46 +21,6 @@
 
 namespace chi_math
 {
-
-FEMKernelSystemData::FEMKernelSystemData(
-  const chi::MaterialPropertiesData& mat_props_data,
-  const EquationSystemTimeData& time_data,
-  const ParallelVector& main_solution_vector,
-  const chi_mesh::Cell*& cell_ptr,
-  const chi_math::CellMapping*& cell_mapping_ptr,
-  const CellQPData& qp_data,
-  const VecDbl& var_qp_values,
-  const VecVec3& var_grad_qp_values,
-  const VecDbl& var_dot_qp_values,
-  const VecDbl& coord_qp_values,
-  const VecDbl& nodal_var_values,
-  const VecVec3& node_locations,
-
-  const FaceQPData& face_qp_data,
-  const VecDbl& face_var_qp_values,
-  const VecVec3& face_var_grad_qp_values,
-  const VecDbl& face_coord_qp_values)
-
-  : ChiObject(chi::InputParameters{}),
-    mat_props_data_(mat_props_data),
-    time_data_(time_data),
-    main_solution_vector_(main_solution_vector),
-    cell_ptr_(cell_ptr),
-    cell_mapping_ptr_(cell_mapping_ptr),
-    qp_data_(qp_data),
-    var_qp_values_(var_qp_values),
-    var_grad_qp_values_(var_grad_qp_values),
-    var_dot_qp_values_(var_dot_qp_values),
-    coord_qp_values_(coord_qp_values),
-    nodal_var_values_(nodal_var_values),
-    node_locations_(node_locations),
-
-    face_qp_data_(face_qp_data),
-    face_var_qp_values_(face_var_qp_values),
-    face_var_grad_qp_values_(face_var_grad_qp_values),
-    face_coord_qp_values_(face_coord_qp_values)
-{
-}
 
 RegisterChiObject(chi_math, KernelSystem);
 
@@ -93,20 +52,8 @@ KernelSystem::KernelSystem(const chi::InputParameters& params)
     std::make_shared<FEMKernelSystemData>(material_properties_data_,
                                           time_data_,
                                           *main_solution_vector_,
-                                          cur_cell_data.cell_ptr_,
-                                          cur_cell_data.cell_mapping_ptr_,
-                                          cur_cell_data.qp_data_,
-                                          cur_cell_data.var_qp_values_,
-                                          cur_cell_data.var_grad_qp_values_,
-                                          cur_cell_data.var_dot_qp_values_,
-                                          cur_cell_data.coord_qp_values_,
-                                          cur_cell_data.local_x_,
-                                          cur_cell_data.node_locations_,
-
-                                          cur_face_data.qp_data_,
-                                          cur_face_data.var_qp_values_,
-                                          cur_face_data.var_grad_qp_values_,
-                                          cur_face_data.coord_qp_values_);
+                                          cur_cell_data,
+                                          cur_face_data);
 
   Chi::object_stack.push_back(reference_data);
   const size_t data_handle = Chi::object_stack.size() - 1;
@@ -198,9 +145,6 @@ KernelSystem::KernelSystem(const chi::InputParameters& params)
         {std::move(cell_qp_data), std::move(faces_qp_data)});
     }
   }
-  // for (auto& field_info : *primary_fields_container_)
-  //   field_info.field_->GetSpatialDiscretization().InitializeQPData(/*internal_faces=*/false,
-  //                                             /*bndry_faces=*/true);
 }
 
 } // namespace chi_math

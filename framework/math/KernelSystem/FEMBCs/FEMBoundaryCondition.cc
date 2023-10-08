@@ -45,18 +45,18 @@ FEMBoundaryCondition::FEMBoundaryCondition(const chi::InputParameters& params)
       __FUNCTION__)),
     dt_(fem_data_.time_data_.dt_),
     time_(fem_data_.time_data_.time_),
-    JxW_values_(fem_data_.face_qp_data_.JxW_Values()),
-    test_values_(fem_data_.face_qp_data_.ShapeValues()),
-    test_grad_values_(fem_data_.face_qp_data_.ShapeGradValues()),
-    shape_values_(fem_data_.face_qp_data_.ShapeValues()),
-    shape_grad_values_(fem_data_.face_qp_data_.ShapeGradValues()),
-    var_value_(fem_data_.face_var_qp_values_),
-    var_grad_value_(fem_data_.face_var_grad_qp_values_),
-    qp_xyz_(fem_data_.face_qp_data_.QPointsXYZ()),
-    normal_(fem_data_.face_qp_data_.Normals()),
-    nodal_var_values_(fem_data_.nodal_var_values_),
-    node_locations_(fem_data_.node_locations_),
-    coord_(fem_data_.coord_qp_values_)
+    JxW_values_(fem_data_.face_data_.qp_data_.JxW_Values()),
+    test_values_(fem_data_.face_data_.qp_data_.ShapeValues()),
+    test_grad_values_(fem_data_.face_data_.qp_data_.ShapeGradValues()),
+    shape_values_(fem_data_.face_data_.qp_data_.ShapeValues()),
+    shape_grad_values_(fem_data_.face_data_.qp_data_.ShapeGradValues()),
+    var_value_(fem_data_.face_data_.var_qp_values_),
+    var_grad_value_(fem_data_.face_data_.var_grad_qp_values_),
+    qp_xyz_(fem_data_.face_data_.qp_data_.QPointsXYZ()),
+    normal_(fem_data_.face_data_.qp_data_.Normals()),
+    nodal_var_values_(fem_data_.cell_data_.local_x_),
+    node_locations_(fem_data_.cell_data_.node_locations_),
+    coord_(fem_data_.face_data_.coord_qp_values_)
 {
 }
 

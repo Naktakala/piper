@@ -2,10 +2,7 @@
 #define CHITECH_KERNELSYSTEM_H
 
 #include "math/Systems/FieldEquationSystem.h"
-#include "math/UnknownManager/unknown_manager.h"
-#include "math/SpatialDiscretization/FiniteElement/QuadraturePointData.h"
-#include "math/SpatialDiscretization/CellMappings/CellMapping.h"
-#include "math/KernelSystem/Coupling/FEMMaterialProperty.h"
+#include "FEMKernelSystemData.h"
 
 namespace chi
 {
@@ -23,61 +20,9 @@ class SpatialDiscretization;
 class FEMKernel;
 class FEMBoundaryCondition;
 class ParallelMatrix;
-class FEMMaterialProperty;
 
-typedef finite_element::VolumetricQuadraturePointData CellQPData;
-typedef finite_element::SurfaceQuadraturePointData FaceQPData;
 typedef std::shared_ptr<FEMKernel> FEMKernelPtr;
 typedef std::shared_ptr<FEMBoundaryCondition> FEMBoundaryConditionPtr;
-
-/**Data pack that can be placed on the object stack for kernels and bc's to
- * use when being constructed.*/
-class FEMKernelSystemData : public ChiObject
-{
-public:
-  typedef chi_mesh::Vector3 Vec3;
-  typedef std::vector<Vec3> VecVec3;
-
-  FEMKernelSystemData(const chi::MaterialPropertiesData& mat_props_data,
-                      const EquationSystemTimeData& time_data,
-                      const ParallelVector& main_solution_vector,
-                      const chi_mesh::Cell*& cell_ptr,
-                      const chi_math::CellMapping*& cell_mapping_ptr,
-                      const CellQPData& qp_data,
-                      const VecDbl& var_qp_values,
-                      const VecVec3& var_grad_qp_values,
-                      const VecDbl& var_dot_qp_values,
-                      const VecDbl& coord_qp_values,
-                      const VecDbl& nodal_var_values,
-                      const VecVec3& node_locations,
-
-                      const FaceQPData& face_qp_data,
-                      const VecDbl& face_var_qp_values,
-                      const VecVec3& face_var_grad_qp_values,
-                      const VecDbl& face_coord_qp_values);
-
-  const chi::MaterialPropertiesData& mat_props_data_;
-
-  const EquationSystemTimeData& time_data_;
-
-  const ParallelVector& main_solution_vector_;
-
-  const chi_mesh::Cell*& cell_ptr_;
-  const chi_math::CellMapping*& cell_mapping_ptr_;
-
-  const CellQPData& qp_data_;
-  const VecDbl& var_qp_values_;
-  const VecVec3& var_grad_qp_values_;
-  const VecDbl& var_dot_qp_values_;
-  const VecDbl& coord_qp_values_;
-  const VecDbl& nodal_var_values_;
-  const VecVec3& node_locations_;
-
-  const FaceQPData& face_qp_data_;
-  const VecDbl& face_var_qp_values_;
-  const VecVec3& face_var_grad_qp_values_;
-  const VecDbl& face_coord_qp_values_;
-};
 
 /**General Finite Element Method Kernel system.*/
 class KernelSystem : public FieldEquationSystem
@@ -134,6 +79,7 @@ protected:
   std::set<uint32_t>
   IdentifyLocalDirichletNodes(const chi_mesh::Cell& cell) const;
 
+  // Members requiring initialization
   std::map<int, std::vector<FEMKernelPtr>> matid_2_volume_kernels_map_;
   typedef std::map<uint64_t, FEMBoundaryConditionPtr> BID2BCMap;
   typedef std::pair<std::string, uint32_t> VarNameComp;
@@ -147,39 +93,18 @@ protected:
   std::map<const SpatialDiscretization*,
            std::vector<CellQPDataContainer>> sdm_stored_cell_qp_data_;
 
+  // Runtime data
   size_t current_field_index_ = 0;
   uint32_t current_field_component_ = 0;
-  const SpatialDiscretization* current_sdm_;
-  const CellQPDataContainer* current_cell_qp_container_;
+  const SpatialDiscretization* current_sdm_ = nullptr;
+  const CellQPDataContainer* current_cell_qp_container_ = nullptr;
 
   typedef std::function<double(const chi_mesh::Vector3&)> SpatialWeightFunction;
   SpatialWeightFunction current_spatial_weight_function_;
 
-  /**Utility data structure to store data ahead of executing the kernels*/
-  struct CurrentCellData
-  {
-    chi_mesh::Cell const* cell_ptr_ = nullptr;
-    const chi_math::CellMapping* cell_mapping_ptr_ = nullptr;
+  FEMKernelSystemData::CurrentCellData cur_cell_data;
 
-    std::vector<chi_mesh::Vector3> node_locations_;
-    std::vector<int64_t> dof_map_;
-    VecDbl local_x_;
-    VecDbl local_x_dot_;
-
-    CellQPData qp_data_;
-    VecDbl var_qp_values_;
-    VecVec3 var_grad_qp_values_;
-    VecDbl coord_qp_values_;
-    VecDbl var_dot_qp_values_;
-  } cur_cell_data;
-
-  struct CurrentFaceData
-  {
-    FaceQPData qp_data_;
-    VecDbl var_qp_values_;
-    VecVec3 var_grad_qp_values_;
-    VecDbl coord_qp_values_;
-  } cur_face_data;
+  FEMKernelSystemData::CurrentFaceData cur_face_data;
 };
 
 } // namespace chi_math
