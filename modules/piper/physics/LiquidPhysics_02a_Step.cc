@@ -1,17 +1,20 @@
 #include "LiquidPhysics.h"
 
 #include "piper/Piper.h"
-#include "piper/utils/CoolPropInterface.h"
 #include "piper/components/HardwareComponent.h"
 
 #include "physics/TimeSteppers/TimeStepper.h"
 
 #include "math/chi_math.h"
 
+#include "mesh/Cell/cell.h"
+
 #include "chi_log.h"
 #include "utils/chi_timer.h"
 
 #include <functional>
+
+#define scint64_t static_cast<int64_t>
 
 namespace piper
 {
@@ -19,71 +22,61 @@ namespace piper
 void LiquidPhysics::Step()
 {
   const double start_time = Chi::program_timer.GetTime();
-  ChiLogicalErrorIf(Chi::mpi.process_count != 1, "ONLY SERIAL!!!");
 
-  const size_t tag_jnc_time = Chi::log.GetExistingRepeatingEventTag("JNC_TIME");
-  const size_t tag_vol_time = Chi::log.GetExistingRepeatingEventTag("VOL_TIME");
-  const size_t tag_slv_time = Chi::log.GetExistingRepeatingEventTag("SLV_TIME");
+  Chi::log.Log() << "Solver \"" + TextName() + "\" " +
+                      timestepper_->StringTimeInfo(false);
 
-  const std::vector<size_t> tags = {
-    Chi::log.GetExistingRepeatingEventTag("TIMING0"),
-    Chi::log.GetExistingRepeatingEventTag("TIMING1"),
-    Chi::log.GetExistingRepeatingEventTag("TIMING2"),
-    Chi::log.GetExistingRepeatingEventTag("TIMING3"),
-    Chi::log.GetExistingRepeatingEventTag("TIMING4")};
-
-  const double projected_end_time =
-    timestepper_->Time() + timestepper_->TimeStepSize();
-  //if (projected_end_time > timestepper_->EndTime()) dt_ = (projected_end_time - Time());
+  auto& t_solve = Chi::log.CreateOrGetTimingBlock("LiquidPhysics::Step");
+  auto& t_junctions = Chi::log.CreateOrGetTimingBlock("Junction assembly time",
+                                                      "LiquidPhysics::Step");
+  auto& t_volumes = Chi::log.CreateOrGetTimingBlock("Volume assembly time",
+                                                    "LiquidPhysics::Step");
+  auto& t_psystem = Chi::log.CreateOrGetTimingBlock("Pressure system solve",
+                                                    "LiquidPhysics::Step");
+  t_solve.TimeSectionBegin();
 
   const auto& pipe_system = *pipe_system_ptr_;
   const auto& vol_comp_ids = pipe_system.VolumeComponentIDs();
   const auto& jnc_comp_ids = pipe_system.JunctionComponentIDs();
 
   //============================================= Assemble momentum eqs
-  Chi::log.LogEvent(tag_jnc_time, chi::ChiLog::EventType::EVENT_BEGIN);
+  t_junctions.TimeSectionBegin();
   for (const size_t jnc_comp_id : jnc_comp_ids)
   {
     auto& jnc_model = GetComponentLiquidModel(jnc_comp_id);
     jnc_model.AssembleEquations();
   } // for junction component
-  Chi::log.LogEvent(tag_jnc_time, chi::ChiLog::EventType::EVENT_END);
+  t_junctions.TimeSectionEnd();
 
   //============================================= Assemble conservation of
   //                                              energy, mass, eos
-  Chi::log.LogEvent(tag_vol_time, chi::ChiLog::EventType::EVENT_BEGIN);
+  t_volumes.TimeSectionBegin();
   for (const auto& vol_comp_id : vol_comp_ids)
   {
     auto& vol_model = GetComponentLiquidModel(vol_comp_id);
+    const auto& cell = *vol_model.GetCellPtr();
+    if (cell.partition_id_ != Chi::mpi.location_id) continue;
     vol_model.AssembleEquations();
   } // for volume components
-  Chi::log.LogEvent(tag_vol_time, chi::ChiLog::EventType::EVENT_END);
+  t_volumes.TimeSectionEnd();
 
   //============================================= Init pressure system
-  Chi::log.LogEvent(tag_slv_time, chi::ChiLog::EventType::EVENT_BEGIN);
+  t_psystem.TimeSectionBegin();
   const size_t num_volumetric_components = vol_comp_ids.size();
 
-  MatDbl A(num_volumetric_components, VecDbl(num_volumetric_components, 0.0));
-  VecDbl p(num_volumetric_components, 0.0);
-  VecDbl b(num_volumetric_components, 0.0);
-
-  std::map<size_t, size_t> vol_comp_id_2_row_i_map;
-  {
-    size_t i = 0;
-    for (const auto& vol_comp_id : vol_comp_ids)
-      vol_comp_id_2_row_i_map[vol_comp_id] = i++;
-  }
-
-  //============================================= Assemble pressure system
+  MatZeroEntries(A_);
+  VecSet(b_, 0.0);
   for (const auto& vol_comp_id : vol_comp_ids)
   {
     auto& vol_model = GetComponentLiquidModel(vol_comp_id);
+    const auto& cell = *vol_model.GetCellPtr();
+    if (cell.partition_id_ != Chi::mpi.location_id) continue;
 
-    const size_t ir = vol_comp_id_2_row_i_map.at(vol_comp_id);
+    const int64_t ir = scint64_t(cell.global_id_);
 
     const auto& eq_COE3 = vol_model.GetEquationCoefficients(2);
 
-    b[ir] = eq_COE3.rhs_;
+    VecSetValue(b_, ir, eq_COE3.rhs_, ADD_VALUES);
 
     for (auto [j, jnc_j_model, connection_j] : vol_model.Connections())
     {
@@ -92,7 +85,7 @@ void LiquidPhysics::Step()
 
       const double a_j_COE3 = eq_COE3.coeff_sets_[0][j];
 
-      b[ir] -= a_j_COE3 * eq_cons_of_mom_j.rhs_;
+      VecSetValue(b_, ir, -a_j_COE3 * eq_cons_of_mom_j.rhs_, ADD_VALUES);
 
       const size_t JI = eq_cons_of_mom_j.coeff_sets_[0].size();
       for (size_t i = 0; i < JI; ++i)
@@ -102,37 +95,55 @@ void LiquidPhysics::Step()
           std::find(vol_comp_ids.begin(), vol_comp_ids.end(), comp_id);
         if (it != vol_comp_ids.end())
         {
-          const size_t adj_comp_id = *it;
-          const size_t ir_adj = vol_comp_id_2_row_i_map[adj_comp_id];
+          const auto& adj_model = GetComponentLiquidModel(comp_id);
+          const auto& adj_cell = *adj_model.GetCellPtr();
+          const int64_t ir_adj = scint64_t(adj_cell.global_id_);
 
-          A[ir][ir_adj] += a_j_COE3 * eq_cons_of_mom_j.coeff_sets_[0][i];
+          // A[ir][ir_adj] += a_j_COE3 * eq_cons_of_mom_j.coeff_sets_[0][i];
+          MatSetValue(A_,
+                      ir,
+                      ir_adj,
+                      a_j_COE3 * eq_cons_of_mom_j.coeff_sets_[0][i],
+                      ADD_VALUES);
         }
         else
         {
           const auto& bndry_comp_model = component_models_[comp_id];
           const double bndry_p = bndry_comp_model->VarOld("p");
-          b[ir] -= a_j_COE3 * eq_cons_of_mom_j.coeff_sets_[0][i] * bndry_p;
+          // b[ir] -= a_j_COE3 * eq_cons_of_mom_j.coeff_sets_[0][i] * bndry_p;
+          VecSetValue(b_,
+                      ir,
+                      -a_j_COE3 * eq_cons_of_mom_j.coeff_sets_[0][i] * bndry_p,
+                      ADD_VALUES);
         }
       } // for i
     }   // for j
   }     // for volume components
 
-  p = b;
-  chi_math::GaussElimination(A, p, static_cast<int>(num_volumetric_components));
-  Chi::log.LogEvent(tag_slv_time, chi::ChiLog::EventType::EVENT_END);
-  Chi::log.LogEvent(tags[0], chi::ChiLog::EventType::EVENT_BEGIN);
+  VecAssemblyBegin(b_);
+  VecAssemblyEnd(b_);
+  MatAssemblyBegin(A_, MAT_FINAL_ASSEMBLY);
+  MatAssemblyEnd(A_, MAT_FINAL_ASSEMBLY);
 
-  Chi::log.LogEvent(tags[0], chi::ChiLog::EventType::EVENT_END);
+  KSPSolve(pressure_solver_setup.ksp, b_, x_);
 
-  Chi::log.LogEvent(tags[1], chi::ChiLog::EventType::EVENT_BEGIN);
+  pressure_vector_->CopyLocalValues(x_);
+  pressure_vector_->CommunicateGhostEntries();
+
   // Update pressure
-  for (const auto& [vol_comp_id, ir] : vol_comp_id_2_row_i_map)
+  VecDbl p(num_volumetric_components, 0.0);
+  for (size_t vol_comp_id : pipe_system_ptr_->VolumeComponentIDs())
   {
-    auto& vol_comp_model = *component_models_.at(vol_comp_id);
-    vol_comp_model.VarNew("p") = p[vol_comp_id_2_row_i_map.at(vol_comp_id)];
+    auto& vol_comp_model = GetComponentLiquidModel(vol_comp_id);
+    const auto& cell = *vol_comp_model.GetCellPtr();
+
+    const int64_t map_id =
+      pressure_vector_->MapGhostToLocal(scint64_t(cell.global_id_));
+
+    vol_comp_model.VarNew("p") = (*pressure_vector_)[map_id];
   }
-  Chi::log.LogEvent(tags[1], chi::ChiLog::EventType::EVENT_END);
-  Chi::log.LogEvent(tags[2], chi::ChiLog::EventType::EVENT_BEGIN);
+  t_psystem.TimeSectionEnd();
+
   // Update junction velocity
   for (const size_t junc_comp_id : jnc_comp_ids)
   {
@@ -154,14 +165,15 @@ void LiquidPhysics::Step()
 
     jnc_model.VarNew("u") = u_j_tp1;
   }
-  Chi::log.LogEvent(tags[2], chi::ChiLog::EventType::EVENT_END);
-
-  Chi::log.LogEvent(tags[3], chi::ChiLog::EventType::EVENT_BEGIN);
 
   // Update density and internal energy + other state variables
-  for (const auto& [vol_comp_id, ir] : vol_comp_id_2_row_i_map)
+  // for (const auto& [vol_comp_id, ir] : vol_comp_id_2_row_i_map)
+  for (size_t vol_comp_id : pipe_system_ptr_->VolumeComponentIDs())
   {
     auto& vol_model = GetComponentLiquidModel(vol_comp_id);
+    const auto& cell = *vol_model.GetCellPtr();
+    if (cell.partition_id_ != Chi::mpi.location_id) continue;
+
     const size_t J = vol_model.Connections().size();
 
     const double Ai = vol_model.Area();
@@ -200,23 +212,13 @@ void LiquidPhysics::Step()
     const std::vector<StateVal> state_specs = {{"p", vol_model.VarNew("p")},
                                                {"e", e_i_tp1}};
 
-    Chi::log.LogEvent(tags[4], chi::ChiLog::EventType::EVENT_BEGIN);
-    const auto state =
-      EvaluateState({"rho", "e", "T", "p", "k", "mu"}, state_specs);
-    Chi::log.LogEvent(tags[4], chi::ChiLog::EventType::EVENT_END);
-
     const std::vector<std::string> var_names = {
       "rho", "e", "T", "p", "k", "mu"};
 
-    for (const auto& var_name : var_names)
-      vol_model.VarNew(var_name) = state.at(var_name);
+    const auto state_map = EvaluateState(var_names, state_specs);
 
-    // Chi::log.Log() << "T=" << vol_model.VarNew("T")
-    //                << " rho=" << vol_model.VarNew("rho")
-    //                << " p=" << vol_model.VarNew("p")
-    //                << " e=" << vol_model.VarNew("e")
-    //                << " mu=" << vol_model.VarNew("mu")
-    //                << " u=" << vol_model.VarNew("u");
+    for (const auto& var_name : var_names)
+      vol_model.VarNew(var_name) = state_map.at(var_name);
 
     // Compute Reynold's number
     const double rho = rho_i_tp1;
@@ -228,9 +230,20 @@ void LiquidPhysics::Step()
 
     vol_model.VarNew("Re") = Re;
   }
-  Chi::log.LogEvent(tags[3], chi::ChiLog::EventType::EVENT_END);
+
+  for (size_t vol_comp_id : pipe_system_ptr_->VolumeComponentIDs())
+  {
+    auto& vol_model = GetComponentLiquidModel(vol_comp_id);
+    const auto& cell = *vol_model.GetCellPtr();
+    BroadcastStateMap(
+      vol_model.VarNames(), vol_model.VarsMapNew(), cell.partition_id_);
+  }
 
   step_time_ = Chi::program_timer.GetTime() - start_time;
+  intgl_step_time_ += step_time_;
+  step_counter_ += 1.0;
+
+  t_solve.TimeSectionEnd();
 }
 
 } // namespace piper

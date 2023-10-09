@@ -3,6 +3,13 @@
 
 #include "FluidPhysics.h"
 #include "piper/models/ComponentLiquidModel.h"
+#include "math/PETScUtils/petsc_utils.h"
+#include "math/ParallelVector/GhostedParallelSTLVector.h"
+
+namespace chi_math::PETScUtils
+{
+struct PETScSolverSetup;
+}
 
 namespace piper
 {
@@ -43,9 +50,14 @@ public:
                             const StateValsList& state_vals_list);
 
 protected:
-
-
   const std::string fluid_name_;
+
+  Mat A_ = nullptr;
+  Vec x_ = nullptr;
+  Vec b_ = nullptr;
+  chi_math::PETScUtils::PETScSolverSetup pressure_solver_setup;
+
+  std::unique_ptr<chi_math::GhostedParallelSTLVector> pressure_vector_;
 };
 
 } // namespace piper

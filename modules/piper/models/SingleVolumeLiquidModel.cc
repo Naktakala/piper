@@ -1,14 +1,13 @@
 #include "SingleVolumeLiquidModel.h"
 
 #include "piper/physics/LiquidPhysics.h"
-#include "piper/utils/CoolPropInterface.h"
-#include "CoolProp.h"
 
 #include "physics/TimeSteppers/TimeStepper.h"
 
+#include "mesh/Cell/cell.h"
+
 #include "ChiObjectFactory.h"
 
-#include "chi_runtime.h"
 #include "chi_log.h"
 
 #include <functional>
@@ -117,9 +116,6 @@ void SingleVolumeLiquidModel::AssembleEquations()
     gz_j[j] = jnc_j_model.MakeCentroid().Dot(gravity);
     Ax_j[j] = j == 0 ? -A_j : A_j;
 
-    //if (jnc_j_model.Name() == "j1")
-    //  form_loss_j[j] = -5.0 * 0.5 * rho_j[j] * u_j_old * u_j_old * u_j[j];
-
     avg_flowrate += Ax_j[j] * u_j[j];
   } // for connection j
   avg_flowrate /= double(J);
@@ -158,11 +154,11 @@ void SingleVolumeLiquidModel::AssembleEquations()
 
     const double T_star = (1.0 + epsilon) * vol_model.VarOld("T");
 
-    const auto values =
+    const auto state_map =
       physics_.EvaluateState({"e", "rho"}, {{"p", p_t}, {"T", T_star}});
 
-    const double e_star = values.at("e");
-    const double rho_star = values.at("rho");
+    const double e_star = state_map.at("e");
+    const double rho_star = state_map.at("rho");
     const double d_rho_e_d_rho =
       (rho_star * e_star - rho_t * e_t) / (rho_star - rho_t);
 

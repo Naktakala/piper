@@ -21,9 +21,6 @@ chi::InputParameters NonLinearExecutioner::GetInputParameters()
                               "chi_math::NonLinearSolverOptions");
 
   params.AddOptionalParameter(
-    "print_timing_info", false, "If true, will print timing info.");
-
-  params.AddOptionalParameter(
     "print_nl_residual",
     true,
     "If false, no non-linear residual will be printed.");
@@ -46,12 +43,11 @@ chi::InputParameters NonLinearExecutioner::GetInputParameters()
 
 NonLinearExecutioner::NonLinearExecutioner(const chi::InputParameters& params)
   : chi_physics::Solver(params),
-    t_tag_residual_(
-      Chi::log.GetRepeatingEventTag(TextName() + "ComputeResidual")),
-    t_tag_jacobian_(
-      Chi::log.GetRepeatingEventTag(TextName() + "ComputeJacobian")),
-    t_tag_solve_(Chi::log.GetRepeatingEventTag(TextName() + "Solve")),
-    print_timing_info_(params.GetParamValue<bool>("print_timing_info")),
+    t_solve_(Chi::log.CreateOrGetTimingBlock("NonLinearExecutioner::Solve")),
+    t_residual_(Chi::log.CreateOrGetTimingBlock("NonLinearExecutioner::ComputeResidual",
+                                                "NonLinearExecutioner::Solve")),
+    t_jacobian_(Chi::log.CreateOrGetTimingBlock("NonLinearExecutioner::ComputeJacobian",
+                                                "NonLinearExecutioner::Solve")),
     print_nl_residual_(params.GetParamValue<bool>("print_nl_residual")),
     print_l_residual_(params.GetParamValue<bool>("print_l_residual")),
     print_header_(params.GetParamValue<bool>("print_header")),
@@ -129,36 +125,6 @@ void NonLinearExecutioner::Initialize()
     std::make_unique<chi_math::BasicNonLinearSolver>(*this, nl_params);
 
   nl_solver_->Setup();
-}
-
-void NonLinearExecutioner::PrintTimingInfo() const
-{
-  if (not print_timing_info_) return;
-
-  constexpr auto DUR = chi::ChiLog::EventOperation::TOTAL_DURATION;
-  constexpr auto NUM = chi::ChiLog::EventOperation::NUMBER_OF_OCCURRENCES;
-  constexpr auto AVG = chi::ChiLog::EventOperation::AVERAGE_DURATION;
-
-  std::stringstream outstr;
-  outstr << "ComputeResidual: ";
-  outstr << Chi::log.ProcessEvent(t_tag_residual_, DUR) / 1.0e6;
-  outstr << " (" << Chi::log.ProcessEvent(t_tag_residual_, NUM) << ")";
-  outstr << " avg=" << Chi::log.ProcessEvent(t_tag_residual_, AVG);
-  outstr << "\n";
-
-  outstr << "ComputeJacobian: ";
-  outstr << Chi::log.ProcessEvent(t_tag_jacobian_, DUR) / 1.0e6;
-  outstr << " (" << Chi::log.ProcessEvent(t_tag_jacobian_, NUM) << ")";
-  outstr << " avg=" << Chi::log.ProcessEvent(t_tag_jacobian_, AVG);
-  outstr << "\n";
-
-  outstr << "Solve: ";
-  outstr << Chi::log.ProcessEvent(t_tag_solve_, DUR) / 1.0e6;
-  outstr << " (" << Chi::log.ProcessEvent(t_tag_solve_, NUM) << ")";
-  outstr << " avg=" << Chi::log.ProcessEvent(t_tag_solve_, AVG);
-  outstr << "\n";
-
-  Chi::log.Log() << "\n" + TextName() + " timing info:\n" + outstr.str();
 }
 
 chi::ParameterBlock

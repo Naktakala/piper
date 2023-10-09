@@ -62,8 +62,6 @@ PiperMeshGenerator::GenerateUnpartitionedMesh(
     new_cell->faces.emplace_back(std::vector<uint64_t>{vertex_counter - 1});
     new_cell->faces.emplace_back(std::vector<uint64_t>{vertex_counter - 2});
 
-    Chi::log.Log() << vertex_counter - 1 << "->" << vertex_counter - 2;
-
     umesh->GetRawCells().push_back(new_cell);
 
     volume_comp_name_2_cell_id_map_[component->Name()] = cell_counter;

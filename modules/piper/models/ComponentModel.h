@@ -37,6 +37,7 @@ public:
   const std::vector<utils::Connection>& ConnectionPoints() const;
   const Orientation& GetOrientation() const;
   size_t GetID() const;
+  const chi_mesh::Cell* GetCellPtr() const;
 
   ComponentCategory Category() const;
   double Area() const;
@@ -68,6 +69,8 @@ public:
   const double& VarNew(const std::string& name) const;
   double& VarNew(const std::string& name);
 
+  std::map<std::string, double>& VarsMapNew() {return vars_new_;}
+
   /**Assign the new variable values to the old.*/
   void AdvanceNewToOld();
 
@@ -89,11 +92,11 @@ protected:
   std::map<std::string, double> vars_old_;
   std::map<std::string, double> vars_new_;
 
-  std::map<std::string, double> primary_vars_old_;
-  std::map<std::string, double> primary_vars_new_;
-
-  std::map<std::string, double> auxiliary_vars_old_;
-  std::map<std::string, double> auxiliary_vars_new_;
+  //std::map<std::string, double> primary_vars_old_;
+  //std::map<std::string, double> primary_vars_new_;
+  //
+  //std::map<std::string, double> auxiliary_vars_old_;
+  //std::map<std::string, double> auxiliary_vars_new_;
 };
 
 } // namespace piper

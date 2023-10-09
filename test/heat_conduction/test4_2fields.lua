@@ -170,3 +170,4 @@ chi.PostProcessorPrinterSetOptions({ print_scalar_time_history = false })
 chiSolverInitialize(phys1)
 chiSolverExecute(phys1)
 
+chiLogPrintTimingGraph()

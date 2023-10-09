@@ -82,3 +82,5 @@ chiSolverExecute(phys1)
 if (master_export == nil) then
   chiExportMultiFieldFunctionToVTK({ "T" }, "transient_test3b")
 end
+
+chiLogPrintTimingGraph()

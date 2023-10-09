@@ -27,24 +27,24 @@ SteadyNonLinearExecutioner::SteadyNonLinearExecutioner(
 void SteadyNonLinearExecutioner::ComputeResidual(const ParallelVector& x,
                                                  ParallelVector& r)
 {
-  Chi::log.LogEvent(t_tag_residual_, chi::ChiLog::EventType::EVENT_BEGIN);
+  t_residual_.TimeSectionBegin();
   SetModeToNonTimeOnly();
   eq_system_->ComputeResidual(x, r);
-  Chi::log.LogEvent(t_tag_residual_, chi::ChiLog::EventType::EVENT_END);
+  t_residual_.TimeSectionEnd();
 }
 
 void SteadyNonLinearExecutioner::ComputeJacobian(const ParallelVector& x,
                                                  ParallelMatrix& J)
 {
-  Chi::log.LogEvent(t_tag_jacobian_, chi::ChiLog::EventType::EVENT_BEGIN);
+  t_jacobian_.TimeSectionBegin();
   SetModeToNonTimeOnly();
   eq_system_->ComputeJacobian(x, J);
-  Chi::log.LogEvent(t_tag_jacobian_, chi::ChiLog::EventType::EVENT_END);
+  t_jacobian_.TimeSectionEnd();
 }
 
 void SteadyNonLinearExecutioner::Execute()
 {
-  Chi::log.LogEvent(t_tag_solve_, chi::ChiLog::EventType::EVENT_BEGIN);
+  t_solve_.TimeSectionBegin();
 
   if (print_header_)
     Chi::log.Log() << "\nExecuting solver \"" + TextName() + "\"";
@@ -55,11 +55,9 @@ void SteadyNonLinearExecutioner::Execute()
   if (print_footer_)
     Chi::log.Log() << nl_solver_->GetConvergedReasonString() << "\n\n";
 
-  Chi::log.LogEvent(t_tag_solve_, chi::ChiLog::EventType::EVENT_END);
+  t_solve_.TimeSectionEnd();
 
   eq_system_->OutputFields(-1); // -1 = latest
-
-  PrintTimingInfo();
 }
 
 } // namespace chi_math

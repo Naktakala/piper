@@ -59,6 +59,13 @@ const Orientation& ComponentModel::GetOrientation() const
 
 size_t ComponentModel::GetID() const { return hardware_component_->GetID(); }
 
+const chi_mesh::Cell* ComponentModel::GetCellPtr() const
+{
+  ChiLogicalErrorIf(not cell_ptr_,
+                    "Function called for a component without a cell");
+  return cell_ptr_;
+}
+
 ComponentCategory ComponentModel::Category() const
 {
   return hardware_component_->Category();

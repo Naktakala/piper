@@ -6,7 +6,6 @@
 #include "piper/components/HardwareComponent.h"
 #include "piper/MeshGenerators/PiperMeshGenerator.h"
 
-
 #include "mesh/MeshHandler/chi_meshhandler.h"
 #include "mesh/MeshContinuum/chi_meshcontinuum.h"
 

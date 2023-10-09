@@ -67,3 +67,5 @@ chi.ExecutePostProcessors({"avgval"})
 if (master_export == nil) then
   chiExportMultiFieldFunctionToVTK({ "T" }, "test3")
 end
+
+chiLogPrintTimingGraph()

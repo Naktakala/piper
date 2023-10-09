@@ -7,6 +7,11 @@
 
 #include <petscsnes.h>
 
+namespace chi
+{
+class TimingBlock;
+}
+
 namespace chi_math
 {
 
@@ -55,11 +60,12 @@ public:
 
   void Initialize() override;
 
-  void PrintTimingInfo() const;
-
   chi::ParameterBlock GetInfo(const chi::ParameterBlock& params) const override;
 
-  const bool print_timing_info_;
+  chi::TimingBlock& t_solve_;
+  chi::TimingBlock& t_residual_;
+  chi::TimingBlock& t_jacobian_;
+
   const bool print_nl_residual_;
   const bool print_l_residual_;
   const bool print_header_;
@@ -71,10 +77,6 @@ protected:
   static std::shared_ptr<EquationSystem> GetEquationSystem(size_t handle);
 
   static bool TimeIDListHasID(const std::vector<TimeID>& time_ids, TimeID id);
-
-  const size_t t_tag_residual_;
-  const size_t t_tag_jacobian_;
-  const size_t t_tag_solve_;
 
   std::shared_ptr<EquationSystem> eq_system_;
   const chi::ParameterBlock nl_solver_params_;

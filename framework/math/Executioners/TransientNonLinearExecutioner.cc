@@ -32,7 +32,7 @@ TransientNonLinearExecutioner::TransientNonLinearExecutioner(
 void TransientNonLinearExecutioner::ComputeResidual(const ParallelVector& x,
                                                     ParallelVector& r)
 {
-  Chi::log.LogEvent(t_tag_residual_, chi::ChiLog::EventType::EVENT_BEGIN);
+  t_residual_.TimeSectionBegin();
 
   auto& time_integrator = eq_system_->GetTimeIntegrator();
 
@@ -69,16 +69,16 @@ void TransientNonLinearExecutioner::ComputeResidual(const ParallelVector& x,
   // Delete r_x_tp1 if r_x_t is not required
   if (not TimeIDListHasID(r_time_ids, TimeID::T)) r_x_tp1_ = nullptr;
 
-  Chi::log.LogEvent(t_tag_residual_, chi::ChiLog::EventType::EVENT_END);
+  t_residual_.TimeSectionEnd();
 }
 
 void TransientNonLinearExecutioner::ComputeJacobian(const ParallelVector& x,
                                                     ParallelMatrix& J)
 {
-  Chi::log.LogEvent(t_tag_jacobian_, chi::ChiLog::EventType::EVENT_BEGIN);
+  t_jacobian_.TimeSectionBegin();
   SetModeToTimeAndNonTime();
   eq_system_->GetTimeIntegrator().ComputeJacobian(x, J, *eq_system_);
-  Chi::log.LogEvent(t_tag_jacobian_, chi::ChiLog::EventType::EVENT_END);
+  t_jacobian_.TimeSectionEnd();
 }
 
 void TransientNonLinearExecutioner::SetInitialSolution()
@@ -117,7 +117,7 @@ void TransientNonLinearExecutioner::SetInitialSolution()
 
 void TransientNonLinearExecutioner::Step()
 {
-  Chi::log.LogEvent(t_tag_solve_, chi::ChiLog::EventType::EVENT_BEGIN);
+  t_solve_.TimeSectionBegin();
 
   const double dt = timestepper_->TimeStepSize();
   const double time = timestepper_->Time();
@@ -136,7 +136,7 @@ void TransientNonLinearExecutioner::Step()
   if (print_footer_)
     Chi::log.Log() << nl_solver_->GetConvergedReasonString() << "\n\n";
 
-  Chi::log.LogEvent(t_tag_solve_, chi::ChiLog::EventType::EVENT_END);
+  t_solve_.TimeSectionEnd();
 }
 
 void TransientNonLinearExecutioner::Advance()
@@ -190,8 +190,6 @@ void TransientNonLinearExecutioner::Execute()
     Chi::log.Log0Error() << "Solver failed: "
                          << timestepper_->StringTimeInfo(false);
   }
-
-  PrintTimingInfo();
 }
 
 } // namespace chi_math

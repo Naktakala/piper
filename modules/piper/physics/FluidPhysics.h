@@ -42,6 +42,9 @@ public:
   void Execute() override;
   chi::ParameterBlock GetInfo(const chi::ParameterBlock& params) const override;
 
+  static void BroadcastStateMap(const std::vector<std::string>& map_keys,
+                                std::map<std::string, double>& state_map,
+                                uint64_t root);
 protected:
   const size_t min_cells_per_processor_;
   const chi::ParameterBlock initializer_param_block_;
@@ -58,7 +61,9 @@ protected:
 
   std::map<std::string, chi::ParameterBlock> compononent_model_parameters_;
 
-  double step_time_ = 0;
+  double step_time_ = 0.0;
+  double intgl_step_time_ = 0.0;
+  double step_counter_ = 0.0;
 
 private:
   static std::map<std::string, chi::ParameterBlock>

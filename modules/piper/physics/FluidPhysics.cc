@@ -9,9 +9,11 @@
 
 #include "mesh/MeshHandler/chi_meshhandler.h"
 
+#include "graphs/LinearGraphPartitioner.h"
+
 #include "chi_log.h"
 
-#include <iomanip>
+#include "ChiObjectFactory.h"
 
 namespace piper
 {
@@ -82,13 +84,27 @@ FluidPhysics::ConstructComponentModelParametersMap(
 // ###################################################################
 void FluidPhysics::MakeMesh()
 {
-  chi::ParameterBlock params;
-  auto valid_params = PiperMeshGenerator::GetInputParameters();
-  valid_params.AssignParameters(params);
-  mesh_generator_ = std::make_unique<PiperMeshGenerator>(valid_params);
+  size_t partitioner_handle;
+  {
+    auto& factory = ChiObjectFactory::GetInstance();
 
-  mesh_generator_->SetPipeSystem(PipeSystem());
-  mesh_generator_->Execute();
+    chi::ParameterBlock params;
+    // params.AddParameter("all_to_rank", 0);
+    partitioner_handle =
+      factory.MakeRegisteredObjectOfType("chi::LinearGraphPartitioner", params);
+  }
+
+  {
+    chi::ParameterBlock params;
+    params.AddParameter("partitioner", partitioner_handle);
+    params.AddParameter("replicated_mesh", true);
+    auto valid_params = PiperMeshGenerator::GetInputParameters();
+    valid_params.AssignParameters(params);
+    mesh_generator_ = std::make_unique<PiperMeshGenerator>(valid_params);
+
+    mesh_generator_->SetPipeSystem(PipeSystem());
+    mesh_generator_->Execute();
+  }
 
   grid_ptr_ = chi_mesh::GetCurrentHandler().GetGrid();
 }
@@ -118,55 +134,14 @@ FluidPhysics::FrictionFactorFuncion() const
 
 void FluidPhysics::Execute()
 {
-  const size_t tag_jnc_time = Chi::log.GetRepeatingEventTag("JNC_TIME");
-  const size_t tag_vol_time = Chi::log.GetRepeatingEventTag("VOL_TIME");
-  const size_t tag_slv_time = Chi::log.GetRepeatingEventTag("SLV_TIME");
-  const std::vector<size_t> tags = {Chi::log.GetRepeatingEventTag("TIMING0"),
-                                    Chi::log.GetRepeatingEventTag("TIMING1"),
-                                    Chi::log.GetRepeatingEventTag("TIMING2"),
-                                    Chi::log.GetRepeatingEventTag("TIMING3"),
-                                    Chi::log.GetRepeatingEventTag("TIMING4")};
+  auto& physics_event_publisher =
+    chi_physics::PhysicsEventPublisher::GetInstance();
 
-  size_t t_index = 0;
-  while (timestepper_->Time() < timestepper_->EndTime())
+  while (timestepper_->IsActive())
   {
-    auto& physics_event_publisher =
-      chi_physics::PhysicsEventPublisher::GetInstance();
     physics_event_publisher.SolverStep(*this);
     physics_event_publisher.SolverAdvance(*this);
-    ++t_index;
-
-    const double dt = timestepper_->TimeStepSize();
-    const double time = timestepper_->Time();
-    std::stringstream outstr;
-    outstr << "Timestep " << t_index << " dt=" << std::scientific
-           << std::setprecision(2) << dt << " time=" << std::scientific
-           << std::setprecision(2) << time << std::fixed
-           << " step_time=" << step_time_ << "ms";
-
-    Chi::log.Log() << outstr.str();
-
-    const auto max_time_steps = timestepper_->MaxTimeSteps();
-
-    if (max_time_steps >= 0 and t_index >= max_time_steps) break;
   }
-
-  const double jnc_time = Chi::log.ProcessEvent(
-    tag_jnc_time, chi::ChiLog::EventOperation::AVERAGE_DURATION);
-  const double vol_time = Chi::log.ProcessEvent(
-    tag_vol_time, chi::ChiLog::EventOperation::AVERAGE_DURATION);
-  const double slv_time = Chi::log.ProcessEvent(
-    tag_slv_time, chi::ChiLog::EventOperation::AVERAGE_DURATION);
-  Chi::log.Log() << "Timing junction assembly: " << jnc_time * 1000 << "ms";
-  Chi::log.Log() << "Timing volume assembly  : " << vol_time * 1000 << "ms";
-  Chi::log.Log() << "Timing solve            : " << slv_time * 1000 << "ms";
-  size_t k = 0;
-  for (size_t tag : tags)
-    Chi::log.Log() << "Timing " << k++ << " : "
-                   << Chi::log.ProcessEvent(
-                        tag, chi::ChiLog::EventOperation::AVERAGE_DURATION) *
-                        1000
-                   << "ms";
 }
 
 chi::ParameterBlock
@@ -190,8 +165,29 @@ FluidPhysics::GetInfo(const chi::ParameterBlock& params) const
   }
   else
     ChiInvalidArgument("Unsupported information label \"" + info_name + "\".");
+}
 
-  return chi::ParameterBlock("", 0.0);
+void FluidPhysics::BroadcastStateMap(const std::vector<std::string>& map_keys,
+                                     std::map<std::string, double>& state_map,
+                                     uint64_t root)
+{
+  const int num_values = static_cast<int>(map_keys.size());
+  std::vector<double> values(num_values, 0.0);
+  if (Chi::mpi.location_id == root)
+  {
+    size_t k = 0;
+    for (const auto& key : map_keys)
+      values[k++] = state_map.at(key);
+  }
+  MPI_Bcast(values.data(),          // send/recv buffer
+            num_values,             // count
+            MPI_DOUBLE,             // datatype
+            static_cast<int>(root), // root
+            Chi::mpi.comm);         // communicator
+
+  size_t k = 0;
+  for (const auto& key : map_keys)
+    state_map[key] = values[k++];
 }
 
 } // namespace piper

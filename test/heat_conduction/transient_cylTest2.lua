@@ -99,3 +99,4 @@ chi.PostProcessorPrinterSetOptions
 chiSolverInitialize(phys1)
 chiSolverExecute(phys1)
 
+chiLogPrintTimingGraph()
