@@ -86,7 +86,7 @@
   # solve_type = PJFNK
   solve_type = NEWTON
 
-  # num_steps = 20
+  num_steps = 20
   dt = 20.0
   end_time = 20000.0
 

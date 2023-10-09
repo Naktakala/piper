@@ -74,16 +74,10 @@ phys1 = chi_math.TransientNonLinearExecutioner.Create
     --nl_method = "PJFNK",
     nl_method = "NEWTON",
     l_rel_tol = 1.0e-5,
-    --pc_options =
-    --{
-    --  pc_type = "hypre",
-    --  pc_hypre_type = "boomeramg",
-    --  pc_hypre_boomeramg_coarsen_type = "HMIS"
-    --}
   },
   dt = 20.0,
   end_time = 20000.0,
-  --max_time_steps = 20
+  max_time_steps = 20
 })
 
 chi.AggregateNodalValuePostProcessor.Create

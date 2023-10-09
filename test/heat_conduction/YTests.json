@@ -66,5 +66,18 @@
       "tol" : 1.0e-3
     }
   ]
+  },
+  {
+    "file" : "transient_test4_hc.lua", "num_procs" : 4, "checks" :
+  [
+    { "type" :  "ErrorCode", "error_code" :  0},
+    {
+      "type" : "FloatCompare",
+      "key" : "maxval(latest)",
+      "wordnum" : 4,
+      "gold" : 486.212097,
+      "tol" : 1.0e-4
+    }
+  ]
   }
 ]
