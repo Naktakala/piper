@@ -14,7 +14,9 @@ public:
 
   std::vector<std::string> RequiredInputNames() const override;
   double
-  ComputeScalarValue(const std::vector<double>& input_params) const override;
+  ComputeScalarValue(const chi_mesh::Vector3& position,
+                     double time,
+                     double param) const override;
 
 protected:
   double scalar_value_;

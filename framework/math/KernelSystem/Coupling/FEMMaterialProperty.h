@@ -42,13 +42,6 @@ public:
   void PreComputeFaceQPValues();
 
 protected:
-  double Evaluate(const chi_mesh::Vector3& xyz,
-                  double t,
-                  const std::vector<double>& v);
-  double EvaluateSlope(const chi_mesh::Vector3& xyz,
-                       double t,
-                       const std::vector<double>& v);
-
   const chi::MaterialProperty2& property_;
   const FEMKernelSystemData& fem_data_;
 

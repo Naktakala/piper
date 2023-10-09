@@ -2,7 +2,6 @@
 
 #include "math/KernelSystem/KernelSystem.h"
 #include "materials/MaterialProperty.h"
-#include "mesh/chi_mesh.h"
 
 #include "chi_log.h"
 
@@ -30,32 +29,6 @@ bool FEMMaterialProperty::HasDerivative() const
   return property_.HasDerivative();
 }
 
-double FEMMaterialProperty::Evaluate(const chi_mesh::Vector3& xyz,
-                                     double t,
-                                     const std::vector<double>& v)
-{
-  std::vector<double> inputs;
-  if (property_.IsPositionDependent()) inputs = {xyz.x, xyz.y, xyz.z};
-  if (property_.IsTimeDependent()) inputs.push_back(t);
-
-  for (double value : v)
-    inputs.push_back(value);
-  return property_.ComputeScalarValue(inputs);
-}
-
-double FEMMaterialProperty::EvaluateSlope(const chi_mesh::Vector3& xyz,
-                                          double t,
-                                          const std::vector<double>& v)
-{
-  std::vector<double> inputs;
-  if (property_.IsPositionDependent()) inputs = {xyz.x, xyz.y, xyz.z};
-  if (property_.IsTimeDependent()) inputs.push_back(t);
-
-  for (double value : v)
-    inputs.push_back(value);
-  return property_.ComputeScalarValueSlope(inputs);
-}
-
 void FEMMaterialProperty::PreComputeInternalQPValues()
 {
   const double time = fem_data_.time_data_.time_;
@@ -71,11 +44,12 @@ void FEMMaterialProperty::PreComputeInternalQPValues()
   for (size_t qp : qp_indices)
   {
     const double var_value_qp = var_qp_values[qp];
-    qp_values_[qp] = this->Evaluate(qp_xyz[qp], time, {var_value_qp});
+    qp_values_[qp] =
+      property_.ComputeScalarValue(qp_xyz[qp], time, var_value_qp);
 
     if (property_.HasDerivative())
       derivative_qp_values_[qp] =
-        this->EvaluateSlope(qp_xyz[qp], time, {var_value_qp});
+        property_.ComputeScalarValueSlope(qp_xyz[qp], time, var_value_qp);
   }
 }
 
@@ -94,12 +68,13 @@ void FEMMaterialProperty::PreComputeFaceQPValues()
   for (size_t qp : qp_indices)
   {
     const double var_value_qp = var_qp_values[qp];
-    qp_values_[qp] = this->Evaluate(qp_xyz[qp], time, {var_value_qp});
+    qp_values_[qp] =
+      property_.ComputeScalarValue(qp_xyz[qp], time, var_value_qp);
 
     if (property_.HasDerivative())
     {
       derivative_qp_values_[qp] =
-        this->EvaluateSlope(qp_xyz[qp], time, {var_value_qp});
+        property_.ComputeScalarValueSlope(qp_xyz[qp], time, var_value_qp);
     }
   }
 }

@@ -27,7 +27,7 @@ ConstantMaterialProperty::ConstantMaterialProperty(
 }
 
 double ConstantMaterialProperty::ComputeScalarValue(
-  const std::vector<double>& input_params) const
+  const chi_mesh::Vector3& position, double time, double param) const
 {
   return scalar_value_;
 }

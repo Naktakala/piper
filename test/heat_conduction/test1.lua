@@ -25,8 +25,8 @@ system1 = chi_math.KernelSystem.Create
   bcs = {
     { type = chi_math.FEMDirichletBC.type, var = "T", boundaries = { "ZMAX" }, bc_value = -1.0 },
     { type = chi_math.FEMDirichletBC.type, var = "T", boundaries = { "ZMIN" }, bc_value = 10.0 }
-  }
-  --verbosity = 2
+  },
+  verbosity = 2
 })
 
 phys1 = chi_math.SteadyNonLinearExecutioner.Create

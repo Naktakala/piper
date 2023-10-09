@@ -22,8 +22,8 @@ void KernelSystem::SetInitialSolution()
 
   for (auto& field_info : *primary_fields_container_)
     x.BlockSet(field_info.field_->FieldVector(),
-                           field_info.local_offset_,
-                           field_info.num_local_dofs_);
+               field_info.local_offset_,
+               field_info.num_local_dofs_);
 
   x.CommunicateGhostEntries();
 
@@ -49,6 +49,7 @@ void KernelSystem::SetInitialSolution()
       const size_t num_nodes = cell_mapping.NumNodes();
       const auto node_locations = cell_mapping.GetNodeLocations();
 
+      cur_cell_data.cell_ptr_ = &cell;
       cur_cell_data.cell_mapping_ptr_ = &cell_mapping;
 
       VecDbl local_x(num_nodes, 0.0);
@@ -61,8 +62,7 @@ void KernelSystem::SetInitialSolution()
         local_x[i] = x[dof_id];
       }
 
-      const std::set<uint32_t> dirichlet_nodes =
-        IdentifyLocalDirichletNodes(cell);
+      const std::set<uint32_t> dirichlet_nodes = IdentifyLocalDirichletNodes();
 
       //====================================== Compute cell-local solution
       std::vector<double> local_x_out(num_nodes, 0.0);

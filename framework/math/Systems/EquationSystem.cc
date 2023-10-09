@@ -165,8 +165,7 @@ void EquationSystem::Advance(
     {
       const int time_index = static_cast<int>(time_id) + 1;
       if (time_index >= 0 and time_index < num_residual_histories_)
-        old_residual_vectors_.at(static_cast<int>(time_id) + 1) =
-          vec_ptr->MakeCopy();
+        old_residual_vectors_.at(time_index) = vec_ptr->MakeCopy();
     }
   }
 }

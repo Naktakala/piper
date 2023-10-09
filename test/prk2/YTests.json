@@ -7,7 +7,7 @@
       "type" : "FloatCompare",
       "key" : "period(s)(latest)",
       "wordnum" : 4,
-      "gold" : 15.705714,
+      "gold" : 15.700683,
       "tol" : 1.0e-4
     }
   ]

@@ -67,17 +67,17 @@ protected:
 
   /**Prepares all the necessary data for internal kernels.*/
   std::vector<std::shared_ptr<FEMKernel>>
-  SetupAndGetCellInternalKernels(const chi_mesh::Cell& cell);
+  SetupAndGetCellInternalKernels();
 
   std::vector<std::pair<size_t, FEMBoundaryConditionPtr>>
-  GetCellBCKernels(const chi_mesh::Cell& cell);
+  GetCellBCKernels();
 
-  void SetupFaceIntegralBCKernel(const chi_mesh::Cell& cell, size_t face_index);
+  void SetupFaceIntegralBCKernel(size_t face_index);
 
   /**Returns a set of dirichlet nodes by looking at the BCs applied on
    * faces. Does not get filtered by time status.*/
   std::set<uint32_t>
-  IdentifyLocalDirichletNodes(const chi_mesh::Cell& cell) const;
+  IdentifyLocalDirichletNodes() const;
 
   // Members requiring initialization
   std::map<int, std::vector<FEMKernelPtr>> matid_2_volume_kernels_map_;

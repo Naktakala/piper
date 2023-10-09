@@ -1,7 +1,5 @@
 #include "ThermalConductionKernel2.h"
 
-#include "materials/MaterialProperty.h"
-
 #include "ChiObjectFactory.h"
 
 namespace hcm
@@ -13,8 +11,8 @@ chi::InputParameters ThermalConductionKernel2::GetInputParameters()
 {
   chi::InputParameters params = FEMKernel::GetInputParameters();
 
-  params.SetGeneralDescription("A material property where the thermal "
-                               "conductivity is constant.");
+  params.SetGeneralDescription("Kernel for classical heat conduction"
+                               "driven by a conduction coefficient.");
   params.SetDocGroup("doc_HeatConduction");
 
   params.AddOptionalParameter(

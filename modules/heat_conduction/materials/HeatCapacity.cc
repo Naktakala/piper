@@ -1,4 +1,4 @@
-#include "ThermalConductivity.h"
+#include "HeatCapacity.h"
 
 #include "math/Functions/function_dimA_to_dimB.h"
 
@@ -8,9 +8,9 @@
 namespace hcm
 {
 
-RegisterChiObject(hcm, ThermalConductivity);
+RegisterChiObject(hcm, HeatCapacity);
 
-chi::InputParameters ThermalConductivity::GetInputParameters()
+chi::InputParameters HeatCapacity::GetInputParameters()
 {
   chi::InputParameters params = chi::MaterialProperty2::GetInputParameters();
 
@@ -27,7 +27,7 @@ chi::InputParameters ThermalConductivity::GetInputParameters()
   return params;
 }
 
-ThermalConductivity::ThermalConductivity(const chi::InputParameters& params)
+HeatCapacity::HeatCapacity(const chi::InputParameters& params)
   : chi::MaterialProperty2(params),
     constant_value_(params.GetParamValue<double>("constant_value")),
     function_(GetFunction(params))
@@ -35,13 +35,13 @@ ThermalConductivity::ThermalConductivity(const chi::InputParameters& params)
   const auto& user_params = params.ParametersAtAssignment();
   if (user_params.Has("constant_value") and user_params.Has("function"))
     Chi::log.Log0Warning()
-      << "ThermalConductivity: parameters \"constant_value\""
+      << "HeatCapacity: parameters \"constant_value\""
          "and \"function\" have both been specified. Defaulting to the "
          "function.";
 }
 
 std::shared_ptr<chi_math::FunctionDimAToDimB>
-ThermalConductivity::GetFunction(const chi::InputParameters& params)
+HeatCapacity::GetFunction(const chi::InputParameters& params)
 {
   if (params.ParametersAtAssignment().Has("value_function"))
   {
@@ -73,14 +73,14 @@ ThermalConductivity::GetFunction(const chi::InputParameters& params)
   else { return nullptr; }
 }
 
-std::vector<std::string> ThermalConductivity::RequiredInputNames() const
+std::vector<std::string> HeatCapacity::RequiredInputNames() const
 {
   if (not function_) return {};
   else
     return {temperature_fieldname_};
 }
 
-double ThermalConductivity::ComputeScalarValue(
+double HeatCapacity::ComputeScalarValue(
   const chi_mesh::Vector3& position, double time, double param) const
 {
   if (not function_) return constant_value_;
@@ -88,7 +88,7 @@ double ThermalConductivity::ComputeScalarValue(
     return function_->ScalarFunction1Parameter(param);
 }
 
-double ThermalConductivity::ComputeScalarValueSlope(
+double HeatCapacity::ComputeScalarValueSlope(
   const chi_mesh::Vector3& position, double time, double param) const
 {
   if (not function_) return 0.0;
@@ -96,6 +96,6 @@ double ThermalConductivity::ComputeScalarValueSlope(
     return function_->ScalarFunctionSlope1Parameter(param);
 }
 
-bool ThermalConductivity::HasDerivative() const { return function_ != nullptr; }
+bool HeatCapacity::HasDerivative() const { return function_ != nullptr; }
 
 } // namespace hcm

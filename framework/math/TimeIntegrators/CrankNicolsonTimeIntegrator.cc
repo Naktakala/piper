@@ -60,8 +60,8 @@ void CrankNicolsonTimeIntegrator::ComputeResidual(
   const auto& r_x_t = *std_residuals.at(TimeID::T);
 
   r += r_t_tp1;
-  r.PlusAY(r_x_tp1, 0.5);
-  r.PlusAY(r_x_t, 0.5);
+  r.PlusAY(r_x_tp1, 1.0);
+  r.PlusAY(r_x_t, 1.0);
 }
 
 void CrankNicolsonTimeIntegrator::ComputeJacobian(

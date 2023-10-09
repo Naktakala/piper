@@ -186,7 +186,7 @@ void PRK2System::ComputeResidual(const chi_math::ParallelVector& x,
     {
       const auto& x_old = SolutionVector(chi_math::TimeID::T);
       for (int64_t i = 0; i < num_local_dofs_; ++i)
-        r[i] += (x[i] - x_old[i]) / time_data_.dt_;
+        r[i] += (x[i] - x_old[i]) * time_data_.var_dot_dvar_;
     }
   }
 
@@ -210,7 +210,7 @@ void PRK2System::ComputeJacobian(const chi_math::ParallelVector& x,
 
     if (QueryTermsActive(chi_math::EqTermScope::TIME_TERMS))
       for (int64_t i = 0; i < num_local_dofs_; ++i)
-        cell_A[i][i] += 1.0 / time_data_.dt_;
+        cell_A[i][i] += time_data_.var_dot_dvar_;
 
     for (int64_t i = 0; i < num_local_dofs_; ++i)
       for (int64_t j = 0; j < num_local_dofs_; ++j)

@@ -1,5 +1,5 @@
-#ifndef PIPER_THERMALCONDUCTIVITY_H
-#define PIPER_THERMALCONDUCTIVITY_H
+#ifndef PIPER_HEATCAPACITY_H
+#define PIPER_HEATCAPACITY_H
 
 #include "materials/MaterialProperty.h"
 
@@ -11,16 +11,17 @@ class FunctionDimAToDimB;
 namespace hcm
 {
 
-class ThermalConductivity : public chi::MaterialProperty2
+class HeatCapacity : public chi::MaterialProperty2
 {
 public:
   static chi::InputParameters GetInputParameters();
-  explicit ThermalConductivity(const chi::InputParameters& params);
+  explicit HeatCapacity(const chi::InputParameters& params);
 
   std::vector<std::string> RequiredInputNames() const override;
-  double ComputeScalarValue(const chi_mesh::Vector3& position,
-                            double time,
-                            double param) const override;
+  double
+  ComputeScalarValue(const chi_mesh::Vector3& position,
+                     double time,
+                     double param) const override;
   double ComputeScalarValueSlope(const chi_mesh::Vector3& position,
                                  double time,
                                  double param) const override;
@@ -39,4 +40,4 @@ private:
 
 } // namespace hcm
 
-#endif // PIPER_THERMALCONDUCTIVITY_H
+#endif // PIPER_HEATCAPACITY_H

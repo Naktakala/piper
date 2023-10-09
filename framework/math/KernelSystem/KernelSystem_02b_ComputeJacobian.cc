@@ -36,15 +36,14 @@ void KernelSystem::ComputeJacobian(const ParallelVector& x, ParallelMatrix& J)
     {
       InitCellData(x, cell);
 
-      auto kernels = SetupAndGetCellInternalKernels(cell);
-      auto bndry_conditions = GetCellBCKernels(cell);
+      auto kernels = SetupAndGetCellInternalKernels();
+      auto bndry_conditions = GetCellBCKernels();
 
       const auto& cell_mapping = *cur_cell_data.cell_mapping_ptr_;
       const size_t num_nodes = cell_mapping.NumNodes();
       const auto& dof_map = cur_cell_data.dof_map_;
 
-      const std::set<uint32_t> dirichlet_nodes =
-        IdentifyLocalDirichletNodes(cell);
+      const std::set<uint32_t> dirichlet_nodes = IdentifyLocalDirichletNodes();
 
       MatDbl cell_local_J(num_nodes, VecDbl(num_nodes, 0.0));
 
@@ -63,7 +62,7 @@ void KernelSystem::ComputeJacobian(const ParallelVector& x, ParallelMatrix& J)
       for (const auto& [f, bndry_condition] : bndry_conditions)
       {
         if (bndry_condition->IsDirichlet()) continue;
-        SetupFaceIntegralBCKernel(cell, f);
+        SetupFaceIntegralBCKernel(f);
 
         bndry_condition->PreComputeValues();
 

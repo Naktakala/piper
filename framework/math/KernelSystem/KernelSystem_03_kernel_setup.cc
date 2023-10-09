@@ -49,7 +49,6 @@ void KernelSystem::InitCellData(const ParallelVector& x,
 
   VecDbl local_x(num_nodes, 0.0);
   VecDbl local_x_dot(num_nodes, 0.0);
-  const double dt = time_data_.dt_;
 
   const auto& x_old =
     max_t > 0 ? SolutionVector(TimeID::T) : SolutionVector(TimeID::T_PLUS_1);
@@ -62,23 +61,19 @@ void KernelSystem::InitCellData(const ParallelVector& x,
     local_x[i] = x[dof_id];
 
     if (max_t > 0)
-      local_x_dot[i] = (local_x[i] - (*old_solution_vectors_[0])[dof_id]) / dt;
+      local_x_dot[i] = (local_x[i] - x_old[dof_id]) * time_data_.var_dot_dvar_;
   }
 
-  cur_cell_data.local_x_ = std::move(local_x);
-  cur_cell_data.local_x_dot_ = std::move(local_x_dot);
+  cur_cell_data.local_x_ = local_x;
+  cur_cell_data.local_x_dot_ = local_x_dot;
 }
 
 // ##################################################################
 /**Prepares all the necessary data for internal kernels.*/
 std::vector<std::shared_ptr<FEMKernel>>
-KernelSystem::SetupAndGetCellInternalKernels(const chi_mesh::Cell& cell)
+KernelSystem::SetupAndGetCellInternalKernels()
 {
-  const auto& field_info =
-    primary_fields_container_->GetFieldBlockInfo(current_field_index_);
-  const auto& field = field_info.field_;
-  const auto& sdm = field->GetSpatialDiscretization();
-
+  const auto& cell = *cur_cell_data.cell_ptr_;
   const auto& cell_mapping = *cur_cell_data.cell_mapping_ptr_;
 
   cur_cell_data.qp_data_ = current_cell_qp_container_->cell_qp_data_;
@@ -138,8 +133,9 @@ KernelSystem::SetupAndGetCellInternalKernels(const chi_mesh::Cell& cell)
 // ##################################################################
 /**Prepares all the necessary data for boundary kernels.*/
 std::vector<std::pair<size_t, FEMBoundaryConditionPtr>>
-KernelSystem::GetCellBCKernels(const chi_mesh::Cell& cell)
+KernelSystem::GetCellBCKernels()
 {
+  const auto& cell = *cur_cell_data.cell_ptr_;
   std::vector<std::pair<size_t, FEMBoundaryConditionPtr>> bndry_conditions;
 
   const size_t num_faces = cell.faces_.size();
@@ -158,8 +154,7 @@ KernelSystem::GetCellBCKernels(const chi_mesh::Cell& cell)
   return bndry_conditions;
 }
 
-void KernelSystem::SetupFaceIntegralBCKernel(const chi_mesh::Cell& cell,
-                                             size_t face_index)
+void KernelSystem::SetupFaceIntegralBCKernel(size_t face_index)
 {
   const auto& cell_mapping = *cur_cell_data.cell_mapping_ptr_;
 
@@ -200,8 +195,9 @@ void KernelSystem::SetupFaceIntegralBCKernel(const chi_mesh::Cell& cell,
 /**Returns a set of dirichlet nodes by looking at the BCs applied on
  * faces. Does not get filtered by time status.*/
 std::set<uint32_t>
-KernelSystem::IdentifyLocalDirichletNodes(const chi_mesh::Cell& cell) const
+KernelSystem::IdentifyLocalDirichletNodes() const
 {
+  const auto& cell = *cur_cell_data.cell_ptr_;
   const auto& current_field =
     primary_fields_container_->GetFieldBlockInfo(current_field_index_).field_;
   const auto& field_name = current_field->TextName();
