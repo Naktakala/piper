@@ -52,35 +52,38 @@ FEMMaterialPropertyInterface::GetFEMMaterialProperty(const std::string& name)
   for (const auto& prop : material_properties_data_.Properties())
     if (prop->TextName() == name) candidates.push_back(&(*prop));
 
-  ChiLogicalErrorIf(candidates.size() > 1,
-                    "More than property with name \"" + name + "\"");
+  //ChiLogicalErrorIf(candidates.size() > 1,
+  //                  "More than property with name \"" + name + "\"");
   ChiLogicalErrorIf(candidates.empty(),
                     "No property with name \"" + name + "\" found.");
 
-  // Making copy
-  auto prop_mat_scope = candidates.front()->GetMaterialIDScope();
   const auto& this_mat_scope = mat_id_scope_;
-
-  // If the prop_mat_scope is empty it means it applies to all materials,
-  // therefore regardless of the object's scope this will be a match, and
-  // vice versa
-  if (prop_mat_scope.empty() or this_mat_scope.empty())
+  for (const auto& candidate : candidates)
   {
-    auto new_prop =
-      std::make_unique<FEMMaterialProperty>(*candidates.front(), fem_data);
-    coupled_material_props_.push_back(std::move(new_prop));
-    return *coupled_material_props_.back();
-  }
+    // Making copy of material scopes
+    auto prop_mat_scope = candidate->GetMaterialIDScope();
 
-  for (int mat_id : this_mat_scope)
-    for (int prop_mat_id : prop_mat_scope)
-      if (mat_id == prop_mat_id)
-      {
-        auto new_prop =
-          std::make_unique<FEMMaterialProperty>(*candidates.front(), fem_data);
-        coupled_material_props_.push_back(std::move(new_prop));
-        return *coupled_material_props_.back();
-      }
+    // If the prop_mat_scope is empty it means it applies to all materials,
+    // therefore regardless of the object's scope this will be a match, and
+    // vice versa
+    if (prop_mat_scope.empty() or this_mat_scope.empty())
+    {
+      auto new_prop =
+        std::make_unique<FEMMaterialProperty>(*candidate, fem_data);
+      coupled_material_props_.push_back(std::move(new_prop));
+      return *coupled_material_props_.back();
+    }
+
+    for (int mat_id : this_mat_scope)
+      for (int prop_mat_id : prop_mat_scope)
+        if (mat_id == prop_mat_id)
+        {
+          auto new_prop =
+            std::make_unique<FEMMaterialProperty>(*candidate, fem_data);
+          coupled_material_props_.push_back(std::move(new_prop));
+          return *coupled_material_props_.back();
+        }
+  }
 
   std::stringstream outstr;
   for (int mat_id : this_mat_scope)

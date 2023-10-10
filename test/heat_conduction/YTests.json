@@ -62,7 +62,7 @@
       "type" : "FloatCompare",
       "key" : "maxval(latest)",
       "wordnum" : 4,
-      "gold" : 2669.268892,
+      "gold" : 3150.699141,
       "tol" : 1.0e-3
     }
   ]

@@ -22,7 +22,9 @@ chi::InputParameters CoupledConvectiveHeatFluxBC::GetInputParameters()
   params.SetParameterTypeMismatchAllowed("T_bulk");
 
   params.AddOptionalParameter(
-    "convection_coefficient", 1.0, "The heat transfer coefficient");
+    "convection_coefficient",
+    1.0,
+    "A value of the name of heat transfer coefficient.");
   params.SetParameterTypeMismatchAllowed("convection_coefficient");
 
   return params;
@@ -32,18 +34,18 @@ CoupledConvectiveHeatFluxBC::CoupledConvectiveHeatFluxBC(
   const chi::InputParameters& params)
   : chi_math::FEMBoundaryCondition(params),
     T_bulk_(GetCoupledField(params.GetParamValue<std::string>("T_bulk"))),
-    h_(params.GetParamValue<double>("convection_coefficient"))
+    h_(GetCoupledField(params.GetParamValue<std::string>("convection_coefficient")))
 {
 }
 
 double CoupledConvectiveHeatFluxBC::ResidualEntryAtQP()
 {
-  return -test_values_[i_][qp_] * h_ * (T_bulk_[qp_] - var_value_[qp_]);
+  return -test_values_[i_][qp_] * h_[qp_] * (T_bulk_[qp_] - var_value_[qp_]);
 }
 
 double CoupledConvectiveHeatFluxBC::JacobianEntryAtQP()
 {
-   return -test_values_[i_][qp_] * shape_values_[j_][qp_] * (-h_);
+  return -test_values_[i_][qp_] * shape_values_[j_][qp_] * (-h_[qp_]);
 }
 
 } // namespace hcm

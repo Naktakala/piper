@@ -17,7 +17,7 @@ public:
 
 protected:
   const chi_math::FEMCoupledField& T_bulk_;
-  const double h_;
+  const chi_math::FEMCoupledField& h_;
 };
 
 }
