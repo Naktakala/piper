@@ -46,6 +46,7 @@ public:
                                 std::map<std::string, double>& state_map,
                                 uint64_t root);
 protected:
+  bool print_header_;
   const size_t min_cells_per_processor_;
   const chi::ParameterBlock initializer_param_block_;
 

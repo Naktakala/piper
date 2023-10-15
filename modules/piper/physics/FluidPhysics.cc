@@ -44,11 +44,19 @@ chi::InputParameters FluidPhysics::GetInputParameters()
     std::vector<chi::ParameterBlock>{},
     "List of parameters to set for individual components");
 
+  params.AddOptionalParameter(
+    "print_header",
+    true,
+    "If false, steady executioner will not print header messages like "
+    "\"Executing...\", whilst"
+    "transient executioners will not print time-info at each timestep.");
+
   return params;
 }
 
 FluidPhysics::FluidPhysics(const chi::InputParameters& params)
   : chi_physics::Solver(params),
+    print_header_(params.GetParamValue<bool>("print_header")),
     min_cells_per_processor_(
       params.GetParamValue<size_t>("min_cells_per_processor")),
     initializer_param_block_(params.GetParam("initializer")),

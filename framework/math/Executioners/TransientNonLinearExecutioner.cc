@@ -187,7 +187,7 @@ void TransientNonLinearExecutioner::Execute()
   }
   catch (const NLSolverFailedException&)
   {
-    Chi::log.Log0Error() << "Solver failed: "
+    Chi::log.Log0Error() << TextName() << " Solver failed: "
                          << timestepper_->StringTimeInfo(false);
   }
 }

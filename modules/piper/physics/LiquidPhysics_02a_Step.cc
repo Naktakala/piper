@@ -23,8 +23,9 @@ void LiquidPhysics::Step()
 {
   const double start_time = Chi::program_timer.GetTime();
 
-  Chi::log.Log() << "Solver \"" + TextName() + "\" " +
-                      timestepper_->StringTimeInfo(false);
+  if (print_header_)
+    Chi::log.Log() << "Solver \"" + TextName() + "\" " +
+                        timestepper_->StringTimeInfo(false);
 
   auto& t_solve = Chi::log.CreateOrGetTimingBlock("LiquidPhysics::Step");
   auto& t_junctions = Chi::log.CreateOrGetTimingBlock("Junction assembly time",
@@ -213,7 +214,7 @@ void LiquidPhysics::Step()
                                                {"e", e_i_tp1}};
 
     const std::vector<std::string> var_names = {
-      "rho", "e", "T", "p", "k", "mu"};
+      "rho", "e", "T", "p", "k", "mu", "Pr"};
 
     const auto state_map = EvaluateState(var_names, state_specs);
 
@@ -227,8 +228,15 @@ void LiquidPhysics::Step()
     const double mu = vol_model.VarNew("mu");
 
     const double Re = std::fabs(rho * u * Dh / mu);
-
     vol_model.VarNew("Re") = Re;
+
+    // Compute convection coefficient
+    const double k = vol_model.VarNew("k");
+    const double Pr = vol_model.VarNew("Pr");
+
+    const double Nu = 0.023 * pow(Re, 0.8) * pow(Pr, 0.4);
+
+    vol_model.VarNew("hcoeff") = std::max(10.0, Nu*k/Dh);
   }
 
   for (size_t vol_comp_id : pipe_system_ptr_->VolumeComponentIDs())
