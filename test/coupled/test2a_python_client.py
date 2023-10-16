@@ -50,6 +50,18 @@ class Window(Frame):
         rem_rho_button = Button(self, text="Remove Rho", command=click_rem_rho_button)
         rem_rho_button.place(x=0, y=120)
 
+        slow_add_rho_button = Button(self, text="Add Rho", command=click_slow_add_rho_button)
+        slow_add_rho_button.place(x=120, y=90)
+
+        slow_rem_rho_button = Button(self, text="Remove Rho", command=click_slow_rem_rho_button)
+        slow_rem_rho_button.place(x=120, y=120)
+
+        export_vtk_button = Button(self, text="Export VTK", command=click_export_vtk_button)
+        export_vtk_button.place(x=0, y=150)
+
+        stop_button = Button(self, text="STOP", command=click_stop_button)
+        stop_button.place(x=120, y=150)
+
     def physics_ping(self):
         self.physics_counter += 1
         self.physics_counter_label.configure(text=str(self.physics_counter))
@@ -71,10 +83,10 @@ class Window(Frame):
             rho = float(results[2])
             temp = float(results[3])
 
-            self.power_label.configure(text=f"Power : {power}")
-            self.period_label.configure(text=f"Period: {period}")
-            self.rho_label.configure(text=f"Rho   : {rho}")
-            self.tmp_label.configure(text=f"Temp  : {temp}")
+            self.power_label.configure(text=f"Power : {power:.3e}")
+            self.period_label.configure(text=f"Period: {period:+.4f}")
+            self.rho_label.configure(text=f"Rho   : {rho:.3f}")
+            self.tmp_label.configure(text=f"Temp  : {temp:.2f}")
 
         except:
             print("oopsie: " + results.__str__())
@@ -103,7 +115,7 @@ def click_query_button():
 def click_add_rho_button():
     message = b"POST / HTTP/1.1\r\n"
     message += b"\r\n"
-    message += b'rho_added=rho_added + 0.1'
+    message += b'rho_added=rho_added + 2.1'
     message += b'\r\n'
     client_socket.sendall(message)
     data = client_socket.recv(1024)
@@ -113,12 +125,49 @@ def click_add_rho_button():
 def click_rem_rho_button():
     message = b"POST / HTTP/1.1\r\n"
     message += b"\r\n"
-    message += b'rho_added=rho_added - 0.1'
+    message += b'rho_added=rho_added - 2.1'
     message += b'\r\n'
     client_socket.sendall(message)
     data = client_socket.recv(1024)
     interpret_chi_message(data.decode('utf-8'), verbose=True)
 
+def click_slow_add_rho_button():
+    message = b"POST / HTTP/1.1\r\n"
+    message += b"\r\n"
+    message += b'rho_added=rho_added + 0.01'
+    message += b'\r\n'
+    client_socket.sendall(message)
+    data = client_socket.recv(1024)
+    interpret_chi_message(data.decode('utf-8'), verbose=True)
+
+
+def click_slow_rem_rho_button():
+    message = b"POST / HTTP/1.1\r\n"
+    message += b"\r\n"
+    message += b'rho_added=rho_added - 0.01'
+    message += b'\r\n'
+    client_socket.sendall(message)
+    data = client_socket.recv(1024)
+    interpret_chi_message(data.decode('utf-8'), verbose=True)
+
+def click_export_vtk_button():
+    message = b"POST / HTTP/1.1\r\n"
+    message += b"\r\n"
+    message += b'chiExportMultiFieldFunctionToVTK(ffs_timestamp1, "ZTimeStamp1")'
+    message += b'chiExportMultiFieldFunctionToVTK(ffs_timestamp2, "ZTimeStamp2")'
+    message += b'\r\n'
+    client_socket.sendall(message)
+    data = client_socket.recv(1024)
+    interpret_chi_message(data.decode('utf-8'), verbose=True)
+
+def click_stop_button():
+    message = b"POST / HTTP/1.1\r\n"
+    message += b"\r\n"
+    message += b'alive = false'
+    message += b'\r\n'
+    client_socket.sendall(message)
+    data = client_socket.recv(1024)
+    interpret_chi_message(data.decode('utf-8'), verbose=True)
 
 def interpret_chi_message(message: str, verbose: bool = False):
     lines = message.splitlines()

@@ -55,7 +55,7 @@ void LiquidPhysics::StaticGravityInitializer(const chi::ParameterBlock& params)
   // The fundamental assumption here is that
   // the density will not change
   const auto root_comp_state =
-    EvaluateState({"rho", "e", "T", "p", "k", "mu"}, root_comp_state_spec);
+    EvaluateState({"rho", "e", "T", "p", "k", "mu", "beta"}, root_comp_state_spec);
   const double root_comp_rho = root_comp_state.at("rho");
 
   //======================================== Print the root state
@@ -114,7 +114,7 @@ void LiquidPhysics::StaticGravityInitializer(const chi::ParameterBlock& params)
         outstr << "\"" << spec_name << "\"=" << val << " ";
 
       const std::vector<std::string> var_names = {
-        "rho", "e", "T", "p", "k", "mu"};
+        "rho", "e", "T", "p", "k", "mu", "beta"};
       const auto state = EvaluateState(var_names, aux_specs);
 
       for (const auto& var_name : var_names)

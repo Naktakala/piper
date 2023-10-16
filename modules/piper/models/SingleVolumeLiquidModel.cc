@@ -1,5 +1,8 @@
 #include "SingleVolumeLiquidModel.h"
 
+#include "Submodels/HeatGeneration.h"
+#include "Submodels/HeatFlux.h"
+
 #include "piper/physics/LiquidPhysics.h"
 
 #include "physics/TimeSteppers/TimeStepper.h"
@@ -20,6 +23,7 @@ RegisterChiObjectParametersOnly(piper, SingleVolumeLiquidModel);
 chi::InputParameters SingleVolumeLiquidModel::GetInputParameters()
 {
   chi::InputParameters params = ComponentLiquidModel::GetInputParameters();
+  params += VolumetricComponentModel::GetInputParameters();
 
   params.SetGeneralDescription(
     "General control volume with liquid physics model.");
@@ -43,8 +47,7 @@ SingleVolumeLiquidModel::SingleVolumeLiquidModel(
   const std::vector<std::string>& variable_names)
   : ComponentLiquidModel(
       params, family, liquid_physics, hardware_component, cell, variable_names),
-    volumetric_heat_generation_(
-      params.GetParamValue<double>("volumetric_heat_generation"))
+    VolumetricComponentModel(params.ParametersAtAssignment())
 {
 }
 
@@ -65,7 +68,17 @@ void SingleVolumeLiquidModel::AssembleEquations()
   const double p_t = vol_model.VarOld("p");
   const double rho_t = vol_model.VarOld("rho");
   const double e_t = vol_model.VarOld("e");
-  const double q_t = volumetric_heat_generation_;
+
+  double q_t = 0.0;
+  for (const auto& heat_gen_model : heat_generation_sub_models_)
+    q_t += heat_gen_model->GetValue(*cell_ptr_);
+  for (const auto& heat_flux_model : heat_flux_sub_models_)
+  {
+    vol_model.VarOld("hcoeff") = heat_flux_model->ComputeHCoeff(*this, gravity);
+    q_t += heat_flux_model->GetValue(*cell_ptr_,
+                                     vars_old_,
+                                     Length())/Vi;
+  }
 
   VecDbl u_j(J, 0.0);
   VecDbl rho_j(J, 0.0);

@@ -75,8 +75,8 @@ NetworkServer::NetworkServer(const InputParameters& params)
 
     Chi::log.LogAll() << "Server started at " << ip_address_ << ":"
                       << port_number_;
-    listening_thread_ =
-      std::thread(std::bind(&chi::NetworkServer::Listen, this));
+    listening_thread_ = std::thread(
+      std::bind(&chi::NetworkServer::Listen, this));
   }
 }
 
@@ -139,14 +139,21 @@ void NetworkServer::Synchronize()
 /**Lua-wrapped method to shutdown the listening server.*/
 void NetworkServer::ShutdownServer()
 {
-  if (Chi::mpi.location_id == 0)
-  {
-    quit_thread_flag_ = true;
-    listening_thread_.join();
-  }
-
   close(server_socket_);
   close(client_socket_);
+
+  try {
+    if (Chi::mpi.location_id == 0)
+    {
+      quit_thread_flag_ = true;
+      listening_thread_.join();
+    }
+  }
+  catch (...)
+  {
+    Chi::log.LogAll() << "Network thread cleanup failed";
+  }
+
   Chi::log.LogAll() << "Server at " << ip_address_ << ":" << port_number_
                     << " stopped.";
 }
@@ -163,7 +170,11 @@ void NetworkServer::Listen()
   {
     Chi::log.LogAll() << "Listening ";
     const int err = listen(server_socket_, connection_que_size_);
-    ChiLogicalErrorIf(err, "Socket listen failed");
+    if (err)
+    {
+      Chi::log.LogAllError() << "Socket listen failed";
+      break ;
+    }
 
     sockaddr_in client_socket_address{0, 0, 0, {0}, {'\0'}};
     unsigned int client_socket_len = sizeof(client_socket_address);

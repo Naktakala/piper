@@ -26,7 +26,7 @@ LiquidPhysics::MakeVariableNamesList(ComponentCategory hw_comp_category)
     case ComponentCategory::Volumetric:
     {
       variable_names = {
-        "rho", "e", "T", "p", "k", "mu", "u", "Pr", "Re", "hcoeff"};
+        "rho", "e", "T", "p", "k", "mu", "u", "Pr", "Re", "hcoeff", "beta"};
       break;
     }
     case ComponentCategory::JunctionLike:

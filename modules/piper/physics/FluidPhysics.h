@@ -13,10 +13,15 @@ namespace chi_mesh
 class MeshContinuum;
 }
 
+namespace chi_physics
+{
+class FieldFunctionGridBased;
+}
+
 namespace piper
 {
 class Piper;
-class PiperMeshGenerator;
+//class PiperMeshGenerator;
 
 class FluidPhysics : public chi_physics::Solver
 {
@@ -32,7 +37,7 @@ public:
 
   std::function<double(const ComponentModel&)> FrictionFactorFuncion() const;
 
-  virtual void MakeMesh();
+  //virtual void MakeMesh();
   virtual void InitializeUnknowns() = 0;
   /**Makes a list of variable names that should be added for a given
    * component category.*/
@@ -46,12 +51,13 @@ public:
                                 std::map<std::string, double>& state_map,
                                 uint64_t root);
 protected:
+  void UpdateFieldFunctions();
   bool print_header_;
   const size_t min_cells_per_processor_;
   const chi::ParameterBlock initializer_param_block_;
 
   const Piper* pipe_system_ptr_;
-  std::unique_ptr<PiperMeshGenerator> mesh_generator_;
+  //std::unique_ptr<PiperMeshGenerator> mesh_generator_;
   std::shared_ptr<const chi_mesh::MeshContinuum> grid_ptr_;
 
   chi_mesh::Vector3 gravity_;
@@ -61,6 +67,9 @@ protected:
   std::function<double(const ComponentModel&)> friction_factor_function_;
 
   std::map<std::string, chi::ParameterBlock> compononent_model_parameters_;
+
+  std::map<std::string, std::shared_ptr<chi_physics::FieldFunctionGridBased>>
+    varname_2_ff_map_;
 
   double step_time_ = 0.0;
   double intgl_step_time_ = 0.0;

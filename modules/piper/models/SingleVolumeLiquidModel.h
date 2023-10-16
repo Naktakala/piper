@@ -2,11 +2,13 @@
 #define PIPER_SINGLEVOLUMELIQUIDMODEL_H
 
 #include "ComponentLiquidModel.h"
+#include "VolumetricComponentModel.h"
 
 namespace piper
 {
 
-class SingleVolumeLiquidModel : public ComponentLiquidModel
+class SingleVolumeLiquidModel : public ComponentLiquidModel,
+                                public VolumetricComponentModel
 {
 public:
   static chi::InputParameters GetInputParameters();
@@ -18,9 +20,6 @@ public:
                           const std::vector<std::string>& variable_names);
 
   void AssembleEquations() override;
-
-protected:
-  double volumetric_heat_generation_;
 };
 
 } // namespace piper

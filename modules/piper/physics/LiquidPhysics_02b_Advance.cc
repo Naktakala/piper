@@ -11,6 +11,8 @@ void LiquidPhysics::Advance()
 
   for (auto& model : component_models_)
     model->AdvanceNewToOld();
+
+  UpdateFieldFunctions();
 }
 
 }

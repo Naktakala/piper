@@ -7,6 +7,7 @@
 namespace piper
 {
 class HardwareComponent;
+class PiperMeshGenerator;
 
 class Piper : public ChiObject
 {
@@ -26,8 +27,7 @@ public:
 
   size_t RootComponentID() const;
 
-private:
-  void ConnectComponents();
+  const std::map<std::string, uint64_t>& GetVolumeComponent2CellGIDMap() const;
 
 protected:
   std::map<std::string, size_t> hw_comp_name_2_id_map_;
@@ -38,11 +38,16 @@ protected:
   std::vector<size_t> junction_component_ids_;
 
 private:
+  void MakeMesh();
+  void ConnectComponents();
+
   const std::string system_name_;
   const std::string root_component_name_;
   size_t root_component_id_;
   const chi_mesh::Vector3 datum_;
   const bool print_nodalization_;
+
+  std::unique_ptr<PiperMeshGenerator> mesh_generator_;
 };
 
 }

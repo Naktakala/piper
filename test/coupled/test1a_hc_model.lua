@@ -209,6 +209,13 @@ chi.CellVolumeIntegralPostProcessor.Create({
   execute_on = { "SolverExecuted" },
   print_on = { "ProgramExecuted" }
 })
+chi.AggregateNodalValuePostProcessor.Create({
+  name = "element_max_temperature",
+  field_function = "T",
+  compute_volume_average = true,
+  execute_on = { "SolverExecuted" },
+  print_on = { "ProgramExecuted" }
+})
 
 chi.PostProcessorPrinterSetOptions({
   print_scalar_time_history = false,

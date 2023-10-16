@@ -2,7 +2,7 @@
 
 #include "ChiObjectFactory.h"
 #include "piper/Components/HardwareComponent.h"
-
+#include "piper/MeshGenerators/PiperMeshGenerator.h"
 
 #include "chi_runtime.h"
 #include "chi_log.h"
@@ -149,6 +149,8 @@ Piper::Piper(const chi::InputParameters& params)
 
   ConnectComponents();
 
+  MakeMesh();
+
   Chi::log.Log0Verbose1() << "Piper system \"" << SystemName() << "\" created.";
 }
 
@@ -182,6 +184,38 @@ size_t Piper::MapHWCompName2ID(const std::string& name) const
 }
 
 size_t Piper::RootComponentID() const { return root_component_id_; }
+
+// ###################################################################
+void Piper::MakeMesh()
+{
+  size_t partitioner_handle;
+  {
+    auto& factory = ChiObjectFactory::GetInstance();
+
+    chi::ParameterBlock params;
+    // params.AddParameter("all_to_rank", 0);
+    partitioner_handle =
+      factory.MakeRegisteredObjectOfType("chi::LinearGraphPartitioner", params);
+  }
+
+  {
+    chi::ParameterBlock params;
+    params.AddParameter("partitioner", partitioner_handle);
+    params.AddParameter("replicated_mesh", true);
+    auto valid_params = PiperMeshGenerator::GetInputParameters();
+    valid_params.AssignParameters(params);
+    mesh_generator_ = std::make_unique<PiperMeshGenerator>(valid_params);
+
+    mesh_generator_->SetPipeSystem(*this);
+    mesh_generator_->Execute();
+  }
+}
+
+const std::map<std::string, uint64_t>&
+Piper::GetVolumeComponent2CellGIDMap() const
+{
+  return mesh_generator_->GetVolumeComponent2CellGIDMap();
+}
 
 } // namespace piper
 

@@ -6,8 +6,8 @@
 zrh_RO = 0.5 * 3.5839e-2
 zrh_RI = 0.0
 zrh_A = math.pi * (zrh_RO^2 - zrh_RI^2)
---zrh_L = 3 * 12.7e-2
-zrh_L = 0.1
+zrh_L = 3 * 12.7e-2
+--zrh_L = 0.1
 zrh_V = zrh_A * zrh_L
 one_MW_peak_element_power = 17.4e3
 one_MW_power_density = one_MW_peak_element_power/zrh_V
@@ -18,8 +18,8 @@ hc_mesh_handler = chiMeshHandlerCreate()
 rnodes = {}
 znodes = {}
 
-Nz = 1
-zmin = -0.05
+Nz = 5
+zmin = 0.0
 
 dz = zrh_L / Nz
 for i = 0, Nz do
@@ -42,9 +42,9 @@ function AddRLayer(Ro, Nlayers)
   end
 end
 
-AddRLayer(0.5 * 0.635e-2, 3)
-AddRLayer(0.5 * 3.5839e-2 - 0.0508e-2, 4)
-AddRLayer(0.5 * 3.5839e-2, 2)
+AddRLayer(0.5 * 0.635e-2, 2)
+AddRLayer(0.5 * 3.5839e-2 - 0.0508e-2, 3)
+AddRLayer(0.5 * 3.5839e-2, 1)
 
 meshgen1 = chi_mesh.OrthogonalMeshGenerator.Create({ node_sets = { rnodes, znodes } })
 chi_mesh.MeshGenerator.Execute(meshgen1)
@@ -71,10 +71,6 @@ field_heat_gen = chi_physics.FieldFunctionGridBased.Create({
 })
 
 function HeatField(_--[[vals]])
-  --z = vals[2] - 0.381/2
-  --w = 0.6
-  --val = (reactor_power/1.0e6)* one_MW_power_density * math.cos(math.pi*z/w)
-  --return {val*1.191268324}
   return { (reactor_power / 1.0e6) * one_MW_power_density }
 end
 func_heatfield = chi_math.functions.LuaDimAToDimB.Create
@@ -99,7 +95,7 @@ field_Tbulk = chi_physics.FieldFunctionGridBased.Create({
 })
 
 field_hcoeff = chi_physics.FieldFunctionGridBased.Create({
-  name = "hcoeff",
+  name = "HTC",
   sdm_type = "FV",
   initial_value = 10000.0,
   coordinate_system = "rz"
@@ -143,33 +139,44 @@ hc_system = chi_math.KernelSystem.Create({
   material_properties = mat_props,
   fields = {
     chi_physics.FieldFunctionGridBased.Create({
-      name = "T",
+      name = "THC",
       sdm_type = "LagrangeC",
       initial_value = 300.0,
       coordinate_system = "rz"
     })
   },
   kernels = {
-    { type = hcm.CoupledHeatGeneration.type, var = "T", e_gen = "p_density" },
+    { type = hcm.CoupledHeatGeneration.type, var = "THC", e_gen = "p_density" },
 
-    { type = hcm.ThermalConductionKernel2.type, var = "T", mat_ids={0,1}},
-    { type = hcm.ThermalConductionTimeDerivative.type, var = "T", mat_ids={0,1} },
+    { type = hcm.ThermalConductionKernel2.type, var = "THC", mat_ids={0,1}},
+    { type = hcm.ThermalConductionTimeDerivative.type, var = "THC", mat_ids={0,1} },
     --
-    { type = hcm.ThermalConductionKernel2.type, var = "T", mat_ids={2}},
-    { type = hcm.ThermalConductionTimeDerivative.type, var = "T", mat_ids={2} }
+    { type = hcm.ThermalConductionKernel2.type, var = "THC", mat_ids={2}},
+    { type = hcm.ThermalConductionTimeDerivative.type, var = "THC", mat_ids={2} }
   },
   bcs = {
     {
       type = hcm.CoupledConvectiveHeatFluxBC.type,
       boundaries = { "XMAX" },
       T_bulk = "Tbulk",
-      convection_coefficient = "hcoeff",
-      var = "T"
+      convection_coefficient = "HTC",
+      var = "THC"
     }
   },
   time_integrator = chi_math.CrankNicolsonTimeIntegrator.Create({}),
   --verbosity = 2
   --output_filename_base = "transient_cylTest1"
+})
+
+do_Tsurf = chi.derived_object.LayeredBoundaryAverage.Create
+({
+  name = "do_Tsurf",
+  nodes = znodes,
+  field_function = "THC",
+  direction = {0.0,0.0,1.0},
+  boundaries = {"XMAX"},
+  parent_forward_direction = {0.0,0.0,1.0},
+  parent_up_direction = {0.0,-1.0,0.0},
 })
 
 hc_model = chi_math.TransientNonLinearExecutioner.Create
@@ -193,7 +200,7 @@ hc_model = chi_math.TransientNonLinearExecutioner.Create
 
 chi.AggregateNodalValuePostProcessor.Create({
   name = "maxval",
-  field_function = "T",
+  field_function = "THC",
   operation = "max",
   print_on = { "ProgramExecuted" }
 })
@@ -204,15 +211,24 @@ chi.CellVolumeIntegralPostProcessor.Create({
 })
 chi.CellVolumeIntegralPostProcessor.Create({
   name = "element_avg_temperature",
-  field_function = "T",
+  field_function = "THC",
   compute_volume_average = true,
+  solvername_filter = "hc_model",
+  execute_on = { "SolverExecuted" },
+  print_on = { "ProgramExecuted" }
+})
+chi.AggregateNodalValuePostProcessor.Create({
+  name = "element_max_temperature",
+  field_function = "THC",
+  operation = "max",
+  solvername_filter = "hc_model",
   execute_on = { "SolverExecuted" },
   print_on = { "ProgramExecuted" }
 })
 
 chi.PostProcessorPrinterSetOptions({
   print_scalar_time_history = false,
-  --csv_filename = "transient_cylTest1.csv"
+  csv_filename = "test2a.csv"
 })
 
 chiSolverInitialize(hc_model)

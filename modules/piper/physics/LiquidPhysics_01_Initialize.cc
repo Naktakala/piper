@@ -11,8 +11,14 @@
 
 #include "math/ParallelVector/GhostedParallelSTLVector.h"
 
+#include "mesh/MeshHandler/chi_meshhandler.h"
+
+#include "physics/FieldFunction/fieldfunction_gridbased.h"
+
 #include "chi_runtime.h"
 #include "chi_log.h"
+
+#include "ChiObjectFactory.h"
 
 #define scint64_t static_cast<int64_t>
 
@@ -23,7 +29,8 @@ void LiquidPhysics::Initialize()
 {
   Chi::log.Log() << "Making mesh";
   Chi::mpi.Barrier();
-  this->MakeMesh();
+  //this->MakeMesh();
+  grid_ptr_ = chi_mesh::GetCurrentHandler().GetGrid();
   Chi::log.Log() << "Initializing Unknowns";
   Chi::mpi.Barrier();
   this->InitializeUnknowns();
@@ -36,7 +43,7 @@ void LiquidPhysics::InitializeUnknowns()
   const auto& pipe_system = PipeSystem();
 
   auto& hw_components = pipe_system.HardwareComponents();
-  const auto& cell_map = mesh_generator_->GetVolumeComponent2CellGIDMap();
+  const auto& cell_map = pipe_system.GetVolumeComponent2CellGIDMap();
 
   //================================================== Instantiate models
   for (auto& hw_component_ptr : hw_components)
@@ -103,6 +110,28 @@ void LiquidPhysics::InitializeUnknowns()
                       supported_typenames);
   }
 
+  //================================================== Create field functions
+  const auto variable_names =
+    MakeVariableNamesList(ComponentCategory::Volumetric);
+  auto& factory = ChiObjectFactory::GetInstance();
+  for (const auto& var_name : variable_names)
+  {
+    chi::ParameterBlock params;
+    params.AddParameter("name", var_name);
+    params.AddParameter("sdm_type", "FV");
+
+    const size_t ff_handle = factory.MakeRegisteredObjectOfType(
+      "chi_physics::FieldFunctionGridBased", params);
+
+    auto ff = Chi::GetStackItemPtrAsType<chi_physics::FieldFunctionGridBased>(
+      Chi::field_function_stack, ff_handle, __FUNCTION__);
+
+    this->field_functions_.push_back(ff);
+
+    varname_2_ff_map_[var_name] = ff;
+  } // for each variable name
+
+
   //================================================== Execute the initializer
   initializer_param_block_.RequireParameter("type");
   const std::string initializer_type =
@@ -119,14 +148,17 @@ void LiquidPhysics::InitializeUnknowns()
     ChiInvalidArgument("Unsupported initializer type \"" + initializer_type +
                        "\".");
 
-   const int64_t num_local_dofs = scint64_t(grid_ptr_->local_cells.size());
-   const int64_t num_global_dofs =
-     scint64_t(grid_ptr_->GetGlobalNumberOfCells());
+  UpdateFieldFunctions();
 
-  //const int64_t num_global_dofs =
-  //  scint64_t(grid_ptr_->GetGlobalNumberOfCells());
-  //const int64_t num_local_dofs =
-  //  Chi::mpi.location_id == 0 ? num_global_dofs : 0;
+  //================================================== Develop linear system
+  const int64_t num_local_dofs = scint64_t(grid_ptr_->local_cells.size());
+  const int64_t num_global_dofs =
+    scint64_t(grid_ptr_->GetGlobalNumberOfCells());
+
+  // const int64_t num_global_dofs =
+  //   scint64_t(grid_ptr_->GetGlobalNumberOfCells());
+  // const int64_t num_local_dofs =
+  //   Chi::mpi.location_id == 0 ? num_global_dofs : 0;
 
   A_ =
     chi_math::PETScUtils::CreateSquareMatrix(num_local_dofs, num_global_dofs);

@@ -4,8 +4,11 @@
 #include "piper/MeshGenerators/PiperMeshGenerator.h"
 #include "piper/utils/utils.h"
 
+#include "math/SpatialDiscretization/SpatialDiscretization.h"
+
 #include "physics/PhysicsEventPublisher.h"
 #include "physics/TimeSteppers/TimeStepper.h"
+#include "physics/FieldFunction/fieldfunction_gridbased.h"
 
 #include "mesh/MeshHandler/chi_meshhandler.h"
 
@@ -64,7 +67,7 @@ FluidPhysics::FluidPhysics(const chi::InputParameters& params)
       &Chi::GetStackItem<Piper>(Chi::object_stack,
                                 params.GetParamValue<size_t>("pipe_system"),
                                 __FUNCTION__)),
-    mesh_generator_(nullptr),
+    //mesh_generator_(nullptr),
     grid_ptr_(nullptr),
     gravity_(params.GetParamVectorValue<double>("gravity_vector")),
     friction_factor_function_(&DarcyFrictionFactorWithChurchill),
@@ -90,32 +93,32 @@ FluidPhysics::ConstructComponentModelParametersMap(
 }
 
 // ###################################################################
-void FluidPhysics::MakeMesh()
-{
-  size_t partitioner_handle;
-  {
-    auto& factory = ChiObjectFactory::GetInstance();
-
-    chi::ParameterBlock params;
-    // params.AddParameter("all_to_rank", 0);
-    partitioner_handle =
-      factory.MakeRegisteredObjectOfType("chi::LinearGraphPartitioner", params);
-  }
-
-  {
-    chi::ParameterBlock params;
-    params.AddParameter("partitioner", partitioner_handle);
-    params.AddParameter("replicated_mesh", true);
-    auto valid_params = PiperMeshGenerator::GetInputParameters();
-    valid_params.AssignParameters(params);
-    mesh_generator_ = std::make_unique<PiperMeshGenerator>(valid_params);
-
-    mesh_generator_->SetPipeSystem(PipeSystem());
-    mesh_generator_->Execute();
-  }
-
-  grid_ptr_ = chi_mesh::GetCurrentHandler().GetGrid();
-}
+//void FluidPhysics::MakeMesh()
+//{
+//  size_t partitioner_handle;
+//  {
+//    auto& factory = ChiObjectFactory::GetInstance();
+//
+//    chi::ParameterBlock params;
+//    // params.AddParameter("all_to_rank", 0);
+//    partitioner_handle =
+//      factory.MakeRegisteredObjectOfType("chi::LinearGraphPartitioner", params);
+//  }
+//
+//  {
+//    chi::ParameterBlock params;
+//    params.AddParameter("partitioner", partitioner_handle);
+//    params.AddParameter("replicated_mesh", true);
+//    auto valid_params = PiperMeshGenerator::GetInputParameters();
+//    valid_params.AssignParameters(params);
+//    mesh_generator_ = std::make_unique<PiperMeshGenerator>(valid_params);
+//
+//    mesh_generator_->SetPipeSystem(PipeSystem());
+//    mesh_generator_->Execute();
+//  }
+//
+//  grid_ptr_ = chi_mesh::GetCurrentHandler().GetGrid();
+//}
 
 const Piper& FluidPhysics::PipeSystem() const
 {
@@ -196,6 +199,26 @@ void FluidPhysics::BroadcastStateMap(const std::vector<std::string>& map_keys,
   size_t k = 0;
   for (const auto& key : map_keys)
     state_map[key] = values[k++];
+}
+
+void FluidPhysics::UpdateFieldFunctions()
+{
+  for (auto& [varname, ff] : varname_2_ff_map_)
+  {
+    const auto& sdm = ff->GetSpatialDiscretization();
+    auto& field_vector = ff->FieldVector();
+
+    for (const auto& model : component_models_)
+    {
+      if (model->Category() != ComponentCategory::Volumetric) continue;
+
+      const auto& cell = *model->GetCellPtr();
+
+      const int64_t dof_map = sdm.MapDOFLocal(cell, 0);
+
+      field_vector.at(dof_map) = model->VarOld(varname);
+    }//for component model
+  }
 }
 
 } // namespace piper
