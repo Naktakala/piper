@@ -1,7 +1,7 @@
 #include "Piper.h"
 
 #include "ChiObjectFactory.h"
-#include "piper/Components/HardwareComponent.h"
+#include "piper/components/HardwareComponent.h"
 #include "piper/MeshGenerators/PiperMeshGenerator.h"
 
 #include "chi_runtime.h"
