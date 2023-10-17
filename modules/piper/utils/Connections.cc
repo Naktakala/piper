@@ -1,6 +1,6 @@
 #include "Connections.h"
 
-#include "piper/Components/HardwareComponent.h"
+#include "piper/components/HardwareComponent.h"
 
 namespace piper::utils
 {

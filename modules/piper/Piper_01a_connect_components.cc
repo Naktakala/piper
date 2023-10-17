@@ -1,6 +1,6 @@
 #include "Piper.h"
 
-#include "piper/Components/HardwareComponent.h"
+#include "piper/components/HardwareComponent.h"
 
 #include "chi_runtime.h"
 #include "chi_log.h"
