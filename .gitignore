@@ -54,3 +54,6 @@ doc/generated_files
 scratch/
 
 test/**/*.out
+
+*.vtu
+*.pvtu

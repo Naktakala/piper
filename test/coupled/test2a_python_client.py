@@ -115,7 +115,7 @@ def click_query_button():
 def click_add_rho_button():
     message = b"POST / HTTP/1.1\r\n"
     message += b"\r\n"
-    message += b'rho_added=rho_added + 2.1'
+    message += b'rho_added=rho_added + 1.1'
     message += b'\r\n'
     client_socket.sendall(message)
     data = client_socket.recv(1024)
@@ -125,7 +125,7 @@ def click_add_rho_button():
 def click_rem_rho_button():
     message = b"POST / HTTP/1.1\r\n"
     message += b"\r\n"
-    message += b'rho_added=rho_added - 2.1'
+    message += b'rho_added=rho_added - 1.1'
     message += b'\r\n'
     client_socket.sendall(message)
     data = client_socket.recv(1024)

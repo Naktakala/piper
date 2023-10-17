@@ -218,8 +218,13 @@ void LiquidPhysics::Step()
 
     const auto state_map = EvaluateState(var_names, state_specs);
 
+    //std::stringstream outstr;
     for (const auto& var_name : var_names)
+    {
       vol_model.VarNew(var_name) = state_map.at(var_name);
+      //outstr << var_name << ": " << state_map.at(var_name) << " ";
+    }
+    //Chi::log.Log0Warning() << outstr.str();
 
     // Compute Reynold's number
     const double rho = rho_i_tp1;

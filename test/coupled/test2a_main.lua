@@ -7,17 +7,17 @@ transfer_Tbulk = chi_physics.field_operations.DerivedObjectAssign.Create({
   derived_object = do_tbulk,
   field_function = "Tbulk"
 })
---transfer_hcoeff = chi_physics.field_operations.DerivedObjectAssign.Create({
---  derived_object = do_hcoeff,
---  field_function = "HTC"
---})
+transfer_hcoeff = chi_physics.field_operations.DerivedObjectAssign.Create({
+  derived_object = do_hcoeff,
+  field_function = "HTC"
+})
 transfer_Tsurf = chi_physics.field_operations.DerivedObjectAssign.Create({
   derived_object = do_Tsurf,
   field_function = "T_surface"
 })
 
 chiFieldOperationExecute(transfer_Tbulk)
---chiFieldOperationExecute(transfer_hcoeff)
+chiFieldOperationExecute(transfer_hcoeff)
 chiFieldOperationExecute(transfer_Tsurf)
 
 ffs_timestamp1 = { "THC", "Tbulk", "HTC" }
@@ -87,14 +87,14 @@ while (alive) do
   if (real_time >= (thirty_hertz_old_time + dt_thirty_hertz)) then
     sim_time30Hz = sim_time30Hz + dt_thirty_hertz
 
-    --chiFieldOperationExecute(transfer_Tsurf)
+    chiFieldOperationExecute(transfer_Tsurf)
 
     chiSolverSetProperties(th_model, { end_time = sim_time30Hz,
                                        dt = dt_thirty_hertz })
     chiSolverExecute(th_model)
 
     chiFieldOperationExecute(transfer_Tbulk)
-    --chiFieldOperationExecute(transfer_hcoeff)
+    chiFieldOperationExecute(transfer_hcoeff)
 
     thirty_hertz_old_time = real_time
   end
