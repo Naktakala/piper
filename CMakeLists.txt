@@ -21,10 +21,10 @@ add_subdirectory("${PROJECT_SOURCE_DIR}/framework")
 
 include_directories("${PROJECT_SOURCE_DIR}/modules")
 include_directories("${PROJECT_SOURCE_DIR}/framework")
-include_directories("${PROJECT_SOURCE_DIR}/scratch/CoolProp/include")
-include_directories("${PROJECT_SOURCE_DIR}/scratch/CoolProp/externals/fmtlib/include")
+include_directories("${PROJECT_SOURCE_DIR}/CoolProp/include")
+include_directories("${PROJECT_SOURCE_DIR}/CoolProp/externals/fmtlib/include")
 
-link_directories("${PROJECT_SOURCE_DIR}/scratch/CoolProp/build")
+link_directories("${PROJECT_SOURCE_DIR}/CoolProp/build")
 
 set(CMAKE_ARCHIVE_OUTPUT_DIRECTORY "${PROJECT_SOURCE_DIR}/lib")
 set(CMAKE_LIBRARY_OUTPUT_DIRECTORY "${PROJECT_SOURCE_DIR}/lib")
