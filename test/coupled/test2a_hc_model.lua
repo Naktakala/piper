@@ -1,15 +1,14 @@
 --==================================================== TRIGA Fuel element
 --
-
---zrh_RO = 0.5 * 3.5839e-2 - 0.0508e-2
---zrh_RI = 0.5 * 0.635e-2
-zrh_RO = 0.5 * 3.5839e-2
-zrh_RI = 0.0
+clad_thickness = 0.0508e-2
+clad_RO = 0.5 * 3.5839e-2
+zrh_RO = clad_RO - clad_thickness
+zrh_RI = 0.5 * 0.635e-2
 zrh_A = math.pi * (zrh_RO^2 - zrh_RI^2)
 zrh_L = 3 * 12.7e-2
---zrh_L = 0.1
+
 zrh_V = zrh_A * zrh_L
-one_MW_peak_element_power = 17.4e3
+one_MW_peak_element_power = 11.0e3
 one_MW_power_density = one_MW_peak_element_power/zrh_V
 if (reactor_power == nil) then reactor_power = 1.0e6 end
 
@@ -42,17 +41,17 @@ function AddRLayer(Ro, Nlayers)
   end
 end
 
-AddRLayer(0.5 * 0.635e-2, 2)
-AddRLayer(0.5 * 3.5839e-2 - 0.0508e-2, 3)
-AddRLayer(0.5 * 3.5839e-2, 1)
+AddRLayer(zrh_RI, 2)
+AddRLayer(zrh_RO, 3)
+AddRLayer(zrh_RO + clad_thickness, 1)
 
 meshgen1 = chi_mesh.OrthogonalMeshGenerator.Create({ node_sets = { rnodes, znodes } })
 chi_mesh.MeshGenerator.Execute(meshgen1)
 
-function SetMatIDs(x, _, _, _)
-  if (x > (0.5 * 3.5839e-2 - 0.0508e-2)) then
+function SetMatIDs(r, _, _, _)
+  if (r > zrh_RO) then
     return 2
-  elseif (x > (0.5 * 0.635e-2)) then
+  elseif (r > zrh_RI) then
     return 1
   else
     return 0
@@ -65,13 +64,18 @@ chiVolumeMesherSetProperty(MATID_FROM_LUA_FUNCTION, "SetMatIDs")
 --===================================== Heat generation
 field_heat_gen = chi_physics.FieldFunctionGridBased.Create({
   name = "p_density",
-  sdm_type = "LagrangeC",
+  sdm_type = "FV",
   initial_value = 50.0,
   coordinate_system = "rz"
 })
 
-function HeatField(_--[[vals]])
-  return { (reactor_power / 1.0e6) * one_MW_power_density }
+function HeatField(vals)
+  r = vals[1]
+  if (r > zrh_RI and r < zrh_RO) then
+    return { (reactor_power / 1.0e6) * one_MW_power_density }
+  else
+    return { 0.0 };
+  end
 end
 func_heatfield = chi_math.functions.LuaDimAToDimB.Create
 ({
@@ -146,7 +150,7 @@ hc_system = chi_math.KernelSystem.Create({
     })
   },
   kernels = {
-    { type = hcm.CoupledHeatGeneration.type, var = "THC", e_gen = "p_density" },
+    { type = hcm.CoupledHeatGeneration.type, var = "THC", e_gen = "p_density", mat_ids={1} },
 
     { type = hcm.ThermalConductionKernel2.type, var = "THC", mat_ids={0,1}},
     { type = hcm.ThermalConductionTimeDerivative.type, var = "THC", mat_ids={0,1} },
@@ -224,11 +228,6 @@ chi.AggregateNodalValuePostProcessor.Create({
   solvername_filter = "hc_model",
   execute_on = { "SolverExecuted" },
   print_on = { "ProgramExecuted" }
-})
-
-chi.PostProcessorPrinterSetOptions({
-  print_scalar_time_history = false,
-  csv_filename = "test2a.csv"
 })
 
 chiSolverInitialize(hc_model)
