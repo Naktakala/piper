@@ -58,7 +58,7 @@ NetworkServer::NetworkServer(const InputParameters& params)
 
     ChiLogicalErrorIf(server_socket_ < 0, "Error opening socket.");
 
-    sockaddr_in socket_address{0, 0, 0, {0}, {'\0'}};
+    sockaddr_in socket_address{0, 0, 0, {0}};
 
     socket_address.sin_family = AF_INET;
     socket_address.sin_addr.s_addr = inet_addr(ip_address_.c_str());
@@ -172,11 +172,11 @@ void NetworkServer::Listen()
     const int err = listen(server_socket_, connection_que_size_);
     if (err)
     {
-      Chi::log.LogAllError() << "Socket listen failed";
+      Chi::log.LogAll() << "Socket listen failed";
       break ;
     }
 
-    sockaddr_in client_socket_address{0, 0, 0, {0}, {'\0'}};
+    sockaddr_in client_socket_address{0, 0, 0, {0}};
     unsigned int client_socket_len = sizeof(client_socket_address);
 
     client_socket_ = accept(
@@ -247,7 +247,7 @@ void NetworkServer::Listen()
 
         if (bytessent != outgoing_message_.size())
         {
-          Chi::log.LogAllError() << "Error sending message";
+          Chi::log.LogAll() << "Error sending message";
           client_connected = false;
         }
 
