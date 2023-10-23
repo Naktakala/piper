@@ -17,7 +17,7 @@ hc_mesh_handler = chiMeshHandlerCreate()
 rnodes = {}
 znodes = {}
 
-Nz = 5
+Nz = 1
 zmin = 0.0
 
 dz = zrh_L / Nz
@@ -167,20 +167,26 @@ hc_system = chi_math.KernelSystem.Create({
       var = "THC"
     }
   },
-  time_integrator = chi_math.CrankNicolsonTimeIntegrator.Create({}),
+  --time_integrator = chi_math.CrankNicolsonTimeIntegrator.Create({}),
   --verbosity = 2
   --output_filename_base = "transient_cylTest1"
 })
 
-do_Tsurf = chi.derived_object.LayeredBoundaryAverage.Create
+--do_Tsurf = chi.derived_object.LayeredBoundaryAverage.Create
+--({
+--  name = "do_Tsurf",
+--  nodes = znodes,
+--  field_function = "THC",
+--  direction = {0.0,0.0,1.0},
+--  boundaries = {"XMAX"},
+--  parent_forward_direction = {0.0,0.0,1.0},
+--  parent_up_direction = {0.0,-1.0,0.0},
+--})
+do_Tsurf = chi.derived_object.BoundaryAverage.Create
 ({
   name = "do_Tsurf",
-  nodes = znodes,
   field_function = "THC",
-  direction = {0.0,0.0,1.0},
   boundaries = {"XMAX"},
-  parent_forward_direction = {0.0,0.0,1.0},
-  parent_up_direction = {0.0,-1.0,0.0},
 })
 
 hc_model = chi_math.TransientNonLinearExecutioner.Create
@@ -189,12 +195,12 @@ hc_model = chi_math.TransientNonLinearExecutioner.Create
   name = "hc_model",
   system = hc_system,
   solver_params = {
-    nl_method = "NEWTON",
+    nl_method = "LINEAR",
     l_rel_tol = 1.0e-5,
-    --l_method = "gmres",
+    l_method = "gmres",
     --pc_options =
     --{
-    --  pc_type = "jacobi"
+    --  pc_type = "gamg"
     --}
   },
 
