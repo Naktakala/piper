@@ -88,7 +88,8 @@ LayeredBoundaryAverage::LayeredBoundaryAverage(const InputParameters& params)
                          " a norm this small normally indicates a problem.");
   direction_ /= dir_norm;
 
-  values_.assign(nodes_.size() - 1, 0.0);
+  values_.assign(nodes_.size() - 1,
+                 params.GetParamValue<double>("initial_value"));
 }
 
 /**Finds the layer index in which this point lies. If not within the layers,
